@@ -15,7 +15,9 @@
 package tcp
 
 import (
+	"encoding/hex"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/elap5e/penguin/pkg/bytes"
@@ -35,27 +37,29 @@ func (c *codec) WriteRequest(req *rpc.Request, args *rpc.Args) error {
 		body.WriteInt32(args.FixID)
 		body.WriteInt32(args.AppID)
 		tmp := make([]byte, 12)
-		tmp[0x0] = c.c.GetFakeApp(req.Username).NetworkType
-		tmp[0xa] = c.c.GetFakeApp(req.Username).NetIPFamily
+		tmp[0x0] = c.cl.GetFakeApp(req.Username).NetworkType
+		tmp[0xa] = c.cl.GetFakeApp(req.Username).NetIPFamily
 		body.Write(tmp)
-		body.WriteBytesL32(c.c.GetTickets(req.Username).A2().Sig())
+		// body.WriteBytesL32(c.cl.GetTickets(req.Username).A2().Sig())
+		body.WriteBytesL32([]byte{})
 	}
 	body.WriteStringL32(args.ServiceMethod)
 	body.WriteBytesL32(args.Cookie)
 	if req.Version == rpc.VersionDefault {
-		body.WriteStringL32(c.c.GetFakeApp(req.Username).IMEI)
-		body.WriteBytesL32(c.c.GetFakeApp(req.Username).KSID)
-		body.WriteStringL16("" + "|" + c.c.GetFakeApp(req.Username).IMSI + "|A" + c.c.GetFakeApp(req.Username).Revision)
+		body.WriteStringL32(c.cl.GetFakeApp(req.Username).IMEI)
+		body.WriteBytesL32(c.cl.GetFakeApp(req.Username).KSID)
+		body.WriteStringL16("" + "|" + c.cl.GetFakeApp(req.Username).IMSI + "|A" + c.cl.GetFakeApp(req.Username).Revision)
 	}
 	body.WriteBytesL32(args.ReserveField)
 	body.WriteUint32At(uint32(body.Len()), 0)
 	body.WriteBytesL32(args.Payload)
+	log.Printf("dump of send body:\n%s", hex.Dump(body.Bytes()))
 
 	method := strings.ToLower(req.ServiceMethod)
 	if method == "heartbeat.ping" || method == "heartbeat.alive" || method == "client.correcttime" {
 		req.EncryptType = rpc.EncryptTypeNotNeedEncrypt
 	} else {
-		cipher, d2 := tea.NewCipher([16]byte{}), c.c.GetTickets(req.Username).D2()
+		cipher, d2 := tea.NewCipher([16]byte{}), c.cl.GetTickets(req.Username).D2()
 		if len(d2.Sig()) == 0 ||
 			method == "login.auth" ||
 			method == "login.chguin" ||
@@ -87,7 +91,7 @@ func (c *codec) WriteRequest(req *rpc.Request, args *rpc.Args) error {
 	switch req.Version {
 	case rpc.VersionDefault:
 		if req.EncryptType == rpc.EncryptTypeEncryptByD2Key {
-			head.WriteBytesL32(c.c.GetTickets(req.Username).D2().Sig())
+			head.WriteBytesL32(c.cl.GetTickets(req.Username).D2().Sig())
 		} else {
 			head.WriteUint32(4)
 		}
@@ -97,7 +101,9 @@ func (c *codec) WriteRequest(req *rpc.Request, args *rpc.Args) error {
 	head.WriteByte(0)
 	head.WriteStringL32(req.Username)
 	head.WriteUint32At(uint32(head.Len()+body.Len()), 0)
+	log.Printf("dump of send head:\n%s", hex.Dump(head.Bytes()))
 
+	log.Printf("dump of send:\n%s", hex.Dump(append(head.Bytes(), body.Bytes()...)))
 	if _, err := head.WriteTo(c.conn); err != nil {
 		return err
 	}

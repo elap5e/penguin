@@ -12,33 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tcp
+package main
 
 import (
-	"io"
-	"net"
+	"context"
+	"log"
+	"math/rand"
 
-	"github.com/elap5e/penguin/pkg/bytes"
+	"github.com/elap5e/penguin/pkg/net/msf"
 	"github.com/elap5e/penguin/pkg/net/msf/rpc"
+	"github.com/elap5e/penguin/pkg/net/msf/service"
 )
 
-type codec struct {
-	cl   rpc.Client
-	conn io.ReadWriteCloser
-
-	buf *bytes.Buffer
+func main() {
+	c := msf.NewClient(context.Background())
+	log.Println(c.Call(service.MethodHeartbeatAlive, &rpc.Args{
+		Seq:     rand.Int31n(100000),
+		FixID:   537044845,
+		AppID:   537044845,
+		Payload: []byte{0x00, 0x00, 0x00, 0x04},
+	}, nil))
 }
-
-func NewCodec(cl rpc.Client, conn net.Conn) rpc.Codec {
-	return &codec{
-		cl:   cl,
-		conn: conn,
-		buf:  bytes.NewBuffer([]byte{}),
-	}
-}
-
-func (c *codec) Close() error {
-	return c.conn.Close()
-}
-
-var _ rpc.Codec = (*codec)(nil)

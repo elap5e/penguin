@@ -77,7 +77,7 @@ func (b *Buffer) ReadBytesL16() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	p := make([]byte, n)
+	p := make([]byte, n-2)
 	if _, err := b.Read(p); err != nil {
 		return nil, err
 	}
@@ -89,7 +89,7 @@ func (b *Buffer) ReadBytesL32() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	p := make([]byte, n)
+	p := make([]byte, n-4)
 	if _, err := b.Read(p); err != nil {
 		return nil, err
 	}
@@ -101,7 +101,7 @@ func (b *Buffer) ReadStringL16() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	p := make([]byte, n)
+	p := make([]byte, n-2)
 	if _, err := b.Read(p); err != nil {
 		return "", err
 	}
@@ -113,7 +113,7 @@ func (b *Buffer) ReadStringL32() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	p := make([]byte, n)
+	p := make([]byte, n-4)
 	if _, err := b.Read(p); err != nil {
 		return "", err
 	}
@@ -149,28 +149,28 @@ func (b *Buffer) WriteUint32At(v uint32, n int) (int, error) {
 
 func (b *Buffer) WriteBytesL16(s []byte) (int, error) {
 	n := len(s)
-	n, _ = b.WriteUint16(uint16(n))
+	n, _ = b.WriteUint16(uint16(n + 2))
 	n, _ = b.Write(s)
 	return n + 2, nil
 }
 
 func (b *Buffer) WriteBytesL32(s []byte) (int, error) {
 	n := len(s)
-	n, _ = b.WriteUint32(uint32(n))
+	n, _ = b.WriteUint32(uint32(n + 4))
 	n, _ = b.Write(s)
 	return n + 4, nil
 }
 
 func (b *Buffer) WriteStringL16(s string) (int, error) {
 	n := len(s)
-	n, _ = b.WriteUint16(uint16(n))
+	n, _ = b.WriteUint16(uint16(n + 2))
 	n, _ = b.WriteString(s)
 	return n + 2, nil
 }
 
 func (b *Buffer) WriteStringL32(s string) (int, error) {
 	n := len(s)
-	n, _ = b.WriteUint32(uint32(n))
+	n, _ = b.WriteUint32(uint32(n + 4))
 	n, _ = b.WriteString(s)
 	return n + 4, nil
 }

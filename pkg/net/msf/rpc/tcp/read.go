@@ -17,8 +17,10 @@ package tcp
 import (
 	"compress/zlib"
 	"encoding/binary"
+	"encoding/hex"
 	"fmt"
 	"io"
+	"log"
 
 	"github.com/elap5e/penguin/pkg/bytes"
 	"github.com/elap5e/penguin/pkg/crypto/tea"
@@ -42,6 +44,7 @@ func (c *codec) ReadResponseHeader(resp *rpc.Response) (err error) {
 	if _, err = c.read(); err != nil {
 		return err
 	}
+	log.Printf("dump of recv:\n%s", hex.Dump(c.buf.Bytes()))
 	// Skip the first 4 bytes for the length of the response.
 	if _, err = c.buf.ReadUint32(); err != nil {
 		return err
@@ -75,7 +78,7 @@ func (c *codec) ReadResponseHeader(resp *rpc.Response) (err error) {
 	case rpc.EncryptTypeNotNeedEncrypt:
 		// c.buf = bytes.NewBuffer(c.buf.Bytes())
 	case rpc.EncryptTypeEncryptByD2Key:
-		buf, err := tea.NewCipher(c.c.GetTickets(resp.Username).D2().Key()).Decrypt(c.buf.Bytes())
+		buf, err := tea.NewCipher(c.cl.GetTickets(resp.Username).D2().Key()).Decrypt(c.buf.Bytes())
 		if err != nil {
 			return err
 		}
@@ -92,6 +95,7 @@ func (c *codec) ReadResponseHeader(resp *rpc.Response) (err error) {
 
 func (c *codec) ReadResponseBody(reply *rpc.Reply) (err error) {
 	var n uint32
+	log.Println(hex.Dump(c.buf.Bytes()))
 	// Read the first 4 bytes for the length of the response body header.
 	if n, err = c.buf.ReadUint32(); err != nil {
 		return err
