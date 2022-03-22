@@ -61,6 +61,10 @@ func (c *client) GetAppID() int32 {
 func (c *client) SetAppID(id int32) {
 }
 
+func (c *client) GetFakeApp(username string) *rpc.FakeApp {
+	return nil
+}
+
 func (c *client) GetTickets(username string) rpc.Tickets {
 	return nil
 }

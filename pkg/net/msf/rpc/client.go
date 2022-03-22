@@ -22,6 +22,7 @@ type Client interface {
 	GetNextSeq() int32
 	GetAppID() int32
 	SetAppID(id int32)
+	GetFakeApp(username string) *FakeApp
 	GetTickets(username string) Tickets
 }
 
@@ -33,4 +34,14 @@ type Tickets interface {
 type Ticket interface {
 	Key() [16]byte
 	Sig() []byte
+}
+
+type FakeApp struct {
+	NetworkType uint8 // 0x00: Others; 0x01: Wi-Fi
+	NetIPFamily uint8 // 0x00: Others; 0x01: IPv4; 0x02: IPv6; 0x03: Dual
+
+	IMEI     string
+	KSID     []byte
+	IMSI     string
+	Revision string
 }

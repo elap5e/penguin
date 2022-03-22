@@ -35,17 +35,17 @@ func (c *codec) WriteRequest(req *rpc.Request, args *rpc.Args) error {
 		body.WriteInt32(args.FixID)
 		body.WriteInt32(args.AppID)
 		tmp := make([]byte, 12)
-		tmp[0x0] = c.NetworkType
-		tmp[0xa] = c.NetIPFamily
+		tmp[0x0] = c.c.GetFakeApp(req.Username).NetworkType
+		tmp[0xa] = c.c.GetFakeApp(req.Username).NetIPFamily
 		body.Write(tmp)
 		body.WriteBytesL32(c.c.GetTickets(req.Username).A2().Sig())
 	}
 	body.WriteStringL32(args.ServiceMethod)
 	body.WriteBytesL32(args.Cookie)
 	if req.Version == rpc.VersionDefault {
-		body.WriteStringL32(c.IMEI)
-		body.WriteBytesL32(c.KSID)
-		body.WriteStringL16("" + "|" + c.IMSI + "|A" + c.Revision)
+		body.WriteStringL32(c.c.GetFakeApp(req.Username).IMEI)
+		body.WriteBytesL32(c.c.GetFakeApp(req.Username).KSID)
+		body.WriteStringL16("" + "|" + c.c.GetFakeApp(req.Username).IMSI + "|A" + c.c.GetFakeApp(req.Username).Revision)
 	}
 	body.WriteBytesL32(args.ReserveField)
 	body.WriteUint32At(uint32(body.Len()), 0)

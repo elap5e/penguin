@@ -27,14 +27,6 @@ type codec struct {
 	conn io.ReadWriteCloser
 
 	buf *bytes.Buffer
-
-	NetworkType uint8 // 0x00: Others; 0x01: Wi-Fi
-	NetIPFamily uint8 // 0x00: Others; 0x01: IPv4; 0x02: IPv6; 0x03: Dual
-
-	IMEI     string
-	KSID     []byte
-	IMSI     string
-	Revision string
 }
 
 func NewCodec(conn net.Conn) rpc.Codec {
