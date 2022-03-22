@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"math/rand"
 
@@ -26,10 +27,13 @@ import (
 
 func main() {
 	c := msf.NewClient(context.Background())
-	log.Println(c.Call(service.MethodHeartbeatAlive, &rpc.Args{
+	call := <-c.Go(service.MethodHeartbeatAlive, &rpc.Args{
+		Uin:     10000,
 		Seq:     rand.Int31n(100000),
 		FixID:   537044845,
 		AppID:   537044845,
 		Payload: []byte{0x00, 0x00, 0x00, 0x04},
-	}, nil))
+	}, &rpc.Reply{}, make(chan *rpc.Call, 1)).Done
+	p, _ := json.MarshalIndent(call.Reply, "", "  ")
+	log.Printf("call.Reply:\n%s", string(p))
 }

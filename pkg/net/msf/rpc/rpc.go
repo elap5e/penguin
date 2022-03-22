@@ -16,7 +16,7 @@ package rpc
 
 type Call struct {
 	ServiceMethod string
-	Seq           uint64
+	Seq           int32
 	Args          *Args
 	Reply         *Reply
 	Error         error
@@ -34,29 +34,31 @@ func (call *Call) done() {
 }
 
 type Args struct {
-	Seq           int32
-	FixID         int32
-	AppID         int32
-	ServiceMethod string
-	Cookie        []byte
-	ReserveField  []byte
-	Payload       []byte
+	Uin           int64  `json:"uin,omitempty"`
+	Seq           int32  `json:"seq,omitempty"`
+	FixID         int32  `json:"fix_id,omitempty"`
+	AppID         int32  `json:"app_id,omitempty"`
+	ServiceMethod string `json:"service_method,omitempty"`
+	Cookie        []byte `json:"cookie,omitempty"`
+	ReserveField  []byte `json:"reserve_field,omitempty"`
+	Payload       []byte `json:"payload,omitempty"`
 }
 
 type Reply struct {
-	Seq           int32
-	Code          int32
-	Message       string
-	ServiceMethod string
-	Cookie        []byte
-	Flag          uint32
-	ReserveField  []byte
-	Payload       []byte
+	Uin           int64  `json:"uin,omitempty"`
+	Seq           int32  `json:"seq,omitempty"`
+	Code          int32  `json:"code,omitempty"`
+	Message       string `json:"message,omitempty"`
+	ServiceMethod string `json:"service_method,omitempty"`
+	Cookie        []byte `json:"cookie,omitempty"`
+	Flag          uint32 `json:"flag,omitempty"`
+	ReserveField  []byte `json:"reserve_field,omitempty"`
+	Payload       []byte `json:"payload,omitempty"`
 }
 
 type Request struct {
 	ServiceMethod string
-	Seq           uint64
+	Seq           int32
 	Version       uint32
 	EncryptType   uint8
 	Username      string
@@ -64,7 +66,7 @@ type Request struct {
 
 type Response struct {
 	ServiceMethod string
-	Seq           uint64
+	Seq           int32
 	Version       uint32
 	EncryptType   uint8
 	Username      string

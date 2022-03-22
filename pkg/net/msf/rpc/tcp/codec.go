@@ -26,14 +26,16 @@ type codec struct {
 	cl   rpc.Client
 	conn io.ReadWriteCloser
 
-	buf *bytes.Buffer
+	buf   *bytes.Buffer
+	reply *rpc.Reply
 }
 
 func NewCodec(cl rpc.Client, conn net.Conn) rpc.Codec {
 	return &codec{
-		cl:   cl,
-		conn: conn,
-		buf:  bytes.NewBuffer([]byte{}),
+		cl:    cl,
+		conn:  conn,
+		buf:   bytes.NewBuffer([]byte{}),
+		reply: new(rpc.Reply),
 	}
 }
 

@@ -15,9 +15,7 @@
 package tcp
 
 import (
-	"encoding/hex"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/elap5e/penguin/pkg/bytes"
@@ -53,7 +51,7 @@ func (c *codec) WriteRequest(req *rpc.Request, args *rpc.Args) error {
 	body.WriteBytesL32(args.ReserveField)
 	body.WriteUint32At(uint32(body.Len()), 0)
 	body.WriteBytesL32(args.Payload)
-	log.Printf("dump of send body:\n%s", hex.Dump(body.Bytes()))
+	// log.Printf("dump of send body:\n%s", hex.Dump(body.Bytes()))
 
 	method := strings.ToLower(req.ServiceMethod)
 	if method == "heartbeat.ping" || method == "heartbeat.alive" || method == "client.correcttime" {
@@ -101,9 +99,8 @@ func (c *codec) WriteRequest(req *rpc.Request, args *rpc.Args) error {
 	head.WriteByte(0)
 	head.WriteStringL32(req.Username)
 	head.WriteUint32At(uint32(head.Len()+body.Len()), 0)
-	log.Printf("dump of send head:\n%s", hex.Dump(head.Bytes()))
 
-	log.Printf("dump of send:\n%s", hex.Dump(append(head.Bytes(), body.Bytes()...)))
+	// log.Printf("dump of send:\n%s", hex.Dump(append(head.Bytes(), body.Bytes()...)))
 	if _, err := head.WriteTo(c.conn); err != nil {
 		return err
 	}

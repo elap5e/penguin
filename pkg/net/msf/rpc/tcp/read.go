@@ -17,10 +17,9 @@ package tcp
 import (
 	"compress/zlib"
 	"encoding/binary"
-	"encoding/hex"
 	"fmt"
 	"io"
-	"log"
+	"strconv"
 
 	"github.com/elap5e/penguin/pkg/bytes"
 	"github.com/elap5e/penguin/pkg/crypto/tea"
@@ -44,7 +43,8 @@ func (c *codec) ReadResponseHeader(resp *rpc.Response) (err error) {
 	if _, err = c.read(); err != nil {
 		return err
 	}
-	log.Printf("dump of recv:\n%s", hex.Dump(c.buf.Bytes()))
+
+	// log.Printf("dump of read:\n%s", hex.Dump(c.buf.Bytes()))
 	// Skip the first 4 bytes for the length of the response.
 	if _, err = c.buf.ReadUint32(); err != nil {
 		return err
@@ -73,6 +73,7 @@ func (c *codec) ReadResponseHeader(resp *rpc.Response) (err error) {
 	if resp.Username, err = c.buf.ReadStringL32(); err != nil {
 		return err
 	}
+	c.reply.Uin, _ = strconv.ParseInt(resp.Username, 10, 64)
 	// Decrypt the response body if the response body is encrypted.
 	switch resp.EncryptType {
 	case rpc.EncryptTypeNotNeedEncrypt:
@@ -90,12 +91,9 @@ func (c *codec) ReadResponseHeader(resp *rpc.Response) (err error) {
 		}
 		c.buf = bytes.NewBuffer(buf)
 	}
-	return nil
-}
 
-func (c *codec) ReadResponseBody(reply *rpc.Reply) (err error) {
 	var n uint32
-	log.Println(hex.Dump(c.buf.Bytes()))
+	// log.Printf("dump of read body:\n%s", hex.Dump(c.buf.Bytes()))
 	// Read the first 4 bytes for the length of the response body header.
 	if n, err = c.buf.ReadUint32(); err != nil {
 		return err
@@ -103,48 +101,50 @@ func (c *codec) ReadResponseBody(reply *rpc.Reply) (err error) {
 	// Calculate the length of the response body payload.
 	n = uint32(c.buf.Len()) - n + 4
 	// Read the next 4 bytes for the sequence.
-	if reply.Seq, err = c.buf.ReadInt32(); err != nil {
+	if c.reply.Seq, err = c.buf.ReadInt32(); err != nil {
 		return err
 	}
+	resp.Seq = c.reply.Seq
 	// Read the next 4 bytes for the status code.
-	if reply.Code, err = c.buf.ReadInt32(); err != nil {
+	if c.reply.Code, err = c.buf.ReadInt32(); err != nil {
 		return err
 	}
 	// Read the next 4 bytes for the status message length and read the status message.
-	if reply.Message, err = c.buf.ReadStringL32(); err != nil {
+	if c.reply.Message, err = c.buf.ReadStringL32(); err != nil {
 		return err
 	}
 	// Read the next 4 bytes for the service method length and read the service method.
-	if reply.ServiceMethod, err = c.buf.ReadStringL32(); err != nil {
+	if c.reply.ServiceMethod, err = c.buf.ReadStringL32(); err != nil {
 		return err
 	}
+	resp.ServiceMethod = c.reply.ServiceMethod
 	// Read the next 4 bytes for the cookie length and read the cookie.
-	if reply.Cookie, err = c.buf.ReadBytesL32(); err != nil {
+	if c.reply.Cookie, err = c.buf.ReadBytesL32(); err != nil {
 		return err
 	}
 	// Read the next 4 bytes for the flag.
-	if reply.Flag, err = c.buf.ReadUint32(); err != nil {
+	if c.reply.Flag, err = c.buf.ReadUint32(); err != nil {
 		return err
 	}
-	if reply.Flag != rpc.FlagNoCompression && reply.Flag != rpc.FlagZlibCompression {
-		return fmt.Errorf("tcp: unsupported flag 0x%x", reply.Flag)
+	if c.reply.Flag != rpc.FlagNoCompression && c.reply.Flag != rpc.FlagZlibCompression {
+		return fmt.Errorf("tcp: unsupported flag 0x%x", c.reply.Flag)
 	}
 	// Read iff the buffer is larger than the length of the response body payload.
 	if c.buf.Len() > int(n) {
-		if reply.ReserveField, err = c.buf.ReadBytesL32(); err != nil {
+		if c.reply.ReserveField, err = c.buf.ReadBytesL32(); err != nil {
 			return err
 		}
 	}
 	// Read the next 4 bytes for the length of the payload and read the payload.
-	if reply.Payload, err = c.buf.ReadBytesL32(); err != nil {
+	if c.reply.Payload, err = c.buf.ReadBytesL32(); err != nil {
 		return err
 	}
 	// Decompress the payload if the payload is compressed.
-	switch reply.Flag {
+	switch c.reply.Flag {
 	case rpc.FlagNoCompression:
-		// reply.Payload = reply.Payload
+		// c.reply.Payload = c.reply.Payload
 	case rpc.FlagZlibCompression:
-		reader, err := zlib.NewReader(bytes.NewBuffer(reply.Payload))
+		reader, err := zlib.NewReader(bytes.NewBuffer(c.reply.Payload))
 		if err != nil {
 			return err
 		}
@@ -153,7 +153,20 @@ func (c *codec) ReadResponseBody(reply *rpc.Reply) (err error) {
 		if _, err := io.Copy(&buf, reader); err != nil {
 			return err
 		}
-		reply.Payload = buf.Bytes()
+		c.reply.Payload = buf.Bytes()
 	}
+	return nil
+}
+
+func (c *codec) ReadResponseBody(reply *rpc.Reply) (err error) {
+	reply.Uin = c.reply.Uin
+	reply.Seq = c.reply.Seq
+	reply.Code = c.reply.Code
+	reply.Message = c.reply.Message
+	reply.ServiceMethod = c.reply.ServiceMethod
+	reply.Cookie = c.reply.Cookie
+	reply.Flag = c.reply.Flag
+	reply.ReserveField = c.reply.ReserveField
+	reply.Payload = c.reply.Payload
 	return nil
 }

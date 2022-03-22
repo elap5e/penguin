@@ -41,7 +41,7 @@ func (b *Buffer) ReadUint8() (uint8, error) {
 }
 
 func (b *Buffer) ReadInt16() (int16, error) {
-	n, err := b.ReadInt16()
+	n, err := b.ReadUint16()
 	if err != nil {
 		return 0, err
 	}
@@ -49,15 +49,15 @@ func (b *Buffer) ReadInt16() (int16, error) {
 }
 
 func (b *Buffer) ReadUint16() (uint16, error) {
-	p, err := b.ReadBytes(2)
-	if err != nil {
+	p := make([]byte, 2)
+	if _, err := b.Read(p); err != nil {
 		return 0, err
 	}
 	return binary.BigEndian.Uint16(p), nil
 }
 
 func (b *Buffer) ReadInt32() (int32, error) {
-	n, err := b.ReadInt32()
+	n, err := b.ReadUint32()
 	if err != nil {
 		return 0, err
 	}
@@ -65,8 +65,8 @@ func (b *Buffer) ReadInt32() (int32, error) {
 }
 
 func (b *Buffer) ReadUint32() (uint32, error) {
-	p, err := b.ReadBytes(4)
-	if err != nil {
+	p := make([]byte, 4)
+	if _, err := b.Read(p); err != nil {
 		return 0, err
 	}
 	return binary.BigEndian.Uint32(p), nil

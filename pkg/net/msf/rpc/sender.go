@@ -21,6 +21,7 @@ import (
 	"io"
 	"log"
 	"net/rpc"
+	"strconv"
 	"sync"
 	"time"
 
@@ -40,7 +41,7 @@ func NewSender(c Client, codec Codec) Sender {
 		codec:   codec,
 		send:    list.New(),
 		wait:    list.New(),
-		pending: make(map[uint64]*Call),
+		pending: make(map[int32]*Call),
 	}
 }
 
@@ -60,8 +61,7 @@ type sender struct {
 	beatRetry int32
 
 	mu       sync.Mutex
-	seq      uint64
-	pending  map[uint64]*Call
+	pending  map[int32]*Call
 	closing  bool // user has called Close
 	shutdown bool // server has told us to stop
 }
@@ -87,7 +87,6 @@ func (s *sender) recvLoop(ctx context.Context) {
 		delete(s.pending, seq)
 		s.mu.Unlock()
 
-		log.Println("recv loop ReadResponseHeader:", resp)
 		switch {
 		case call == nil:
 			// We've got no pending call. That usually means that
@@ -106,8 +105,8 @@ func (s *sender) recvLoop(ctx context.Context) {
 			}
 			call.done()
 		}
+		log.Printf("[R] uin:%s ver:%d seq:%d cmd:%s", resp.Username, resp.Version, resp.Seq, resp.ServiceMethod)
 	}
-	log.Println("recv loop error:", err)
 	s.loopError(err)
 }
 
@@ -136,9 +135,8 @@ func (s *sender) sendLoop(ctx context.Context) {
 			Seq:           call.Seq,
 			Version:       VersionDefault,
 			EncryptType:   EncryptTypeNotNeedEncrypt,
-			Username:      "0",
+			Username:      strconv.FormatInt(call.Args.Uin, 10),
 		}
-		log.Println("send loop WriteRequest:", req, *call.Args)
 		err := s.codec.WriteRequest(&req, call.Args)
 		if err != nil {
 			s.mu.Lock()
@@ -150,6 +148,7 @@ func (s *sender) sendLoop(ctx context.Context) {
 				call.done()
 			}
 		}
+		log.Printf("[S] uin:%s ver:%d seq:%d cmd:%s", req.Username, req.Version, req.Seq, req.ServiceMethod)
 	}
 	s.loopError(err)
 }
@@ -159,6 +158,7 @@ func (s *sender) waitLoop(ctx context.Context) {
 }
 
 func (s *sender) loopError(err error) {
+	log.Println("loop error:", err)
 	// Terminate pending calls.
 	s.sendMu.Lock()
 	s.mu.Lock()
@@ -203,8 +203,6 @@ func (s *sender) push(call *Call, front bool) {
 		call.done()
 		return
 	}
-	call.Seq = s.seq
-	s.seq++
 	s.pending[call.Seq] = call
 	s.mu.Unlock()
 
@@ -225,10 +223,10 @@ func (s *sender) Go(serviceMethod string, args *Args, reply *Reply, done chan *C
 }
 
 func (s *sender) goSend(serviceMethod string, args *Args, reply *Reply, done chan *Call, front bool) *Call {
-	log.Println("goSend:", serviceMethod)
 	call := new(Call)
 	call.ServiceMethod = serviceMethod
 	args.ServiceMethod = serviceMethod
+	call.Seq = args.Seq
 	call.Args = args
 	call.Reply = reply
 	if done == nil {
@@ -252,7 +250,9 @@ func (s *sender) heartbeat() {
 	s.beating = true
 	s.beatRetry++
 	args := &Args{
+		Uin:     0,
 		Seq:     s.c.GetNextSeq(),
+		FixID:   s.c.GetAppID(),
 		AppID:   s.c.GetAppID(),
 		Payload: []byte{0x00, 0x00, 0x00, 0x04},
 	}
