@@ -12,25 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package rpc
+package tea
 
-type Client interface {
-	Close() error
-	Go(serviceMethod string, args *Args, reply *Reply, done chan *Call) *Call
-	Call(serviceMethod string, args *Args, reply *Reply) error
+import (
+	_ "crypto"
+	_ "unsafe"
+)
 
-	GetNextSeq() int32
-	GetAppID() int32
-	SetAppID(id int32)
-	GetTickets(username string) Tickets
-}
-
-type Tickets interface {
-	A2() Ticket
-	D2() Ticket
-}
-
-type Ticket interface {
-	Key() [16]byte
-	Sig() []byte
-}
+//go:linkname xorBytes crypto/cipher.xorBytes
+func xorBytes(dst, a, b []byte) int

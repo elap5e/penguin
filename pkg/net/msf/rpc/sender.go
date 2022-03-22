@@ -230,9 +230,9 @@ func (s *sender) heartbeat() {
 	s.beating = true
 	s.beatRetry++
 	args := &Args{
-		Seq:    s.c.GetNextSeq(),
-		AppID:  s.c.GetAppID(),
-		Buffer: []byte{0x00, 0x00, 0x00, 0x04},
+		Seq:     s.c.GetNextSeq(),
+		AppID:   s.c.GetAppID(),
+		Payload: []byte{0x00, 0x00, 0x00, 0x04},
 	}
 	call := <-s.goSend(service.MethodHeartbeatAlive, args, new(Reply), make(chan *Call, 1), true).Done
 	if call.Error != nil {

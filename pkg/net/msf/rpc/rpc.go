@@ -34,22 +34,38 @@ func (call *Call) done() {
 }
 
 type Args struct {
-	Seq    int32
-	AppID  int32
-	FixID  int32
-	Buffer []byte
+	Seq           int32
+	FixID         int32
+	AppID         int32
+	ServiceMethod string
+	Cookie        []byte
+	ReserveField  []byte
+	Payload       []byte
 }
 
 type Reply struct {
-	Seq int32
+	Seq           int32
+	Code          int32
+	Message       string
+	ServiceMethod string
+	Cookie        []byte
+	Flag          uint32
+	ReserveField  []byte
+	Payload       []byte
 }
 
 type Request struct {
 	ServiceMethod string
 	Seq           uint64
+	Version       uint32
+	EncryptType   uint8
+	Username      string
 }
 
 type Response struct {
 	ServiceMethod string
 	Seq           uint64
+	Version       uint32
+	EncryptType   uint8
+	Username      string
 }

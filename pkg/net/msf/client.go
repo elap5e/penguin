@@ -61,4 +61,8 @@ func (c *client) GetAppID() int32 {
 func (c *client) SetAppID(id int32) {
 }
 
+func (c *client) GetTickets(username string) rpc.Tickets {
+	return nil
+}
+
 var _ rpc.Client = (*client)(nil)

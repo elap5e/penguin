@@ -15,9 +15,25 @@
 package rpc
 
 type Codec interface {
-	WriteRequest(*Request, any) error
-	ReadResponseHeader(*Response) error
-	ReadResponseBody(any) error
-
 	Close() error
+
+	ReadResponseHeader(*Response) error
+	ReadResponseBody(*Reply) error
+	WriteRequest(*Request, *Args) error
 }
+
+const (
+	EncryptTypeNotNeedEncrypt = 0x00
+	EncryptTypeEncryptByD2Key = 0x01
+	EncryptTypeEncryptByZeros = 0x02
+)
+
+const (
+	FlagNoCompression   = 0x00000000
+	FlagZlibCompression = 0x00000001
+)
+
+const (
+	VersionDefault = 0x0000000a
+	VersionSimple  = 0x0000000b
+)
