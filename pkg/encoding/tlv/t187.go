@@ -12,17 +12,37 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package service
+package tlv
 
-const (
-	MethodHeartbeatAlive = "Heartbeat.Alive"
-	MethodHeartbeatPing  = "Heartbeat.Ping"
+import (
+	"github.com/elap5e/penguin/pkg/bytes"
 )
 
-const (
-	MethodAuthSignIn           = "wtlogin.login"
-	MethodAuthExchange         = "wtlogin.exchange"
-	MethodAuthExchangeAccount  = "wtlogin.exchange_emp"
-	MethodAuthUsernameToUin    = "wtlogin.name2uin"
-	MethodAuthTransportAccount = "wtlogin.trans_emp"
-)
+type T187 struct {
+	tlv    *TLV
+	md5MAC [16]byte
+}
+
+func NewT187(md5MAC [16]byte) *T187 {
+	return &T187{
+		tlv:    NewTLV(0x0187, 0x0000, nil),
+		md5MAC: md5MAC,
+	}
+}
+
+func (t *T187) ReadFrom(b *bytes.Buffer) error {
+	if err := t.tlv.ReadFrom(b); err != nil {
+		return err
+	}
+	v, err := t.tlv.GetValue()
+	if err != nil {
+		return err
+	}
+	copy(t.md5MAC[:], v.Bytes())
+	return nil
+}
+
+func (t *T187) WriteTo(b *bytes.Buffer) error {
+	t.tlv.SetValue(bytes.NewBuffer(t.md5MAC[:]))
+	return t.tlv.WriteTo(b)
+}

@@ -12,17 +12,41 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package service
+package tlv
 
-const (
-	MethodHeartbeatAlive = "Heartbeat.Alive"
-	MethodHeartbeatPing  = "Heartbeat.Ping"
+import (
+	"github.com/elap5e/penguin/pkg/bytes"
 )
 
-const (
-	MethodAuthSignIn           = "wtlogin.login"
-	MethodAuthExchange         = "wtlogin.exchange"
-	MethodAuthExchangeAccount  = "wtlogin.exchange_emp"
-	MethodAuthUsernameToUin    = "wtlogin.name2uin"
-	MethodAuthTransportAccount = "wtlogin.trans_emp"
-)
+type T154 struct {
+	tlv *TLV
+	seq int32
+}
+
+func NewT154(seq int32) *T154 {
+	return &T154{
+		tlv: NewTLV(0x0154, 0x0000, nil),
+		seq: seq,
+	}
+}
+
+func (t *T154) ReadFrom(b *bytes.Buffer) error {
+	if err := t.tlv.ReadFrom(b); err != nil {
+		return err
+	}
+	v, err := t.tlv.GetValue()
+	if err != nil {
+		return err
+	}
+	if t.seq, err = v.ReadInt32(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (t *T154) WriteTo(b *bytes.Buffer) error {
+	v := bytes.NewBuffer([]byte{})
+	v.WriteInt32(t.seq)
+	t.tlv.SetValue(v)
+	return t.tlv.WriteTo(b)
+}

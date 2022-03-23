@@ -89,11 +89,7 @@ func (s *sender) recvLoop(ctx context.Context) {
 
 		switch {
 		case call == nil:
-			// We've got no pending call. That usually means that
-			// WriteRequest partially failed, and call was already
-			// removed; response is a server telling us about an
-			// error reading request body. We should still attempt
-			// to read error body, but there's no one to give it to.
+			// TODO: server push
 			err = s.codec.ReadResponseBody(nil)
 			if err != nil {
 				err = errors.New("reading error body: " + err.Error())
@@ -252,8 +248,6 @@ func (s *sender) heartbeat() {
 	args := &Args{
 		Uin:     0,
 		Seq:     s.c.GetNextSeq(),
-		FixID:   s.c.GetAppID(),
-		AppID:   s.c.GetAppID(),
 		Payload: []byte{0x00, 0x00, 0x00, 0x04},
 	}
 	call := <-s.goSend(service.MethodHeartbeatAlive, args, new(Reply), make(chan *Call, 1), true).Done

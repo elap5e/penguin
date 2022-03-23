@@ -28,6 +28,14 @@ func NewBuffer(buf []byte) *Buffer {
 	return &Buffer{Buffer: bytes.NewBuffer(buf)}
 }
 
+func (b *Buffer) ReadBool() (bool, error) {
+	n, err := b.ReadByte()
+	if err != nil {
+		return false, err
+	}
+	return n != 0, nil
+}
+
 func (b *Buffer) ReadInt8() (int8, error) {
 	n, err := b.ReadByte()
 	if err != nil {
@@ -36,7 +44,7 @@ func (b *Buffer) ReadInt8() (int8, error) {
 	return int8(n), nil
 }
 
-func (b *Buffer) ReadUint8() (uint8, error) {
+func (b *Buffer) ReadByte() (uint8, error) {
 	return b.ReadByte()
 }
 
@@ -72,6 +80,18 @@ func (b *Buffer) ReadUint32() (uint32, error) {
 	return binary.BigEndian.Uint32(p), nil
 }
 
+func (b *Buffer) ReadBytesL16V() ([]byte, error) {
+	n, err := b.ReadUint16()
+	if err != nil {
+		return nil, err
+	}
+	p := make([]byte, n)
+	if _, err := b.Read(p); err != nil {
+		return nil, err
+	}
+	return p, nil
+}
+
 func (b *Buffer) ReadBytesL16() ([]byte, error) {
 	n, err := b.ReadUint16()
 	if err != nil {
@@ -96,12 +116,24 @@ func (b *Buffer) ReadBytesL32() ([]byte, error) {
 	return p, nil
 }
 
-func (b *Buffer) ReadStringL16() (string, error) {
+func (b *Buffer) ReadStringL16V() (string, error) {
 	n, err := b.ReadUint16()
 	if err != nil {
 		return "", err
 	}
 	p := make([]byte, n-2)
+	if _, err := b.Read(p); err != nil {
+		return "", err
+	}
+	return string(p), nil
+}
+
+func (b *Buffer) ReadStringL16() (string, error) {
+	n, err := b.ReadUint16()
+	if err != nil {
+		return "", err
+	}
+	p := make([]byte, n)
 	if _, err := b.Read(p); err != nil {
 		return "", err
 	}
@@ -118,6 +150,13 @@ func (b *Buffer) ReadStringL32() (string, error) {
 		return "", err
 	}
 	return string(p), nil
+}
+
+func (b *Buffer) WriteBool(v bool) error {
+	if v {
+		return b.WriteByte(1)
+	}
+	return b.WriteByte(0)
 }
 
 func (b *Buffer) WriteInt16(v int16) (int, error) {
@@ -147,6 +186,28 @@ func (b *Buffer) WriteUint32At(v uint32, n int) (int, error) {
 	return 4, nil
 }
 
+func (b *Buffer) WriteInt64(v int64) (int, error) {
+	return b.WriteUint64(uint64(v))
+}
+
+func (b *Buffer) WriteUint64(v uint64) (int, error) {
+	p := make([]byte, 8)
+	binary.BigEndian.PutUint64(p, v)
+	return b.Write(p)
+}
+
+func (b *Buffer) WriteBytesL16V(s []byte, l ...int16) (int, error) {
+	n := len(s)
+	if len(l) > 0 {
+		if n > int(l[0]) {
+			n = int(l[0])
+		}
+	}
+	n, _ = b.WriteUint16(uint16(n))
+	n, _ = b.Write(s[:n])
+	return n + 2, nil
+}
+
 func (b *Buffer) WriteBytesL16(s []byte) (int, error) {
 	n := len(s)
 	n, _ = b.WriteUint16(uint16(n + 2))
@@ -159,6 +220,18 @@ func (b *Buffer) WriteBytesL32(s []byte) (int, error) {
 	n, _ = b.WriteUint32(uint32(n + 4))
 	n, _ = b.Write(s)
 	return n + 4, nil
+}
+
+func (b *Buffer) WriteStringL16V(s string, l ...int16) (int, error) {
+	n := len(s)
+	if len(l) > 0 {
+		if n > int(l[0]) {
+			n = int(l[0])
+		}
+	}
+	n, _ = b.WriteUint16(uint16(n))
+	n, _ = b.WriteString(s)
+	return n + 2, nil
 }
 
 func (b *Buffer) WriteStringL16(s string) (int, error) {

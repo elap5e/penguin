@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+option go_package = "./;pb";
+
+// device_report
+message DeviceReport {
+  bytes bootloader = 1; // "bytes_bootloader"
+  bytes proc_version = 2; // "bytes_version"
+  bytes codename = 3; // "bytes_codename"
+  bytes incremental = 4; // "bytes_incremental"
+  bytes fingerprint = 5; // "bytes_fingerprint"
+  bytes boot_id = 6; // "bytes_boot_id"
+  bytes android_id = 7; // "bytes_android_id"
+  bytes baseband = 8; // "bytes_baseband"
+  bytes inner_version = 9; // "bytes_inner_ver"
+}

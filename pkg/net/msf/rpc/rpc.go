@@ -36,10 +36,7 @@ func (call *Call) done() {
 type Args struct {
 	Uin           int64  `json:"uin,omitempty"`
 	Seq           int32  `json:"seq,omitempty"`
-	FixID         int32  `json:"fix_id,omitempty"`
-	AppID         int32  `json:"app_id,omitempty"`
 	ServiceMethod string `json:"service_method,omitempty"`
-	Cookie        []byte `json:"cookie,omitempty"`
 	ReserveField  []byte `json:"reserve_field,omitempty"`
 	Payload       []byte `json:"payload,omitempty"`
 }

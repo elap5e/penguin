@@ -12,17 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package service
+package tlv
 
-const (
-	MethodHeartbeatAlive = "Heartbeat.Alive"
-	MethodHeartbeatPing  = "Heartbeat.Ping"
+import (
+	"github.com/elap5e/penguin/pkg/bytes"
 )
 
-const (
-	MethodAuthSignIn           = "wtlogin.login"
-	MethodAuthExchange         = "wtlogin.exchange"
-	MethodAuthExchangeAccount  = "wtlogin.exchange_emp"
-	MethodAuthUsernameToUin    = "wtlogin.name2uin"
-	MethodAuthTransportAccount = "wtlogin.trans_emp"
-)
+type T16D struct {
+	tlv *TLV
+}
+
+func NewT16D() *T16D {
+	return &T16D{
+		tlv: NewTLV(0x016d, 0x0000, nil),
+	}
+}
+
+func (t *T16D) ReadFrom(b *bytes.Buffer) error {
+	if err := t.tlv.ReadFrom(b); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (t *T16D) WriteTo(b *bytes.Buffer) error {
+	return t.tlv.WriteTo(b)
+}

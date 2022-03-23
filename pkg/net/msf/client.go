@@ -21,6 +21,7 @@ import (
 	"net"
 	"sync/atomic"
 
+	"github.com/elap5e/penguin/pkg/encoding/tlv"
 	"github.com/elap5e/penguin/pkg/net/msf/rpc"
 	"github.com/elap5e/penguin/pkg/net/msf/rpc/tcp"
 )
@@ -59,26 +60,67 @@ func (c *client) GetNextSeq() int32 {
 	return seq
 }
 
-func (c *client) GetAppID() int32 {
-	return -1
-}
-
-func (c *client) SetAppID(id int32) {
-}
-
-func (c *client) GetFakeApp(username string) *rpc.FakeApp {
-	return &rpc.FakeApp{
-		NetworkType: 0x01,
-		NetIPFamily: 0x03,
-		IMEI:        fmt.Sprintf("86030802%07d", rand.Int31n(10000000)),
-		KSID:        []byte{},
-		IMSI:        fmt.Sprintf("460001%09d", rand.Int31n(1000000000)),
-		Revision:    "8.8.83.7b3989f8",
+func (c *client) GetFake(uin int64) *rpc.Fake {
+	// TODO: hardcoded for now
+	return &rpc.Fake{
+		FixID:    537044845,
+		AppID:    537044845,
+		Revision: "8.8.83.7b3989f8",
+		Device: &rpc.FakeDevice{
+			OS: rpc.FakeDeviceOS{
+				Type:        "android",
+				Version:     "11",
+				BuildBrand:  []byte("Xiaomi"),
+				BuildModel:  "Redmi K20",
+				SDKVersion:  uint32(30),
+				NetworkType: 0x0002,
+			},
+			APNName:     []byte("wifi"),
+			SIMOPName:   []byte("CMCC"),
+			NetworkType: 0x01,
+			NetIPFamily: 0x03,
+			IMEI:        fmt.Sprintf("86030802%07d", rand.Int31n(10000000)),
+			IMSI:        fmt.Sprintf("460001%09d", rand.Int31n(1000000000)),
+		},
 	}
 }
 
-func (c *client) GetTickets(username string) rpc.Tickets {
-	return nil
+func (c *client) GetServerTime() int64 {
+	return 0
 }
+
+func (c *client) GetSession(uin int64) *rpc.Session {
+	return &rpc.Session{
+		Auth:         []byte{},
+		Cookie:       []byte{},
+		KSID:         []byte{},
+		RandomKey:    [16]byte{},
+		KeyVersion:   0,
+		PublicKey:    []byte{},
+		SharedSecret: [16]byte{},
+	}
+}
+
+func (c *client) GetTickets(uin int64) *rpc.Tickets {
+	return &rpc.Tickets{
+		A1: rpc.Ticket{
+			Key: [16]byte{},
+			Sig: []byte{},
+		},
+		A2: rpc.Ticket{
+			Key: [16]byte{},
+			Sig: []byte{},
+		},
+		D2: rpc.Ticket{
+			Key: [16]byte{},
+			Sig: []byte{},
+		},
+	}
+}
+
+func (c *client) SetSession(uin int64, tlvs map[uint16]tlv.Codec) {}
+func (c *client) SetSessionAuth(uin int64, auth []byte)           {}
+func (c *client) SetSessionKSID(uin int64, ksid []byte)           {}
+func (c *client) SetTickets(uin int64, tlvs map[uint16]tlv.Codec) {}
 
 var _ rpc.Client = (*client)(nil)

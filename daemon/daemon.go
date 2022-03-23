@@ -12,17 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package service
+package deamon
 
-const (
-	MethodHeartbeatAlive = "Heartbeat.Alive"
-	MethodHeartbeatPing  = "Heartbeat.Ping"
+import (
+	"github.com/elap5e/penguin/daemon/account"
+	"github.com/elap5e/penguin/daemon/auth"
+	"github.com/elap5e/penguin/daemon/contact"
+	"github.com/elap5e/penguin/daemon/message"
+	"github.com/elap5e/penguin/pkg/net/msf/rpc"
 )
 
-const (
-	MethodAuthSignIn           = "wtlogin.login"
-	MethodAuthExchange         = "wtlogin.exchange"
-	MethodAuthExchangeAccount  = "wtlogin.exchange_emp"
-	MethodAuthUsernameToUin    = "wtlogin.name2uin"
-	MethodAuthTransportAccount = "wtlogin.trans_emp"
-)
+type Daemon struct {
+	c rpc.Client
+
+	accm *account.Manager
+	athm *auth.Manager
+	cntm *contact.Manager
+	msgm *message.Manager
+}
+
+func New() {
+
+}

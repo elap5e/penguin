@@ -12,26 +12,37 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package tlv
 
 import (
-	"context"
-	"encoding/json"
-	"log"
-	"math/rand"
-
-	"github.com/elap5e/penguin/pkg/net/msf"
-	"github.com/elap5e/penguin/pkg/net/msf/rpc"
-	"github.com/elap5e/penguin/pkg/net/msf/service"
+	"github.com/elap5e/penguin/pkg/bytes"
 )
 
-func main() {
-	c := msf.NewClient(context.Background())
-	call := <-c.Go(service.MethodHeartbeatAlive, &rpc.Args{
-		Uin:     10000,
-		Seq:     rand.Int31n(100000),
-		Payload: []byte{0x00, 0x00, 0x00, 0x04},
-	}, &rpc.Reply{}, make(chan *rpc.Call, 1)).Done
-	p, _ := json.MarshalIndent(call.Reply, "", "  ")
-	log.Printf("call.Reply:\n%s", string(p))
+type T188 struct {
+	tlv          *TLV
+	md5AndroidID [16]byte
+}
+
+func NewT188(md5AndroidID [16]byte) *T188 {
+	return &T188{
+		tlv:          NewTLV(0x0188, 0x0000, nil),
+		md5AndroidID: md5AndroidID,
+	}
+}
+
+func (t *T188) ReadFrom(b *bytes.Buffer) error {
+	if err := t.tlv.ReadFrom(b); err != nil {
+		return err
+	}
+	v, err := t.tlv.GetValue()
+	if err != nil {
+		return err
+	}
+	copy(t.md5AndroidID[:], v.Bytes())
+	return nil
+}
+
+func (t *T188) WriteTo(b *bytes.Buffer) error {
+	t.tlv.SetValue(bytes.NewBuffer(t.md5AndroidID[:]))
+	return t.tlv.WriteTo(b)
 }

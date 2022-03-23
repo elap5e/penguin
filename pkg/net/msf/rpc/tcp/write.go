@@ -28,25 +28,25 @@ func (c *codec) WriteRequest(req *rpc.Request, args *rpc.Args) error {
 		return fmt.Errorf("tcp: unsupported version 0x%x", req.Version)
 	}
 
+	fake, sess := c.cl.GetFake(args.Uin), c.cl.GetSession(args.Uin)
 	body := bytes.NewBuffer([]byte{})
 	body.WriteUint32(0)
 	if req.Version == rpc.VersionDefault {
 		body.WriteInt32(args.Seq)
-		body.WriteInt32(args.FixID)
-		body.WriteInt32(args.AppID)
+		body.WriteInt32(fake.FixID)
+		body.WriteInt32(fake.AppID)
 		tmp := make([]byte, 12)
-		tmp[0x0] = c.cl.GetFakeApp(req.Username).NetworkType
-		tmp[0xa] = c.cl.GetFakeApp(req.Username).NetIPFamily
+		tmp[0x0] = fake.Device.NetworkType
+		tmp[0xa] = fake.Device.NetIPFamily
 		body.Write(tmp)
-		// body.WriteBytesL32(c.cl.GetTickets(req.Username).A2().Sig())
-		body.WriteBytesL32([]byte{})
+		body.WriteBytesL32(c.cl.GetTickets(args.Uin).A2.Sig)
 	}
 	body.WriteStringL32(args.ServiceMethod)
-	body.WriteBytesL32(args.Cookie)
+	body.WriteBytesL32(sess.Cookie)
 	if req.Version == rpc.VersionDefault {
-		body.WriteStringL32(c.cl.GetFakeApp(req.Username).IMEI)
-		body.WriteBytesL32(c.cl.GetFakeApp(req.Username).KSID)
-		body.WriteStringL16("" + "|" + c.cl.GetFakeApp(req.Username).IMSI + "|A" + c.cl.GetFakeApp(req.Username).Revision)
+		body.WriteStringL32(fake.Device.IMEI)
+		body.WriteBytesL32(sess.KSID)
+		body.WriteStringL16("" + "|" + fake.Device.IMSI + "|A" + fake.Revision)
 	}
 	body.WriteBytesL32(args.ReserveField)
 	body.WriteUint32At(uint32(body.Len()), 0)
@@ -57,8 +57,8 @@ func (c *codec) WriteRequest(req *rpc.Request, args *rpc.Args) error {
 	if method == "heartbeat.ping" || method == "heartbeat.alive" || method == "client.correcttime" {
 		req.EncryptType = rpc.EncryptTypeNotNeedEncrypt
 	} else {
-		cipher, d2 := tea.NewCipher([16]byte{}), c.cl.GetTickets(req.Username).D2()
-		if len(d2.Sig()) == 0 ||
+		cipher, d2 := tea.NewCipher([16]byte{}), c.cl.GetTickets(args.Uin).D2
+		if len(d2.Sig) == 0 ||
 			method == "login.auth" ||
 			method == "login.chguin" ||
 			method == "grayuinpro.check" ||
@@ -75,7 +75,7 @@ func (c *codec) WriteRequest(req *rpc.Request, args *rpc.Args) error {
 			method == "qqconnectlogin.auth_emp" {
 			req.EncryptType = rpc.EncryptTypeEncryptByZeros
 		} else {
-			cipher.SetKey(d2.Key())
+			cipher.SetKey(d2.Key)
 			req.EncryptType = rpc.EncryptTypeEncryptByD2Key
 		}
 		body = bytes.NewBuffer(cipher.Encrypt(body.Bytes()))
@@ -89,7 +89,7 @@ func (c *codec) WriteRequest(req *rpc.Request, args *rpc.Args) error {
 	switch req.Version {
 	case rpc.VersionDefault:
 		if req.EncryptType == rpc.EncryptTypeEncryptByD2Key {
-			head.WriteBytesL32(c.cl.GetTickets(req.Username).D2().Sig())
+			head.WriteBytesL32(c.cl.GetTickets(args.Uin).D2.Sig)
 		} else {
 			head.WriteUint32(4)
 		}
