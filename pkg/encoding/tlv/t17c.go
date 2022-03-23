@@ -38,7 +38,7 @@ func (t *T17C) ReadFrom(b *bytes.Buffer) error {
 	if err != nil {
 		return err
 	}
-	if t.bArr, err = v.ReadBytes(); err != nil {
+	if t.bArr, err = v.ReadBytesL16V(); err != nil {
 		return err
 	}
 	return nil
@@ -46,7 +46,7 @@ func (t *T17C) ReadFrom(b *bytes.Buffer) error {
 
 func (t *T17C) WriteTo(b *bytes.Buffer) error {
 	v := bytes.NewBuffer([]byte{})
-	v.WriteBytes(t.bArr)
+	v.WriteBytesL16V(t.bArr)
 	t.tlv.SetValue(v)
 	return t.tlv.WriteTo(b)
 }

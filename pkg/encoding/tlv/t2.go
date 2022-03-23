@@ -68,8 +68,8 @@ func (t *T2) GetSign() ([]byte, error) {
 func (t *T2) WriteTo(b *bytes.Buffer) error {
 	v := bytes.NewBuffer([]byte{})
 	v.WriteUint16(0x0000)
-	v.WriteBytes(t.code)
-	v.WriteBytes(t.sign)
+	v.WriteBytesL16V(t.code)
+	v.WriteBytesL16V(t.sign)
 	t.tlv.SetValue(v)
 	return t.tlv.WriteTo(b)
 }
