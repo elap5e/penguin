@@ -12,15 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package service
+package jce
 
-const (
-	MethodHeartbeatAlive = "Heartbeat.Alive"
-	MethodHeartbeatPing  = "Heartbeat.Ping"
-)
-
-const (
-	MethodAuthName2Uin = "wtlogin.name2uin"
-	MethodAuthSignIn   = "wtlogin.login"
-	MethodAuthSignInA2 = "wtlogin.exchange_emp"
-)
+func Marshal(v interface{}, opts ...bool) ([]byte, error) {
+	return nil, nil
+}

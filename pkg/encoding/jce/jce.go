@@ -12,15 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package service
+package jce
 
-const (
-	MethodHeartbeatAlive = "Heartbeat.Alive"
-	MethodHeartbeatPing  = "Heartbeat.Ping"
+import (
+	"strings"
 )
 
-const (
-	MethodAuthName2Uin = "wtlogin.name2uin"
-	MethodAuthSignIn   = "wtlogin.login"
-	MethodAuthSignInA2 = "wtlogin.exchange_emp"
-)
+func parseTag(tag string) (string, string) {
+	if idx := strings.Index(tag, ","); idx != -1 {
+		return tag[:idx], tag[idx+1:]
+	}
+	return tag, "-"
+}

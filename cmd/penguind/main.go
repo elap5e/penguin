@@ -30,7 +30,7 @@ func main() {
 	call := <-c.Go(service.MethodHeartbeatAlive, &rpc.Args{
 		Uin:     10000,
 		Seq:     rand.Int31n(100000),
-		Payload: []byte{0x00, 0x00, 0x00, 0x04},
+		Payload: []byte{0, 0, 0, 4},
 	}, &rpc.Reply{}, make(chan *rpc.Call, 1)).Done
 	p, _ := json.MarshalIndent(call.Reply, "", "  ")
 	log.Printf("call.Reply:\n%s", string(p))

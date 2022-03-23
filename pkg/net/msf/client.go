@@ -63,9 +63,18 @@ func (c *client) GetNextSeq() int32 {
 func (c *client) GetFake(uin int64) *rpc.Fake {
 	// TODO: hardcoded for now
 	return &rpc.Fake{
-		FixID:    537044845,
-		AppID:    537044845,
-		Revision: "8.8.83.7b3989f8",
+		FixID:      537044845,
+		AppID:      537044845,
+		PkgName:    "com.tencent.mobileqq",
+		VerName:    "8.8.83",
+		Revision:   "8.8.83.7b3989f8",
+		SigHash:    [16]byte{0xa6, 0xb7, 0x45, 0xbf, 0x24, 0xa2, 0xc2, 0x77, 0x52, 0x77, 0x16, 0xf6, 0xf3, 0x6e, 0xb6, 0x8d},
+		BuildAt:    0x0000000060c9bd50,
+		SDKVer:     "6.0.0.2497",
+		SSOVer:     0x00000012,
+		ImageType:  0x01,
+		MiscBitmap: 0x08f7ff7c,
+		CanCaptcha: true,
 		Device: &rpc.FakeDevice{
 			OS: rpc.FakeDeviceOS{
 				Type:        "android",

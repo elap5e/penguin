@@ -12,15 +12,37 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package service
+package tlv
 
-const (
-	MethodHeartbeatAlive = "Heartbeat.Alive"
-	MethodHeartbeatPing  = "Heartbeat.Ping"
+import (
+	"github.com/elap5e/penguin/pkg/bytes"
 )
 
-const (
-	MethodAuthName2Uin = "wtlogin.name2uin"
-	MethodAuthSignIn   = "wtlogin.login"
-	MethodAuthSignInA2 = "wtlogin.exchange_emp"
-)
+type T10A struct {
+	tlv *TLV
+	a2  []byte // A2
+}
+
+func NewT10A(a2 []byte) *T10A {
+	return &T10A{
+		tlv: NewTLV(0x010a, 0x0000, nil),
+		a2:  a2,
+	}
+}
+
+func (t *T10A) ReadFrom(b *bytes.Buffer) error {
+	if err := t.tlv.ReadFrom(b); err != nil {
+		return err
+	}
+	v, err := t.tlv.GetValue()
+	if err != nil {
+		return err
+	}
+	t.a2 = v.Bytes()
+	return nil
+}
+
+func (t *T10A) WriteTo(b *bytes.Buffer) error {
+	t.tlv.SetValue(bytes.NewBuffer(t.a2))
+	return t.tlv.WriteTo(b)
+}
