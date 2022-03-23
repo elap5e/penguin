@@ -19,22 +19,22 @@ import (
 )
 
 type T108 struct {
-	tlv  *TLV
+	*TLV
 	ksid []byte
 }
 
 func NewT108(ksid []byte) *T108 {
 	return &T108{
-		tlv:  NewTLV(0x0108, 0x0000, nil),
+		TLV:  NewTLV(0x0108, 0x0000, nil),
 		ksid: ksid,
 	}
 }
 
 func (t *T108) ReadFrom(b *bytes.Buffer) error {
-	if err := t.tlv.ReadFrom(b); err != nil {
+	if err := t.TLV.ReadFrom(b); err != nil {
 		return err
 	}
-	v, err := t.tlv.GetValue()
+	v, err := t.TLV.GetValue()
 	if err != nil {
 		return err
 	}
@@ -43,6 +43,6 @@ func (t *T108) ReadFrom(b *bytes.Buffer) error {
 }
 
 func (t *T108) WriteTo(b *bytes.Buffer) error {
-	t.tlv.SetValue(bytes.NewBuffer(t.ksid))
-	return t.tlv.WriteTo(b)
+	t.TLV.SetValue(bytes.NewBuffer(t.ksid))
+	return t.TLV.WriteTo(b)
 }

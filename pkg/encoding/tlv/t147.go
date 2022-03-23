@@ -19,7 +19,7 @@ import (
 )
 
 type T147 struct {
-	tlv             *TLV
+	*TLV
 	appID           uint64
 	apkVersion      []byte
 	md5APKSignature [16]byte
@@ -27,7 +27,7 @@ type T147 struct {
 
 func NewT147(appID uint64, apkVersion []byte, md5APKSignature [16]byte) *T147 {
 	return &T147{
-		tlv:             NewTLV(0x0147, 0x0000, nil),
+		TLV:             NewTLV(0x0147, 0x0000, nil),
 		appID:           appID,
 		apkVersion:      apkVersion,
 		md5APKSignature: md5APKSignature,
@@ -35,10 +35,10 @@ func NewT147(appID uint64, apkVersion []byte, md5APKSignature [16]byte) *T147 {
 }
 
 func (t *T147) ReadFrom(b *bytes.Buffer) error {
-	if err := t.tlv.ReadFrom(b); err != nil {
+	if err := t.TLV.ReadFrom(b); err != nil {
 		return err
 	}
-	v, err := t.tlv.GetValue()
+	v, err := t.TLV.GetValue()
 	if err != nil {
 		return err
 	}
@@ -63,6 +63,6 @@ func (t *T147) WriteTo(b *bytes.Buffer) error {
 	v.WriteUint32(uint32(t.appID))
 	v.WriteBytesL16V(t.apkVersion, 0x0020)
 	v.WriteBytesL16V(t.md5APKSignature[:], 0x0020)
-	t.tlv.SetValue(v)
-	return t.tlv.WriteTo(b)
+	t.TLV.SetValue(v)
+	return t.TLV.WriteTo(b)
 }

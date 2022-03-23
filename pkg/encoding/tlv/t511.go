@@ -23,22 +23,22 @@ import (
 )
 
 type T511 struct {
-	tlv     *TLV
+	*TLV
 	domains []string
 }
 
 func NewT511(domains []string) *T511 {
 	return &T511{
-		tlv:     NewTLV(0x0511, 0x0000, nil),
+		TLV:     NewTLV(0x0511, 0x0000, nil),
 		domains: domains,
 	}
 }
 
 func (t *T511) ReadFrom(b *bytes.Buffer) error {
-	if err := t.tlv.ReadFrom(b); err != nil {
+	if err := t.TLV.ReadFrom(b); err != nil {
 		return err
 	}
-	_, err := t.tlv.GetValue()
+	_, err := t.TLV.GetValue()
 	if err != nil {
 		return err
 	}
@@ -80,6 +80,6 @@ func (t *T511) WriteTo(b *bytes.Buffer) error {
 		v.WriteByte(flag)
 		v.WriteStringL16V(domain)
 	}
-	t.tlv.SetValue(v)
-	return t.tlv.WriteTo(b)
+	t.TLV.SetValue(v)
+	return t.TLV.WriteTo(b)
 }

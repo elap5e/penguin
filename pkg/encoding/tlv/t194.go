@@ -19,22 +19,22 @@ import (
 )
 
 type T194 struct {
-	tlv     *TLV
+	*TLV
 	md5IMSI [16]byte
 }
 
 func NewT194(md5IMSI [16]byte) *T194 {
 	return &T194{
-		tlv:     NewTLV(0x0194, 0x0000, nil),
+		TLV:     NewTLV(0x0194, 0x0000, nil),
 		md5IMSI: md5IMSI,
 	}
 }
 
 func (t *T194) ReadFrom(b *bytes.Buffer) error {
-	if err := t.tlv.ReadFrom(b); err != nil {
+	if err := t.TLV.ReadFrom(b); err != nil {
 		return err
 	}
-	v, err := t.tlv.GetValue()
+	v, err := t.TLV.GetValue()
 	if err != nil {
 		return err
 	}
@@ -43,6 +43,6 @@ func (t *T194) ReadFrom(b *bytes.Buffer) error {
 }
 
 func (t *T194) WriteTo(b *bytes.Buffer) error {
-	t.tlv.SetValue(bytes.NewBuffer(t.md5IMSI[:]))
-	return t.tlv.WriteTo(b)
+	t.TLV.SetValue(bytes.NewBuffer(t.md5IMSI[:]))
+	return t.TLV.WriteTo(b)
 }

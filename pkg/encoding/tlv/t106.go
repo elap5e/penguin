@@ -25,7 +25,7 @@ import (
 )
 
 type T106 struct {
-	tlv      *TLV
+	*TLV
 	appID    uint64
 	subAppID uint64
 	acVer    uint32
@@ -46,7 +46,7 @@ type T106 struct {
 
 func NewT106(appID, subAppID uint64, acVer uint32, uin int64, svrTime int64, ip net.IP, i2 bool, hash [16]byte, salt int64, username string, a1Kay [16]byte, haveGUID bool, guid []byte, typ, ssoVer uint32) *T106 {
 	return &T106{
-		tlv:      NewTLV(0x0106, 0x0000, nil),
+		TLV:      NewTLV(0x0106, 0x0000, nil),
 		appID:    appID,
 		subAppID: subAppID,
 		acVer:    acVer,
@@ -67,10 +67,10 @@ func NewT106(appID, subAppID uint64, acVer uint32, uin int64, svrTime int64, ip 
 }
 
 func (t *T106) ReadFrom(b *bytes.Buffer) error {
-	if err := t.tlv.ReadFrom(b); err != nil {
+	if err := t.TLV.ReadFrom(b); err != nil {
 		return err
 	}
-	_, err := t.tlv.GetValue()
+	_, err := t.TLV.GetValue()
 	if err != nil {
 		return err
 	}
@@ -112,6 +112,6 @@ func (t *T106) WriteTo(b *bytes.Buffer) error {
 	} else {
 		binary.BigEndian.PutUint64(key[16:], uint64(t.salt))
 	}
-	t.tlv.SetValue(bytes.NewBuffer(tea.NewCipher(md5.Sum(key)).Encrypt(v.Bytes())))
-	return t.tlv.WriteTo(b)
+	t.TLV.SetValue(bytes.NewBuffer(tea.NewCipher(md5.Sum(key)).Encrypt(v.Bytes())))
+	return t.TLV.WriteTo(b)
 }

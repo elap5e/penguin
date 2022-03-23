@@ -19,24 +19,24 @@ import (
 )
 
 type T177 struct {
-	tlv        *TLV
+	*TLV
 	buildTime  int64
 	sdkVersion string
 }
 
 func NewT177(buildTime int64, sdkVersion string) *T177 {
 	return &T177{
-		tlv:        NewTLV(0x0177, 0x0000, nil),
+		TLV:        NewTLV(0x0177, 0x0000, nil),
 		buildTime:  buildTime,
 		sdkVersion: sdkVersion,
 	}
 }
 
 func (t *T177) ReadFrom(b *bytes.Buffer) error {
-	if err := t.tlv.ReadFrom(b); err != nil {
+	if err := t.TLV.ReadFrom(b); err != nil {
 		return err
 	}
-	v, err := t.tlv.GetValue()
+	v, err := t.TLV.GetValue()
 	if err != nil {
 		return err
 	}
@@ -59,6 +59,6 @@ func (t *T177) WriteTo(b *bytes.Buffer) error {
 	v.WriteByte(0x01)
 	v.WriteUint32(uint32(t.buildTime))
 	v.WriteStringL16V(t.sdkVersion)
-	t.tlv.SetValue(v)
-	return t.tlv.WriteTo(b)
+	t.TLV.SetValue(v)
+	return t.TLV.WriteTo(b)
 }

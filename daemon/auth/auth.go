@@ -61,17 +61,17 @@ type ExtraData struct {
 	Message      string `json:"message,omitempty"`
 	SMSMobile    string `json:"sms_mobile,omitempty"`
 
-	T119 []byte         `json:"t119,omitempty"`
-	T150 []byte         `json:"t150,omitempty"`
-	T161 []byte         `json:"t161,omitempty"`
-	T174 []byte         `json:"t174,omitempty"`
-	T17B []byte         `json:"t17b,omitempty"`
-	T401 rpc.Key16Bytes `json:"t401,omitempty"`
-	T402 []byte         `json:"t402,omitempty"`
-	T403 []byte         `json:"t403,omitempty"`
-	T542 []byte         `json:"t542,omitempty"`
-	T546 []byte         `json:"t546,omitempty"`
-	T547 []byte         `json:"t547,omitempty"`
+	T119 []byte          `json:"t119,omitempty"`
+	T150 []byte          `json:"t150,omitempty"`
+	T161 []byte          `json:"t161,omitempty"`
+	T174 []byte          `json:"t174,omitempty"`
+	T17B []byte          `json:"t17b,omitempty"`
+	T401 *rpc.Key16Bytes `json:"t401,omitempty"`
+	T402 []byte          `json:"t402,omitempty"`
+	T403 []byte          `json:"t403,omitempty"`
+	T542 []byte          `json:"t542,omitempty"`
+	T546 []byte          `json:"t546,omitempty"`
+	T547 []byte          `json:"t547,omitempty"`
 }
 
 type Request struct {
@@ -182,20 +182,12 @@ func (m *Manager) request(req *Request) (*Response, error) {
 		return nil, err
 	}
 
-	args, reply := rpc.Args{
-		Uin:     data.Uin,
-		Seq:     req.Seq,
-		Payload: p,
-	}, rpc.Reply{}
+	args, reply := rpc.Args{Uin: data.Uin, Seq: req.Seq, Payload: p}, rpc.Reply{}
 	if err = m.c.Call(req.ServiceMethod, &args, &reply); err != nil {
 		return nil, err
 	}
 
-	resp := &Response{
-		ServiceMethod: reply.ServiceMethod,
-		Seq:           reply.Seq,
-		Data:          data,
-	}
+	resp := &Response{ServiceMethod: reply.ServiceMethod, Seq: reply.Seq, Data: data}
 	if err := oicq.Unmarshal(reply.Payload, data); err != nil {
 		return nil, err
 	}
@@ -218,7 +210,7 @@ func (m *Manager) request(req *Request) (*Response, error) {
 		default:
 			log.Printf("unknown type: 0x%02x", data.Type)
 			copy(key[:], tickets.A1.Key[:])
-		case 0x0007: // AuthCheckSMSAndGetSessionTickets
+		case 0x0007: // VerifySMSCode
 			copy(key[:], tickets.A1.Key[:])
 		case 0x0009: // signInWithPassword
 			copy(key[:], tickets.A1.Key[:])
@@ -226,7 +218,7 @@ func (m *Manager) request(req *Request) (*Response, error) {
 			copy(key[:], tickets.A2.Key[:])
 		case 0x000b: // signInWithoutPassword.D2
 			key = md5.Sum(tickets.D2.Key[:])
-		case 0x0014: // AuthUnlockDevice
+		case 0x0014: // UnlockDevice
 			copy(key[:], tickets.A1.Key[:])
 		}
 		t119, err := tea.NewCipher(key).Decrypt(resp.ExtraData.T119)
@@ -254,18 +246,17 @@ func (m *Manager) request(req *Request) (*Response, error) {
 		m.c.SetSessionAuth(data.Uin, resp.ExtraData.SessionAuth)
 
 		var code string
-		extraData.T547 = resp.ExtraData.T546 // TODO: check
+		extraData.T546 = resp.ExtraData.T546 // TODO: check
 		if resp.ExtraData.CaptchaSign != "" {
 			log.Println("verify captcha, url:", strings.ReplaceAll(resp.ExtraData.CaptchaSign, "https://", "https://elap5e.github.io/kits/"))
-			// TODO: verify captcha
 			fmt.Printf(">>> ")
 			fmt.Scanln(&code)
-			log.Printf("[%s]\n", code)
 			return m.VerifyCaptcha(data.Uin, []byte(code))
 		} else {
 			log.Println("verify picture")
-			// TODO: verify picture
-			return m.VerifyCaptcha(data.Uin, []byte("code"), resp.ExtraData.PictureSign)
+			fmt.Printf(">>> ")
+			fmt.Scanln(&code)
+			return m.VerifyCaptcha(data.Uin, []byte(code), resp.ExtraData.PictureSign)
 		}
 	case 0xa0:
 		// verify sms code
@@ -273,22 +264,24 @@ func (m *Manager) request(req *Request) (*Response, error) {
 
 		extraData.T17B = resp.ExtraData.T17B
 		log.Println("verify sms code")
-		// TODO: verify sms code
-		return m.VerifySMSCode(data.Uin, []byte("code"))
+		var code string
+		fmt.Printf(">>> ")
+		fmt.Scanln(&code)
+		return m.VerifySMSCode(data.Uin, []byte(code))
 	case 0xcc:
 		// unlock device
 		m.c.SetSessionAuth(data.Uin, resp.ExtraData.SessionAuth)
 
 		extraData.T402 = resp.ExtraData.T402
 		extraData.T403 = resp.ExtraData.T403
-		extraData.T401 = md5.Sum(
+		extraData.T401.Set(md5.Sum(
 			append(append(
 				m.c.GetFakeSource(data.Uin).Device.GUID[:],
 				sess.RandomPass[:]...),
 				extraData.T402...),
-		)
+		))
 		log.Println("unlock device")
-		return m.unlockDevice(data.Uin)
+		return m.UnlockDevice(data.Uin)
 	case 0xef:
 		// resend sms code
 		m.c.SetSessionAuth(data.Uin, resp.ExtraData.SessionAuth)
@@ -296,12 +289,12 @@ func (m *Manager) request(req *Request) (*Response, error) {
 		extraData.T174 = resp.ExtraData.T174
 		extraData.T402 = resp.ExtraData.T402
 		extraData.T403 = resp.ExtraData.T403
-		extraData.T401 = md5.Sum(
+		extraData.T401.Set(md5.Sum(
 			append(append(
 				m.c.GetFakeSource(data.Uin).Device.GUID[:],
 				sess.RandomPass[:]...),
 				extraData.T402...),
-		)
+		))
 		log.Println("resend sms code, mobile:", resp.ExtraData.SMSMobile)
 		return m.resendSMSCode(data.Uin)
 	case 0x01:
@@ -330,6 +323,9 @@ func (m *Manager) request(req *Request) (*Response, error) {
 	case 0xa4:
 		log.Printf("error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
 		return nil, fmt.Errorf("bad requests")
+	case 0xeb:
+		log.Printf("version too low, error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
+		return nil, fmt.Errorf("too many failures")
 	case 0xed:
 		log.Printf("invalid device, error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
 		return nil, fmt.Errorf("too many failures")

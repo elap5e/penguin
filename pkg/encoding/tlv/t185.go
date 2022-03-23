@@ -21,22 +21,22 @@ import (
 )
 
 type T185 struct {
-	tlv *TLV
-	i   uint8
+	*TLV
+	i uint8
 }
 
 func NewT185(i uint8) *T185 {
 	return &T185{
-		tlv: NewTLV(0x0185, 0x0000, nil),
+		TLV: NewTLV(0x0185, 0x0000, nil),
 		i:   i,
 	}
 }
 
 func (t *T185) ReadFrom(b *bytes.Buffer) error {
-	if err := t.tlv.ReadFrom(b); err != nil {
+	if err := t.TLV.ReadFrom(b); err != nil {
 		return err
 	}
-	v, err := t.tlv.GetValue()
+	v, err := t.TLV.GetValue()
 	if err != nil {
 		return err
 	}
@@ -56,6 +56,6 @@ func (t *T185) WriteTo(b *bytes.Buffer) error {
 	v := bytes.NewBuffer([]byte{})
 	v.WriteByte(0x01)
 	v.WriteByte(t.i)
-	t.tlv.SetValue(v)
-	return t.tlv.WriteTo(b)
+	t.TLV.SetValue(v)
+	return t.TLV.WriteTo(b)
 }

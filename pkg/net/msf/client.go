@@ -31,11 +31,12 @@ import (
 )
 
 func NewClient(ctx context.Context) rpc.Client {
-	conn, _ := net.Dial("tcp", "14.22.5.202:8080")
+	conn, _ := net.Dial("tcp", "125.94.60.148:14000")
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	c := &client{
 		seq:      r.Int31n(100000),
 		sessions: make(map[int64]*rpc.Session),
+		stickets: make(map[int64]*rpc.Tickets),
 	}
 	c.rs = rpc.NewSender(c, tcp.NewCodec(c, conn))
 	go c.rs.Run(ctx)
@@ -47,6 +48,7 @@ type client struct {
 	seq int32
 
 	sessions map[int64]*rpc.Session
+	stickets map[int64]*rpc.Tickets
 }
 
 func (c *client) Close() error {
@@ -151,6 +153,8 @@ func (c *client) GetSession(uin int64) *rpc.Session {
 		r := rand.New(rand.NewSource(uin))
 		c.sessions[uin] = &rpc.Session{}
 		session = c.sessions[uin]
+		session.Cookie = make([]byte, 4)
+		r.Read(session.Cookie)
 		session.RandomKey = [16]byte{}
 		r.Read(session.RandomKey[:])
 		session.RandomPass = [16]byte{}
@@ -167,25 +171,27 @@ func (c *client) GetSession(uin int64) *rpc.Session {
 }
 
 func (c *client) GetTickets(uin int64) *rpc.Tickets {
-	return &rpc.Tickets{
-		A1: rpc.Ticket{
+	tickets := c.stickets[uin]
+	if tickets == nil {
+		r := rand.New(rand.NewSource(uin))
+		c.stickets[uin] = &rpc.Tickets{}
+		tickets = c.stickets[uin]
+		tickets.A1 = &rpc.Ticket{
 			Key: [16]byte{},
-			Sig: []byte{},
-		},
-		A2: rpc.Ticket{
-			Key: [16]byte{},
-			Sig: []byte{},
-		},
-		D2: rpc.Ticket{
-			Key: [16]byte{},
-			Sig: []byte{},
-		},
+		}
+		r.Read(tickets.A1.Key[:])
+		tickets.A2 = &rpc.Ticket{}
+		tickets.D2 = &rpc.Ticket{}
 	}
+	return tickets
 }
 
 func (c *client) SetSession(uin int64, tlvs map[uint16]tlv.Codec) {}
 func (c *client) SetSessionAuth(uin int64, auth []byte) {
 	c.GetSession(uin).Auth = auth
+}
+func (c *client) SetSessionCookie(uin int64, cookie []byte) {
+	c.GetSession(uin).Cookie = cookie
 }
 func (c *client) SetSessionKSID(uin int64, ksid []byte) {
 	c.GetSession(uin).KSID = ksid

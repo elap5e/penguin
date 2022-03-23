@@ -19,7 +19,7 @@ import (
 )
 
 type T116 struct {
-	tlv        *TLV
+	*TLV
 	miscBitmap uint32
 	subSigMap  uint32
 	subAppIDs  []uint64
@@ -27,7 +27,7 @@ type T116 struct {
 
 func NewT116(miscBitmap, subSigMap uint32, subAppIDs []uint64) *T116 {
 	return &T116{
-		tlv:        NewTLV(0x0116, 0x0000, nil),
+		TLV:        NewTLV(0x0116, 0x0000, nil),
 		miscBitmap: miscBitmap,
 		subSigMap:  subSigMap,
 		subAppIDs:  subAppIDs,
@@ -35,10 +35,10 @@ func NewT116(miscBitmap, subSigMap uint32, subAppIDs []uint64) *T116 {
 }
 
 func (t *T116) ReadFrom(b *bytes.Buffer) error {
-	if err := t.tlv.ReadFrom(b); err != nil {
+	if err := t.TLV.ReadFrom(b); err != nil {
 		return err
 	}
-	v, err := t.tlv.GetValue()
+	v, err := t.TLV.GetValue()
 	if err != nil {
 		return err
 	}
@@ -75,6 +75,6 @@ func (t *T116) WriteTo(b *bytes.Buffer) error {
 	for i := range t.subAppIDs {
 		v.WriteUint32(uint32(t.subAppIDs[i]))
 	}
-	t.tlv.SetValue(v)
-	return t.tlv.WriteTo(b)
+	t.TLV.SetValue(v)
+	return t.TLV.WriteTo(b)
 }

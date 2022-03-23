@@ -19,7 +19,7 @@ import (
 )
 
 type T124 struct {
-	tlv    *TLV
+	*TLV
 	osType []byte
 	osVer  []byte
 	nwType uint16
@@ -30,7 +30,7 @@ type T124 struct {
 
 func NewT124(osType, osVer []byte, nwType uint16, simOp, bArr4, apn []byte) *T124 {
 	return &T124{
-		tlv:    NewTLV(0x0124, 0x0000, nil),
+		TLV:    NewTLV(0x0124, 0x0000, nil),
 		osType: osType,
 		osVer:  osVer,
 		nwType: nwType,
@@ -41,10 +41,10 @@ func NewT124(osType, osVer []byte, nwType uint16, simOp, bArr4, apn []byte) *T12
 }
 
 func (t *T124) ReadFrom(b *bytes.Buffer) error {
-	if err := t.tlv.ReadFrom(b); err != nil {
+	if err := t.TLV.ReadFrom(b); err != nil {
 		return err
 	}
-	_, err := t.tlv.GetValue()
+	_, err := t.TLV.GetValue()
 	if err != nil {
 		return err
 	}
@@ -59,6 +59,6 @@ func (t *T124) WriteTo(b *bytes.Buffer) error {
 	v.WriteBytesL16V(t.simOp, 0x0010)
 	v.WriteBytesL16V(t.bArr4, 0x0020)
 	v.WriteBytesL16V(t.apn, 0x0010)
-	t.tlv.SetValue(v)
-	return t.tlv.WriteTo(b)
+	t.TLV.SetValue(v)
+	return t.TLV.WriteTo(b)
 }

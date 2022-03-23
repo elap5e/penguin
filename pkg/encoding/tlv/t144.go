@@ -20,24 +20,24 @@ import (
 )
 
 type T144 struct {
-	tlv  *TLV
+	*TLV
 	key  [16]byte // Key
 	tlvs []Codec
 }
 
 func NewT144(key [16]byte, tlvs ...Codec) *T144 {
 	return &T144{
-		tlv:  NewTLV(0x0144, 0x0000, nil),
+		TLV:  NewTLV(0x0144, 0x0000, nil),
 		key:  key,
 		tlvs: tlvs,
 	}
 }
 
 func (t *T144) ReadFrom(b *bytes.Buffer) error {
-	if err := t.tlv.ReadFrom(b); err != nil {
+	if err := t.TLV.ReadFrom(b); err != nil {
 		return err
 	}
-	_, err := t.tlv.GetValue()
+	_, err := t.TLV.GetValue()
 	if err != nil {
 		return err
 	}
@@ -50,6 +50,6 @@ func (t *T144) WriteTo(b *bytes.Buffer) error {
 	for i := range t.tlvs {
 		t.tlvs[i].WriteTo(v)
 	}
-	t.tlv.SetValue(bytes.NewBuffer(tea.NewCipher(t.key).Encrypt(v.Bytes())))
-	return t.tlv.WriteTo(b)
+	t.TLV.SetValue(bytes.NewBuffer(tea.NewCipher(t.key).Encrypt(v.Bytes())))
+	return t.TLV.WriteTo(b)
 }

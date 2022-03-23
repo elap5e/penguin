@@ -22,22 +22,22 @@ import (
 )
 
 type T52D struct {
-	tlv          *TLV
+	*TLV
 	deviceReport *pb.DeviceReport
 }
 
 func NewT52D(deviceReport *pb.DeviceReport) *T52D {
 	return &T52D{
-		tlv:          NewTLV(0x052d, 0x0000, nil),
+		TLV:          NewTLV(0x052d, 0x0000, nil),
 		deviceReport: deviceReport,
 	}
 }
 
 func (t *T52D) ReadFrom(b *bytes.Buffer) error {
-	if err := t.tlv.ReadFrom(b); err != nil {
+	if err := t.TLV.ReadFrom(b); err != nil {
 		return err
 	}
-	v, err := t.tlv.GetValue()
+	v, err := t.TLV.GetValue()
 	if err != nil {
 		return err
 	}
@@ -50,6 +50,6 @@ func (t *T52D) ReadFrom(b *bytes.Buffer) error {
 
 func (t *T52D) WriteTo(b *bytes.Buffer) error {
 	v, _ := proto.Marshal(t.deviceReport)
-	t.tlv.SetValue(bytes.NewBuffer(v))
-	return t.tlv.WriteTo(b)
+	t.TLV.SetValue(bytes.NewBuffer(v))
+	return t.TLV.WriteTo(b)
 }

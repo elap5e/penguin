@@ -23,7 +23,7 @@ import (
 )
 
 type T1 struct {
-	tlv *TLV
+	*TLV
 	uin int64
 	ip  net.IP
 
@@ -32,7 +32,7 @@ type T1 struct {
 
 func NewT1(uin int64, ip net.IP, serverTime int64) *T1 {
 	return &T1{
-		tlv: NewTLV(0x0001, 0x0014, nil),
+		TLV: NewTLV(0x0001, 0x0014, nil),
 		uin: uin,
 		ip:  ip,
 
@@ -49,10 +49,10 @@ func (t *T1) GetIP() (net.IP, error) {
 }
 
 func (t *T1) ReadFrom(b *bytes.Buffer) error {
-	if err := t.tlv.ReadFrom(b); err != nil {
+	if err := t.TLV.ReadFrom(b); err != nil {
 		return err
 	}
-	v, err := t.tlv.GetValue()
+	v, err := t.TLV.GetValue()
 	if err != nil {
 		return err
 	}
@@ -91,6 +91,6 @@ func (t *T1) WriteTo(b *bytes.Buffer) error {
 	v.WriteInt32(int32(t.serverTime))
 	v.Write(t.ip.To4())
 	v.WriteInt16(0x0000)
-	t.tlv.SetValue(v)
-	return t.tlv.WriteTo(b)
+	t.TLV.SetValue(v)
+	return t.TLV.WriteTo(b)
 }

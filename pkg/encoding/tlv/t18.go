@@ -21,7 +21,7 @@ import (
 )
 
 type T18 struct {
-	tlv   *TLV
+	*TLV
 	appID uint64
 	acVer uint32
 	uin   int64
@@ -30,7 +30,7 @@ type T18 struct {
 
 func NewT18(appID uint64, acVer uint32, uin int64, i2 uint16) *T18 {
 	return &T18{
-		tlv:   NewTLV(0x0018, 0x0000, nil),
+		TLV:   NewTLV(0x0018, 0x0000, nil),
 		appID: appID,
 		acVer: acVer,
 		uin:   uin,
@@ -39,10 +39,10 @@ func NewT18(appID uint64, acVer uint32, uin int64, i2 uint16) *T18 {
 }
 
 func (t *T18) ReadFrom(b *bytes.Buffer) error {
-	if err := t.tlv.ReadFrom(b); err != nil {
+	if err := t.TLV.ReadFrom(b); err != nil {
 		return err
 	}
-	v, err := t.tlv.GetValue()
+	v, err := t.TLV.GetValue()
 	if err != nil {
 		return err
 	}
@@ -89,6 +89,6 @@ func (t *T18) WriteTo(b *bytes.Buffer) error {
 	v.WriteUint32(uint32(t.uin))
 	v.WriteUint16(t.i2)
 	v.WriteUint16(0x0000)
-	t.tlv.SetValue(v)
-	return t.tlv.WriteTo(b)
+	t.TLV.SetValue(v)
+	return t.TLV.WriteTo(b)
 }

@@ -19,22 +19,22 @@ import (
 )
 
 type T545 struct {
-	tlv  *TLV
+	*TLV
 	bArr [16]byte
 }
 
 func NewT545(bArr [16]byte) *T545 {
 	return &T545{
-		tlv:  NewTLV(0x0545, 0x0000, nil),
+		TLV:  NewTLV(0x0545, 0x0000, nil),
 		bArr: bArr,
 	}
 }
 
 func (t *T545) ReadFrom(b *bytes.Buffer) error {
-	if err := t.tlv.ReadFrom(b); err != nil {
+	if err := t.TLV.ReadFrom(b); err != nil {
 		return err
 	}
-	v, err := t.tlv.GetValue()
+	v, err := t.TLV.GetValue()
 	if err != nil {
 		return err
 	}
@@ -43,6 +43,6 @@ func (t *T545) ReadFrom(b *bytes.Buffer) error {
 }
 
 func (t *T545) WriteTo(b *bytes.Buffer) error {
-	t.tlv.SetValue(bytes.NewBuffer(t.bArr[:]))
-	return t.tlv.WriteTo(b)
+	t.TLV.SetValue(bytes.NewBuffer(t.bArr[:]))
+	return t.TLV.WriteTo(b)
 }

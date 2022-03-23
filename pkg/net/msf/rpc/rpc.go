@@ -54,17 +54,17 @@ type Reply struct {
 }
 
 type Request struct {
-	ServiceMethod string
-	Seq           int32
-	Version       uint32
-	EncryptType   uint8
-	Username      string
+	ServiceMethod string `json:"service_method,omitempty"`
+	Seq           int32  `json:"seq,omitempty"`
+	Version       uint32 `json:"version,omitempty"`
+	EncryptType   uint8  `json:"encrypt_type,omitempty"`
+	Username      string `json:"username,omitempty"`
 }
 
 type Response struct {
-	ServiceMethod string
-	Seq           int32
-	Version       uint32
-	EncryptType   uint8
-	Username      string
+	ServiceMethod string `json:"service_method,omitempty"`
+	Seq           int32  `json:"seq,omitempty"`
+	Version       uint32 `json:"version,omitempty"`
+	EncryptType   uint8  `json:"encrypt_type,omitempty"`
+	Username      string `json:"username,omitempty"`
 }

@@ -16,6 +16,7 @@ package tcp
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
@@ -31,6 +32,10 @@ func (c *codec) WriteRequest(req *rpc.Request, args *rpc.Args) error {
 	}
 
 	fake, sess := c.cl.GetFakeSource(args.Uin), c.cl.GetSession(args.Uin)
+	p, _ := json.MarshalIndent(sess, "", "  ")
+	log.Printf("session:\n%s", string(p))
+	p, _ = json.MarshalIndent(c.cl.GetTickets(args.Uin), "", "  ")
+	log.Printf("tickets:\n%s", string(p))
 	body := bytes.NewBuffer([]byte{})
 	body.WriteUint32(0)
 	if req.Version == rpc.VersionDefault {
@@ -48,7 +53,7 @@ func (c *codec) WriteRequest(req *rpc.Request, args *rpc.Args) error {
 	if req.Version == rpc.VersionDefault {
 		body.WriteStringL32(fake.Device.IMEI)
 		body.WriteBytesL32(sess.KSID)
-		body.WriteStringL16("" + "|" + fake.Device.IMSI + "|A" + fake.App.Revision)
+		body.WriteStringL16("|" + fake.Device.IMSI + "|A" + fake.App.Revision)
 	}
 	body.WriteBytesL32(args.ReserveField)
 	body.WriteUint32At(uint32(body.Len()), 0)

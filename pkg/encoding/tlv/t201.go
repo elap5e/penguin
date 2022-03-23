@@ -19,7 +19,7 @@ import (
 )
 
 type T201 struct {
-	tlv   *TLV
+	*TLV
 	bArr  []byte
 	bArr2 []byte
 	bArr3 []byte
@@ -28,7 +28,7 @@ type T201 struct {
 
 func NewT201(bArr, bArr2, bArr3, bArr4 []byte) *T201 {
 	return &T201{
-		tlv:   NewTLV(0x0201, 0x0000, nil),
+		TLV:   NewTLV(0x0201, 0x0000, nil),
 		bArr:  bArr,
 		bArr2: bArr2,
 		bArr3: bArr3,
@@ -37,10 +37,10 @@ func NewT201(bArr, bArr2, bArr3, bArr4 []byte) *T201 {
 }
 
 func (t *T201) ReadFrom(b *bytes.Buffer) error {
-	if err := t.tlv.ReadFrom(b); err != nil {
+	if err := t.TLV.ReadFrom(b); err != nil {
 		return err
 	}
-	v, err := t.tlv.GetValue()
+	v, err := t.TLV.GetValue()
 	if err != nil {
 		return err
 	}
@@ -65,6 +65,6 @@ func (t *T201) WriteTo(b *bytes.Buffer) error {
 	v.WriteBytesL16V(t.bArr2)
 	v.WriteBytesL16V(t.bArr3)
 	v.WriteBytesL16V(t.bArr4)
-	t.tlv.SetValue(v)
-	return t.tlv.WriteTo(b)
+	t.TLV.SetValue(v)
+	return t.TLV.WriteTo(b)
 }

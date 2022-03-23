@@ -19,22 +19,22 @@ import (
 )
 
 type T166 struct {
-	tlv *TLV
-	i   uint8
+	*TLV
+	i uint8
 }
 
 func NewT166(i uint8) *T166 {
 	return &T166{
-		tlv: NewTLV(0x0166, 0x0000, nil),
+		TLV: NewTLV(0x0166, 0x0000, nil),
 		i:   i,
 	}
 }
 
 func (t *T166) ReadFrom(b *bytes.Buffer) error {
-	if err := t.tlv.ReadFrom(b); err != nil {
+	if err := t.TLV.ReadFrom(b); err != nil {
 		return err
 	}
-	v, err := t.tlv.GetValue()
+	v, err := t.TLV.GetValue()
 	if err != nil {
 		return err
 	}
@@ -45,6 +45,6 @@ func (t *T166) ReadFrom(b *bytes.Buffer) error {
 }
 
 func (t *T166) WriteTo(b *bytes.Buffer) error {
-	t.tlv.SetValue(bytes.NewBuffer([]byte{t.i}))
-	return t.tlv.WriteTo(b)
+	t.TLV.SetValue(bytes.NewBuffer([]byte{t.i}))
+	return t.TLV.WriteTo(b)
 }

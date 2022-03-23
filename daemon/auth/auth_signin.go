@@ -150,9 +150,9 @@ func (m *Manager) signInWithPassword(uin int64, hash [16]byte) (*Response, error
 	tlvs[0x0521] = tlv.NewTLV(0x0521, 0x0006, bytes.NewBuffer([]byte{0, 0, 0, 0, 0, 0})) // ProductType
 	if len(extraData.Login) != 0 {
 		buf := bytes.NewBuffer([]byte{})
-		buf.WriteUint16(0x0001)
+		buf.WriteUint16(1)
 		tlv.NewTLV(0x0536, 0x0002, bytes.NewBuffer(extraData.Login)).WriteTo(buf)
-		tlvs[0x0525] = tlv.NewTLV(0x0525, 0x0000, buf)
+		tlvs[0x0525] = tlv.NewTLV(0x0525, 0, buf)
 	}
 	// TODO: ???
 	// tlvs[0x0529] = tlv.NewT529()

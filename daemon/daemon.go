@@ -16,8 +16,6 @@ package daemon
 
 import (
 	"context"
-	"encoding/json"
-	"log"
 
 	"github.com/elap5e/penguin/daemon/account"
 	"github.com/elap5e/penguin/daemon/auth"
@@ -25,7 +23,6 @@ import (
 	"github.com/elap5e/penguin/daemon/message"
 	"github.com/elap5e/penguin/pkg/net/msf"
 	"github.com/elap5e/penguin/pkg/net/msf/rpc"
-	"github.com/elap5e/penguin/pkg/net/msf/service"
 )
 
 type Daemon struct {
@@ -49,16 +46,7 @@ func New(ctx context.Context) *Daemon {
 }
 
 func (d *Daemon) Run() error {
-	var p []byte
-	call := <-d.c.Go(service.MethodHeartbeatAlive, &rpc.Args{
-		Uin:     0,
-		Seq:     d.c.GetNextSeq(),
-		Payload: []byte{0, 0, 0, 4},
-	}, &rpc.Reply{}, make(chan *rpc.Call, 1)).Done
-	p, _ = json.MarshalIndent(call.Reply, "", "  ")
-	log.Printf("call.Reply:\n%s", string(p))
-	_, err := d.athm.SignIn("10000", "password")
-	if err != nil {
+	if _, err := d.athm.SignIn("10000", "123456"); err != nil {
 		return err
 	}
 	return nil

@@ -19,22 +19,22 @@ import (
 )
 
 type T109 struct {
-	tlv  *TLV
+	*TLV
 	hash [16]byte
 }
 
 func NewT109(hash [16]byte) *T109 {
 	return &T109{
-		tlv:  NewTLV(0x0109, 0x0000, nil),
+		TLV:  NewTLV(0x0109, 0x0000, nil),
 		hash: hash,
 	}
 }
 
 func (t *T109) ReadFrom(b *bytes.Buffer) error {
-	if err := t.tlv.ReadFrom(b); err != nil {
+	if err := t.TLV.ReadFrom(b); err != nil {
 		return err
 	}
-	v, err := t.tlv.GetValue()
+	v, err := t.TLV.GetValue()
 	if err != nil {
 		return err
 	}
@@ -43,6 +43,6 @@ func (t *T109) ReadFrom(b *bytes.Buffer) error {
 }
 
 func (t *T109) WriteTo(b *bytes.Buffer) error {
-	t.tlv.SetValue(bytes.NewBuffer(t.hash[:]))
-	return t.tlv.WriteTo(b)
+	t.TLV.SetValue(bytes.NewBuffer(t.hash[:]))
+	return t.TLV.WriteTo(b)
 }

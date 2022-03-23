@@ -19,22 +19,22 @@ import (
 )
 
 type T17C struct {
-	tlv  *TLV
+	*TLV
 	bArr []byte
 }
 
 func NewT17C(bArr []byte) *T17C {
 	return &T17C{
-		tlv:  NewTLV(0x017c, 0x0000, nil),
+		TLV:  NewTLV(0x017c, 0x0000, nil),
 		bArr: bArr,
 	}
 }
 
 func (t *T17C) ReadFrom(b *bytes.Buffer) error {
-	if err := t.tlv.ReadFrom(b); err != nil {
+	if err := t.TLV.ReadFrom(b); err != nil {
 		return err
 	}
-	v, err := t.tlv.GetValue()
+	v, err := t.TLV.GetValue()
 	if err != nil {
 		return err
 	}
@@ -47,6 +47,6 @@ func (t *T17C) ReadFrom(b *bytes.Buffer) error {
 func (t *T17C) WriteTo(b *bytes.Buffer) error {
 	v := bytes.NewBuffer([]byte{})
 	v.WriteBytesL16V(t.bArr)
-	t.tlv.SetValue(v)
-	return t.tlv.WriteTo(b)
+	t.TLV.SetValue(v)
+	return t.TLV.WriteTo(b)
 }

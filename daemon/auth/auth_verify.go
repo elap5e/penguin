@@ -31,11 +31,10 @@ func (m *Manager) resendSMSCode(uin int64) (*Response, error) {
 	tlvs[0x017a] = tlv.NewT17A(constant.SMSAppID)
 	tlvs[0x0197] = tlv.NewTLV(0x0197, 0x0000, bytes.NewBuffer([]byte{0}))
 	tlvs[0x0542] = tlv.NewT542(extraData.T542)
-	return m.requestSignIn(0, uin, 0x0008, tlvs)
+	return m.requestSignIn(0, uin, 8, tlvs)
 }
 
 func (m *Manager) VerifyCaptcha(uin int64, code []byte, sign ...[]byte) (*Response, error) {
-	extraData := m.GetExtraData(uin)
 	fake, sess := m.c.GetFakeSource(uin), m.c.GetSession(uin)
 	tlvs := make(map[uint16]tlv.Codec)
 	if len(sign) == 0 {
@@ -46,8 +45,8 @@ func (m *Manager) VerifyCaptcha(uin int64, code []byte, sign ...[]byte) (*Respon
 	tlvs[0x0008] = tlv.NewT8(0, constant.LocaleID, 0)
 	tlvs[0x0104] = tlv.NewT104(sess.Auth)
 	tlvs[0x0116] = tlv.NewT116(fake.App.MiscBitMap, constant.SubSigMap, constant.SubAppIDList)
-	tlvs[0x0547] = tlv.NewT547(extraData.T547)
-	return m.requestSignIn(0, uin, 0x0002, tlvs)
+	tlvs[0x0547] = tlv.NewT547(m.GetExtraData(uin).T547)
+	return m.requestSignIn(0, uin, 2, tlvs)
 }
 
 func (m *Manager) VerifySMSCode(uin int64, code []byte) (*Response, error) {
@@ -59,8 +58,8 @@ func (m *Manager) VerifySMSCode(uin int64, code []byte) (*Response, error) {
 	tlvs[0x0116] = tlv.NewT116(fake.App.MiscBitMap, constant.SubSigMap, constant.SubAppIDList)
 	tlvs[0x0174] = tlv.NewT174(extraData.T174)
 	tlvs[0x017c] = tlv.NewT17C(code)
-	tlvs[0x0401] = tlv.NewT401(extraData.T401)
+	tlvs[0x0401] = tlv.NewT401(extraData.T401.Get())
 	tlvs[0x0197] = tlv.NewTLV(0x0197, 0x0000, bytes.NewBuffer([]byte{0}))
 	tlvs[0x0542] = tlv.NewT542(extraData.T542)
-	return m.requestSignIn(0, uin, 0x0007, tlvs)
+	return m.requestSignIn(0, uin, 7, tlvs)
 }

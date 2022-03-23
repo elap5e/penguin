@@ -19,22 +19,22 @@ import (
 )
 
 type T154 struct {
-	tlv *TLV
+	*TLV
 	seq int32
 }
 
 func NewT154(seq int32) *T154 {
 	return &T154{
-		tlv: NewTLV(0x0154, 0x0000, nil),
+		TLV: NewTLV(0x0154, 0x0000, nil),
 		seq: seq,
 	}
 }
 
 func (t *T154) ReadFrom(b *bytes.Buffer) error {
-	if err := t.tlv.ReadFrom(b); err != nil {
+	if err := t.TLV.ReadFrom(b); err != nil {
 		return err
 	}
-	v, err := t.tlv.GetValue()
+	v, err := t.TLV.GetValue()
 	if err != nil {
 		return err
 	}
@@ -47,6 +47,6 @@ func (t *T154) ReadFrom(b *bytes.Buffer) error {
 func (t *T154) WriteTo(b *bytes.Buffer) error {
 	v := bytes.NewBuffer([]byte{})
 	v.WriteInt32(t.seq)
-	t.tlv.SetValue(v)
-	return t.tlv.WriteTo(b)
+	t.TLV.SetValue(v)
+	return t.TLV.WriteTo(b)
 }

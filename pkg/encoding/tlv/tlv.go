@@ -15,6 +15,8 @@
 package tlv
 
 import (
+	"fmt"
+
 	"github.com/elap5e/penguin/pkg/bytes"
 )
 
@@ -27,6 +29,10 @@ type TLV struct {
 	t uint16
 	l uint16
 	v *bytes.Buffer
+}
+
+func (v *TLV) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf("\"t%x(%d)\"", v.t, v.l)), nil
 }
 
 func NewTLV(t uint16, l uint16, v *bytes.Buffer) *TLV {

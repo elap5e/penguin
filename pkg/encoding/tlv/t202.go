@@ -19,24 +19,24 @@ import (
 )
 
 type T202 struct {
-	tlv      *TLV
+	*TLV
 	md5BSSID [16]byte
 	ssid     []byte
 }
 
 func NewT202(md5BSSID [16]byte, ssid []byte) *T202 {
 	return &T202{
-		tlv:      NewTLV(0x0202, 0x0000, nil),
+		TLV:      NewTLV(0x0202, 0x0000, nil),
 		md5BSSID: md5BSSID,
 		ssid:     ssid,
 	}
 }
 
 func (t *T202) ReadFrom(b *bytes.Buffer) error {
-	if err := t.tlv.ReadFrom(b); err != nil {
+	if err := t.TLV.ReadFrom(b); err != nil {
 		return err
 	}
-	v, err := t.tlv.GetValue()
+	v, err := t.TLV.GetValue()
 	if err != nil {
 		return err
 	}
@@ -55,6 +55,6 @@ func (t *T202) WriteTo(b *bytes.Buffer) error {
 	v := bytes.NewBuffer([]byte{})
 	v.WriteBytesL16V(t.md5BSSID[:], 0x0010)
 	v.WriteBytesL16V(t.ssid, 0x0020)
-	t.tlv.SetValue(v)
-	return t.tlv.WriteTo(b)
+	t.TLV.SetValue(v)
+	return t.TLV.WriteTo(b)
 }

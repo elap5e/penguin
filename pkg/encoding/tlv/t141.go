@@ -21,7 +21,7 @@ import (
 )
 
 type T141 struct {
-	tlv     *TLV
+	*TLV
 	simOp   []byte
 	netType uint16
 	apn     []byte
@@ -29,7 +29,7 @@ type T141 struct {
 
 func NewT141(simOp []byte, netType uint16, apn []byte) *T141 {
 	return &T141{
-		tlv:     NewTLV(0x0141, 0x0000, nil),
+		TLV:     NewTLV(0x0141, 0x0000, nil),
 		simOp:   simOp,
 		netType: netType,
 		apn:     apn,
@@ -37,10 +37,10 @@ func NewT141(simOp []byte, netType uint16, apn []byte) *T141 {
 }
 
 func (t *T141) ReadFrom(b *bytes.Buffer) error {
-	if err := t.tlv.ReadFrom(b); err != nil {
+	if err := t.TLV.ReadFrom(b); err != nil {
 		return err
 	}
-	v, err := t.tlv.GetValue()
+	v, err := t.TLV.GetValue()
 	if err != nil {
 		return err
 	}
@@ -68,6 +68,6 @@ func (t *T141) WriteTo(b *bytes.Buffer) error {
 	v.WriteBytesL16V(t.simOp)
 	v.WriteUint16(t.netType)
 	v.WriteBytesL16V(t.apn)
-	t.tlv.SetValue(v)
-	return t.tlv.WriteTo(b)
+	t.TLV.SetValue(v)
+	return t.TLV.WriteTo(b)
 }

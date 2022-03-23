@@ -19,22 +19,22 @@ import (
 )
 
 type T16D struct {
-	tlv *TLV
+	*TLV
 }
 
 func NewT16D() *T16D {
 	return &T16D{
-		tlv: NewTLV(0x016d, 0x0000, nil),
+		TLV: NewTLV(0x016d, 0x0000, nil),
 	}
 }
 
 func (t *T16D) ReadFrom(b *bytes.Buffer) error {
-	if err := t.tlv.ReadFrom(b); err != nil {
+	if err := t.TLV.ReadFrom(b); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (t *T16D) WriteTo(b *bytes.Buffer) error {
-	return t.tlv.WriteTo(b)
+	return t.TLV.WriteTo(b)
 }

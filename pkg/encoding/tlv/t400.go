@@ -20,7 +20,7 @@ import (
 )
 
 type T400 struct {
-	tlv      *TLV
+	*TLV
 	key      [16]byte
 	uin      uint64
 	guid     [16]byte
@@ -34,7 +34,7 @@ type T400 struct {
 
 func NewT400(key [16]byte, uin uint64, guid, dpwd [16]byte, appID, subAppID uint64, randSeed []byte, serverTime int64) *T400 {
 	return &T400{
-		tlv:      NewTLV(0x0400, 0x0000, nil),
+		TLV:      NewTLV(0x0400, 0x0000, nil),
 		key:      key,
 		uin:      uin,
 		guid:     guid,
@@ -48,10 +48,10 @@ func NewT400(key [16]byte, uin uint64, guid, dpwd [16]byte, appID, subAppID uint
 }
 
 func (t *T400) ReadFrom(b *bytes.Buffer) error {
-	if err := t.tlv.ReadFrom(b); err != nil {
+	if err := t.TLV.ReadFrom(b); err != nil {
 		return err
 	}
-	_, err := t.tlv.GetValue()
+	_, err := t.TLV.GetValue()
 	if err != nil {
 		return err
 	}
@@ -71,6 +71,6 @@ func (t *T400) WriteTo(b *bytes.Buffer) error {
 	v.WriteUint32(uint32(t.subAppID))
 	v.WriteUint32(uint32(t.serverTime))
 	v.WriteBytesL16V(t.randSeed)
-	t.tlv.SetValue(bytes.NewBuffer(tea.NewCipher(t.key).Encrypt(v.Bytes())))
-	return t.tlv.WriteTo(b)
+	t.TLV.SetValue(bytes.NewBuffer(tea.NewCipher(t.key).Encrypt(v.Bytes())))
+	return t.TLV.WriteTo(b)
 }

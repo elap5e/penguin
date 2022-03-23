@@ -21,24 +21,24 @@ import (
 )
 
 type T2 struct {
-	tlv  *TLV
+	*TLV
 	code []byte
 	sign []byte
 }
 
 func NewT2(code, sign []byte) *T2 {
 	return &T2{
-		tlv:  NewTLV(0x0002, 0x0000, nil),
+		TLV:  NewTLV(0x0002, 0x0000, nil),
 		code: code,
 		sign: sign,
 	}
 }
 
 func (t *T2) ReadFrom(b *bytes.Buffer) error {
-	if err := t.tlv.ReadFrom(b); err != nil {
+	if err := t.TLV.ReadFrom(b); err != nil {
 		return err
 	}
-	v, err := t.tlv.GetValue()
+	v, err := t.TLV.GetValue()
 	if err != nil {
 		return err
 	}
@@ -70,6 +70,6 @@ func (t *T2) WriteTo(b *bytes.Buffer) error {
 	v.WriteUint16(0x0000)
 	v.WriteBytesL16V(t.code)
 	v.WriteBytesL16V(t.sign)
-	t.tlv.SetValue(v)
-	return t.tlv.WriteTo(b)
+	t.TLV.SetValue(v)
+	return t.TLV.WriteTo(b)
 }

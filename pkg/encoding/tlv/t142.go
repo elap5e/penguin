@@ -21,22 +21,22 @@ import (
 )
 
 type T142 struct {
-	tlv   *TLV
+	*TLV
 	apkID []byte
 }
 
 func NewT142(apkID []byte) *T142 {
 	return &T142{
-		tlv:   NewTLV(0x0142, 0x0000, nil),
+		TLV:   NewTLV(0x0142, 0x0000, nil),
 		apkID: apkID,
 	}
 }
 
 func (t *T142) ReadFrom(b *bytes.Buffer) error {
-	if err := t.tlv.ReadFrom(b); err != nil {
+	if err := t.TLV.ReadFrom(b); err != nil {
 		return err
 	}
-	v, err := t.tlv.GetValue()
+	v, err := t.TLV.GetValue()
 	if err != nil {
 		return err
 	}
@@ -55,6 +55,6 @@ func (t *T142) WriteTo(b *bytes.Buffer) error {
 	v := bytes.NewBuffer([]byte{})
 	v.WriteUint16(0x0000)
 	v.WriteBytesL16V(t.apkID, 0x0020)
-	t.tlv.SetValue(v)
-	return t.tlv.WriteTo(b)
+	t.TLV.SetValue(v)
+	return t.TLV.WriteTo(b)
 }

@@ -19,12 +19,12 @@ import (
 	"github.com/elap5e/penguin/pkg/encoding/tlv"
 )
 
-func (m *Manager) unlockDevice(uin int64) (*Response, error) {
+func (m *Manager) UnlockDevice(uin int64) (*Response, error) {
 	fake, sess := m.c.GetFakeSource(uin), m.c.GetSession(uin)
 	tlvs := make(map[uint16]tlv.Codec)
 	tlvs[0x0008] = tlv.NewT8(0, constant.LocaleID, 0)
 	tlvs[0x0104] = tlv.NewT104(sess.Auth)
 	tlvs[0x0116] = tlv.NewT116(fake.App.MiscBitMap, constant.SubSigMap, constant.SubAppIDList)
-	tlvs[0x0401] = tlv.NewT401(m.GetExtraData(uin).T401)
+	tlvs[0x0401] = tlv.NewT401(m.GetExtraData(uin).T401.Get())
 	return m.requestSignIn(0, uin, 0x0014, tlvs)
 }

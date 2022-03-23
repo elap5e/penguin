@@ -19,22 +19,22 @@ import (
 )
 
 type T187 struct {
-	tlv    *TLV
+	*TLV
 	md5MAC [16]byte
 }
 
 func NewT187(md5MAC [16]byte) *T187 {
 	return &T187{
-		tlv:    NewTLV(0x0187, 0x0000, nil),
+		TLV:    NewTLV(0x0187, 0x0000, nil),
 		md5MAC: md5MAC,
 	}
 }
 
 func (t *T187) ReadFrom(b *bytes.Buffer) error {
-	if err := t.tlv.ReadFrom(b); err != nil {
+	if err := t.TLV.ReadFrom(b); err != nil {
 		return err
 	}
-	v, err := t.tlv.GetValue()
+	v, err := t.TLV.GetValue()
 	if err != nil {
 		return err
 	}
@@ -43,6 +43,6 @@ func (t *T187) ReadFrom(b *bytes.Buffer) error {
 }
 
 func (t *T187) WriteTo(b *bytes.Buffer) error {
-	t.tlv.SetValue(bytes.NewBuffer(t.md5MAC[:]))
-	return t.tlv.WriteTo(b)
+	t.TLV.SetValue(bytes.NewBuffer(t.md5MAC[:]))
+	return t.TLV.WriteTo(b)
 }

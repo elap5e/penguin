@@ -19,7 +19,7 @@ import (
 )
 
 type T8 struct {
-	tlv      *TLV
+	*TLV
 	i1       uint16
 	localeID uint32
 	i3       uint16
@@ -27,7 +27,7 @@ type T8 struct {
 
 func NewT8(i1 uint16, localeID uint32, i3 uint16) *T8 {
 	return &T8{
-		tlv:      NewTLV(0x0008, 0x0000, nil),
+		TLV:      NewTLV(0x0008, 0x0000, nil),
 		i1:       i1,
 		localeID: localeID,
 		i3:       i3,
@@ -35,10 +35,10 @@ func NewT8(i1 uint16, localeID uint32, i3 uint16) *T8 {
 }
 
 func (t *T8) ReadFrom(b *bytes.Buffer) error {
-	if err := t.tlv.ReadFrom(b); err != nil {
+	if err := t.TLV.ReadFrom(b); err != nil {
 		return err
 	}
-	v, err := t.tlv.GetValue()
+	v, err := t.TLV.GetValue()
 	if err != nil {
 		return err
 	}
@@ -59,6 +59,6 @@ func (t *T8) WriteTo(b *bytes.Buffer) error {
 	v.WriteUint16(t.i1)
 	v.WriteUint32(t.localeID)
 	v.WriteUint16(t.i3)
-	t.tlv.SetValue(v)
-	return t.tlv.WriteTo(b)
+	t.TLV.SetValue(v)
+	return t.TLV.WriteTo(b)
 }

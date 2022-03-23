@@ -19,22 +19,22 @@ import (
 )
 
 type T17A struct {
-	tlv   *TLV
+	*TLV
 	appID uint64
 }
 
 func NewT17A(appID uint64) *T17A {
 	return &T17A{
-		tlv:   NewTLV(0x017a, 0x0000, nil),
+		TLV:   NewTLV(0x017a, 0x0000, nil),
 		appID: appID,
 	}
 }
 
 func (t *T17A) ReadFrom(b *bytes.Buffer) error {
-	if err := t.tlv.ReadFrom(b); err != nil {
+	if err := t.TLV.ReadFrom(b); err != nil {
 		return err
 	}
-	v, err := t.tlv.GetValue()
+	v, err := t.TLV.GetValue()
 	if err != nil {
 		return err
 	}
@@ -49,6 +49,6 @@ func (t *T17A) ReadFrom(b *bytes.Buffer) error {
 func (t *T17A) WriteTo(b *bytes.Buffer) error {
 	v := bytes.NewBuffer([]byte{})
 	v.WriteUint32(uint32(t.appID))
-	t.tlv.SetValue(v)
-	return t.tlv.WriteTo(b)
+	t.TLV.SetValue(v)
+	return t.TLV.WriteTo(b)
 }

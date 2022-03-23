@@ -19,7 +19,7 @@ import (
 )
 
 type T544 struct {
-	tlv    *TLV
+	*TLV
 	uin    int64
 	guid   [16]byte
 	sdkVer string
@@ -28,7 +28,7 @@ type T544 struct {
 
 func NewT544(uin int64, guid [16]byte, sdkVer string, typ uint16) *T544 {
 	return &T544{
-		tlv:    NewTLV(0x0544, 0x0000, nil),
+		TLV:    NewTLV(0x0544, 0x0000, nil),
 		uin:    uin,
 		guid:   guid,
 		sdkVer: sdkVer,
@@ -37,7 +37,7 @@ func NewT544(uin int64, guid [16]byte, sdkVer string, typ uint16) *T544 {
 }
 
 func (t *T544) ReadFrom(b *bytes.Buffer) error {
-	if err := t.tlv.ReadFrom(b); err != nil {
+	if err := t.TLV.ReadFrom(b); err != nil {
 		return err
 	}
 	panic("not implement")

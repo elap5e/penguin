@@ -19,22 +19,22 @@ import (
 )
 
 type T188 struct {
-	tlv          *TLV
+	*TLV
 	md5AndroidID [16]byte
 }
 
 func NewT188(md5AndroidID [16]byte) *T188 {
 	return &T188{
-		tlv:          NewTLV(0x0188, 0x0000, nil),
+		TLV:          NewTLV(0x0188, 0x0000, nil),
 		md5AndroidID: md5AndroidID,
 	}
 }
 
 func (t *T188) ReadFrom(b *bytes.Buffer) error {
-	if err := t.tlv.ReadFrom(b); err != nil {
+	if err := t.TLV.ReadFrom(b); err != nil {
 		return err
 	}
-	v, err := t.tlv.GetValue()
+	v, err := t.TLV.GetValue()
 	if err != nil {
 		return err
 	}
@@ -43,6 +43,6 @@ func (t *T188) ReadFrom(b *bytes.Buffer) error {
 }
 
 func (t *T188) WriteTo(b *bytes.Buffer) error {
-	t.tlv.SetValue(bytes.NewBuffer(t.md5AndroidID[:]))
-	return t.tlv.WriteTo(b)
+	t.TLV.SetValue(bytes.NewBuffer(t.md5AndroidID[:]))
+	return t.TLV.WriteTo(b)
 }

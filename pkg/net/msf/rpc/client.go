@@ -35,6 +35,7 @@ type Client interface {
 	GetTickets(uin int64) *Tickets
 	SetSession(uin int64, tlvs map[uint16]tlv.Codec)
 	SetSessionAuth(uin int64, auth []byte)
+	SetSessionCookie(uin int64, cookie []byte)
 	SetSessionKSID(uin int64, ksid []byte)
 	SetTickets(uin int64, tlvs map[uint16]tlv.Codec)
 }
@@ -53,9 +54,9 @@ type Session struct {
 }
 
 type Tickets struct {
-	A1 Ticket `json:"a1,omitempty"`
-	A2 Ticket `json:"a2,omitempty"`
-	D2 Ticket `json:"d2,omitempty"`
+	A1 *Ticket `json:"a1,omitempty"`
+	A2 *Ticket `json:"a2,omitempty"`
+	D2 *Ticket `json:"d2,omitempty"`
 }
 
 type Ticket struct {
@@ -71,8 +72,18 @@ func (v Key16Bytes) MarshalJSON() ([]byte, error) {
 	return []byte("\"" + hex.EncodeToString(v[:]) + "\""), nil
 }
 
-func (v *Key16Bytes) UnmarshalJSON(p []byte) error {
-	return nil
+func (v *Key16Bytes) Get() [16]byte {
+	if v == nil {
+		v = new(Key16Bytes)
+	}
+	return *v
+}
+
+func (v *Key16Bytes) Set(b [16]byte) {
+	if v == nil {
+		v = new(Key16Bytes)
+	}
+	copy(v[:], b[:])
 }
 
 type FakeSource struct {

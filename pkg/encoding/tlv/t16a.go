@@ -19,22 +19,22 @@ import (
 )
 
 type T16A struct {
-	tlv  *TLV
+	*TLV
 	bArr []byte
 }
 
 func NewT16A(bArr []byte) *T16A {
 	return &T16A{
-		tlv:  NewTLV(0x016a, 0x0000, nil),
+		TLV:  NewTLV(0x016a, 0x0000, nil),
 		bArr: bArr,
 	}
 }
 
 func (t *T16A) ReadFrom(b *bytes.Buffer) error {
-	if err := t.tlv.ReadFrom(b); err != nil {
+	if err := t.TLV.ReadFrom(b); err != nil {
 		return err
 	}
-	v, err := t.tlv.GetValue()
+	v, err := t.TLV.GetValue()
 	if err != nil {
 		return err
 	}
@@ -43,6 +43,6 @@ func (t *T16A) ReadFrom(b *bytes.Buffer) error {
 }
 
 func (t *T16A) WriteTo(b *bytes.Buffer) error {
-	t.tlv.SetValue(bytes.NewBuffer(t.bArr))
-	return t.tlv.WriteTo(b)
+	t.TLV.SetValue(bytes.NewBuffer(t.bArr))
+	return t.TLV.WriteTo(b)
 }

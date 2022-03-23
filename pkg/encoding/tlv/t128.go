@@ -19,7 +19,7 @@ import (
 )
 
 type T128 struct {
-	tlv           *TLV
+	*TLV
 	isGuidFileNil bool
 	isGuidGenSucc bool
 	isGuidChanged bool
@@ -31,7 +31,7 @@ type T128 struct {
 
 func NewT128(isGuidFileNil, isGuidGenSucc, isGuidChanged bool, guidFlag uint32, model, guid, brand []byte) *T128 {
 	return &T128{
-		tlv:           NewTLV(0x0128, 0x0000, nil),
+		TLV:           NewTLV(0x0128, 0x0000, nil),
 		isGuidFileNil: isGuidFileNil,
 		isGuidGenSucc: isGuidGenSucc,
 		isGuidChanged: isGuidChanged,
@@ -43,10 +43,10 @@ func NewT128(isGuidFileNil, isGuidGenSucc, isGuidChanged bool, guidFlag uint32, 
 }
 
 func (t *T128) ReadFrom(b *bytes.Buffer) error {
-	if err := t.tlv.ReadFrom(b); err != nil {
+	if err := t.TLV.ReadFrom(b); err != nil {
 		return err
 	}
-	v, err := t.tlv.GetValue()
+	v, err := t.TLV.GetValue()
 	if err != nil {
 		return err
 	}
@@ -87,6 +87,6 @@ func (t *T128) WriteTo(b *bytes.Buffer) error {
 	v.WriteBytesL16V(t.model, 0x0020)
 	v.WriteBytesL16V(t.guid, 0x0010)
 	v.WriteBytesL16V(t.brand, 0x0010)
-	t.tlv.SetValue(v)
-	return t.tlv.WriteTo(b)
+	t.TLV.SetValue(v)
+	return t.TLV.WriteTo(b)
 }

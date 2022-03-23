@@ -19,22 +19,22 @@ import (
 )
 
 type T193 struct {
-	tlv  *TLV
+	*TLV
 	code []byte
 }
 
 func NewT193(code []byte) *T193 {
 	return &T193{
-		tlv:  NewTLV(0x0193, 0x0000, nil),
+		TLV:  NewTLV(0x0193, 0x0000, nil),
 		code: code,
 	}
 }
 
 func (t *T193) ReadFrom(b *bytes.Buffer) error {
-	if err := t.tlv.ReadFrom(b); err != nil {
+	if err := t.TLV.ReadFrom(b); err != nil {
 		return err
 	}
-	v, err := t.tlv.GetValue()
+	v, err := t.TLV.GetValue()
 	if err != nil {
 		return err
 	}
@@ -43,6 +43,6 @@ func (t *T193) ReadFrom(b *bytes.Buffer) error {
 }
 
 func (t *T193) WriteTo(b *bytes.Buffer) error {
-	t.tlv.SetValue(bytes.NewBuffer(t.code))
-	return t.tlv.WriteTo(b)
+	t.TLV.SetValue(bytes.NewBuffer(t.code))
+	return t.TLV.WriteTo(b)
 }

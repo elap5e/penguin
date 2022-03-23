@@ -19,16 +19,16 @@ import (
 )
 
 type T107 struct {
-	tlv *TLV
-	i   uint16
-	i2  uint8
-	i3  uint16
-	i4  uint8
+	*TLV
+	i  uint16
+	i2 uint8
+	i3 uint16
+	i4 uint8
 }
 
 func NewT107(i uint16, i2 uint8, i3 uint16, i4 uint8) *T107 {
 	return &T107{
-		tlv: NewTLV(0x0107, 0x0000, nil),
+		TLV: NewTLV(0x0107, 0x0000, nil),
 		i:   i,
 		i2:  i2,
 		i3:  i3,
@@ -37,10 +37,10 @@ func NewT107(i uint16, i2 uint8, i3 uint16, i4 uint8) *T107 {
 }
 
 func (t *T107) ReadFrom(b *bytes.Buffer) error {
-	if err := t.tlv.ReadFrom(b); err != nil {
+	if err := t.TLV.ReadFrom(b); err != nil {
 		return err
 	}
-	v, err := t.tlv.GetValue()
+	v, err := t.TLV.GetValue()
 	if err != nil {
 		return err
 	}
@@ -65,6 +65,6 @@ func (t *T107) WriteTo(b *bytes.Buffer) error {
 	v.WriteByte(t.i2)
 	v.WriteUint16(t.i3)
 	v.WriteByte(t.i4)
-	t.tlv.SetValue(v)
-	return t.tlv.WriteTo(b)
+	t.TLV.SetValue(v)
+	return t.TLV.WriteTo(b)
 }

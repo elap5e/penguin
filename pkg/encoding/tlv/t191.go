@@ -19,22 +19,22 @@ import (
 )
 
 type T191 struct {
-	tlv          *TLV
+	*TLV
 	verifyMethod uint8
 }
 
 func NewT191(verifyMethod uint8) *T191 {
 	return &T191{
-		tlv:          NewTLV(0x0191, 0x0000, nil),
+		TLV:          NewTLV(0x0191, 0x0000, nil),
 		verifyMethod: verifyMethod,
 	}
 }
 
 func (t *T191) ReadFrom(b *bytes.Buffer) error {
-	if err := t.tlv.ReadFrom(b); err != nil {
+	if err := t.TLV.ReadFrom(b); err != nil {
 		return err
 	}
-	v, err := t.tlv.GetValue()
+	v, err := t.TLV.GetValue()
 	if err != nil {
 		return err
 	}
@@ -45,6 +45,6 @@ func (t *T191) ReadFrom(b *bytes.Buffer) error {
 }
 
 func (t *T191) WriteTo(b *bytes.Buffer) error {
-	t.tlv.SetValue(bytes.NewBuffer([]byte{t.verifyMethod}))
-	return t.tlv.WriteTo(b)
+	t.TLV.SetValue(bytes.NewBuffer([]byte{t.verifyMethod}))
+	return t.TLV.WriteTo(b)
 }

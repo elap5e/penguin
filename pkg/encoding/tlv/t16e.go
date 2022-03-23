@@ -19,22 +19,22 @@ import (
 )
 
 type T16E struct {
-	tlv   *TLV
+	*TLV
 	model []byte
 }
 
 func NewT16E(model []byte) *T16E {
 	return &T16E{
-		tlv:   NewTLV(0x016e, 0x0000, nil),
+		TLV:   NewTLV(0x016e, 0x0000, nil),
 		model: model,
 	}
 }
 
 func (t *T16E) ReadFrom(b *bytes.Buffer) error {
-	if err := t.tlv.ReadFrom(b); err != nil {
+	if err := t.TLV.ReadFrom(b); err != nil {
 		return err
 	}
-	v, err := t.tlv.GetValue()
+	v, err := t.TLV.GetValue()
 	if err != nil {
 		return err
 	}
@@ -45,6 +45,6 @@ func (t *T16E) ReadFrom(b *bytes.Buffer) error {
 func (t *T16E) WriteTo(b *bytes.Buffer) error {
 	v := bytes.NewBuffer([]byte{})
 	v.WriteBytesL16V(t.model, 0x0040)
-	t.tlv.SetValue(v)
-	return t.tlv.WriteTo(b)
+	t.TLV.SetValue(v)
+	return t.TLV.WriteTo(b)
 }

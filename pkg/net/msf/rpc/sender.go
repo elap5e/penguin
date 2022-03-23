@@ -17,6 +17,7 @@ package rpc
 import (
 	"container/list"
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"log"
@@ -101,6 +102,10 @@ func (s *sender) recvLoop(ctx context.Context) {
 			}
 			call.done()
 		}
+		p, _ := json.MarshalIndent(resp, "", "  ")
+		log.Printf("sender.response:\n%s", string(p))
+		p, _ = json.MarshalIndent(call.Reply, "", "  ")
+		log.Printf("sender.call.Reply:\n%s", string(p))
 		log.Printf("[R] uin:%s ver:%d seq:%d cmd:%s", resp.Username, resp.Version, resp.Seq, resp.ServiceMethod)
 	}
 	s.loopError(err)
@@ -144,6 +149,10 @@ func (s *sender) sendLoop(ctx context.Context) {
 				call.done()
 			}
 		}
+		p, _ := json.MarshalIndent(req, "", "  ")
+		log.Printf("sender.requset:\n%s", string(p))
+		p, _ = json.MarshalIndent(call.Args, "", "  ")
+		log.Printf("sender.call.Args:\n%s", string(p))
 		log.Printf("[S] uin:%s ver:%d seq:%d cmd:%s", req.Username, req.Version, req.Seq, req.ServiceMethod)
 	}
 	s.loopError(err)
