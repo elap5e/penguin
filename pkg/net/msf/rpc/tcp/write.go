@@ -28,13 +28,13 @@ func (c *codec) WriteRequest(req *rpc.Request, args *rpc.Args) error {
 		return fmt.Errorf("tcp: unsupported version 0x%x", req.Version)
 	}
 
-	fake, sess := c.cl.GetFake(args.Uin), c.cl.GetSession(args.Uin)
+	fake, sess := c.cl.GetFakeSource(args.Uin), c.cl.GetSession(args.Uin)
 	body := bytes.NewBuffer([]byte{})
 	body.WriteUint32(0)
 	if req.Version == rpc.VersionDefault {
 		body.WriteInt32(args.Seq)
-		body.WriteInt32(fake.FixID)
-		body.WriteInt32(fake.AppID)
+		body.WriteInt32(fake.App.FixID)
+		body.WriteInt32(fake.App.AppID)
 		tmp := make([]byte, 12)
 		tmp[0x0] = fake.Device.NetworkType
 		tmp[0xa] = fake.Device.NetIPFamily
@@ -46,7 +46,7 @@ func (c *codec) WriteRequest(req *rpc.Request, args *rpc.Args) error {
 	if req.Version == rpc.VersionDefault {
 		body.WriteStringL32(fake.Device.IMEI)
 		body.WriteBytesL32(sess.KSID)
-		body.WriteStringL16("" + "|" + fake.Device.IMSI + "|A" + fake.Revision)
+		body.WriteStringL16("" + "|" + fake.Device.IMSI + "|A" + fake.App.Revision)
 	}
 	body.WriteBytesL32(args.ReserveField)
 	body.WriteUint32At(uint32(body.Len()), 0)

@@ -22,11 +22,11 @@ import (
 
 func (m *Manager) resendSMSCode(uin int64) (*Response, error) {
 	extraData := m.GetExtraData(uin)
-	sess := m.c.GetSession(uin)
+	fake, sess := m.c.GetFakeSource(uin), m.c.GetSession(uin)
 	tlvs := make(map[uint16]tlv.Codec)
 	tlvs[0x0008] = tlv.NewT8(0, constant.LocaleID, 0)
 	tlvs[0x0104] = tlv.NewT104(sess.Auth)
-	tlvs[0x0116] = tlv.NewT116(m.c.GetFake(uin).MiscBitmap, constant.SubSigMap, constant.SubAppIDList)
+	tlvs[0x0116] = tlv.NewT116(fake.App.MiscBitMap, constant.SubSigMap, constant.SubAppIDList)
 	tlvs[0x0174] = tlv.NewT174(extraData.T174)
 	tlvs[0x017a] = tlv.NewT17A(constant.SMSAppID)
 	tlvs[0x0197] = tlv.NewTLV(0x0197, 0x0000, bytes.NewBuffer([]byte{0}))
@@ -36,7 +36,7 @@ func (m *Manager) resendSMSCode(uin int64) (*Response, error) {
 
 func (m *Manager) VerifyCaptcha(uin int64, code []byte, sign ...[]byte) (*Response, error) {
 	extraData := m.GetExtraData(uin)
-	sess := m.c.GetSession(uin)
+	fake, sess := m.c.GetFakeSource(uin), m.c.GetSession(uin)
 	tlvs := make(map[uint16]tlv.Codec)
 	if len(sign) > 0 {
 		tlvs[0x0193] = tlv.NewT193(code)
@@ -45,18 +45,18 @@ func (m *Manager) VerifyCaptcha(uin int64, code []byte, sign ...[]byte) (*Respon
 	}
 	tlvs[0x0008] = tlv.NewT8(0, constant.LocaleID, 0)
 	tlvs[0x0104] = tlv.NewT104(sess.Auth)
-	tlvs[0x0116] = tlv.NewT116(m.c.GetFake(uin).MiscBitmap, constant.SubSigMap, constant.SubAppIDList)
+	tlvs[0x0116] = tlv.NewT116(fake.App.MiscBitMap, constant.SubSigMap, constant.SubAppIDList)
 	tlvs[0x0547] = tlv.NewT547(extraData.T547)
 	return m.requestSignIn(0, uin, 0x0002, tlvs)
 }
 
 func (m *Manager) VerifySMSCode(uin int64, code []byte) (*Response, error) {
 	extraData := m.GetExtraData(uin)
-	sess := m.c.GetSession(uin)
+	fake, sess := m.c.GetFakeSource(uin), m.c.GetSession(uin)
 	tlvs := make(map[uint16]tlv.Codec)
 	tlvs[0x0008] = tlv.NewT8(0, constant.LocaleID, 0)
 	tlvs[0x0104] = tlv.NewT104(sess.Auth)
-	tlvs[0x0116] = tlv.NewT116(m.c.GetFake(uin).MiscBitmap, constant.SubSigMap, constant.SubAppIDList)
+	tlvs[0x0116] = tlv.NewT116(fake.App.MiscBitMap, constant.SubSigMap, constant.SubAppIDList)
 	tlvs[0x0174] = tlv.NewT174(extraData.T174)
 	tlvs[0x017c] = tlv.NewT17C(code)
 	tlvs[0x0401] = tlv.NewT401(extraData.T401)

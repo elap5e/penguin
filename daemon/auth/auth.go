@@ -250,7 +250,7 @@ func (m *Manager) request(req *Request) (*Response, error) {
 		extraData.T403 = resp.ExtraData.T403
 		extraData.T401 = md5.Sum(
 			append(append(
-				m.c.GetFake(data.Uin).Device.GUID[:],
+				m.c.GetFakeSource(data.Uin).Device.GUID[:],
 				sess.RandomPass[:]...),
 				extraData.T402...),
 		)
@@ -265,7 +265,7 @@ func (m *Manager) request(req *Request) (*Response, error) {
 		extraData.T403 = resp.ExtraData.T403
 		extraData.T401 = md5.Sum(
 			append(append(
-				m.c.GetFake(data.Uin).Device.GUID[:],
+				m.c.GetFakeSource(data.Uin).Device.GUID[:],
 				sess.RandomPass[:]...),
 				extraData.T402...),
 		)

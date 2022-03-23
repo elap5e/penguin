@@ -26,7 +26,7 @@ type Client interface {
 	Call(serviceMethod string, args *Args, reply *Reply) error
 
 	GetNextSeq() int32
-	GetFake(uin int64) *Fake
+	GetFakeSource(uin int64) *FakeSource
 	GetServerTime() int64
 	GetSession(uin int64) *Session
 	GetTickets(uin int64) *Tickets
@@ -60,7 +60,12 @@ type Ticket struct {
 	Sig []byte
 }
 
-type Fake struct {
+type FakeSource struct {
+	App    *FakeApp
+	Device *FakeDevice
+}
+
+type FakeApp struct {
 	FixID int32
 	AppID int32
 
@@ -74,11 +79,9 @@ type Fake struct {
 	SSOVer  uint32
 
 	ImageType  uint8
-	MiscBitmap uint32
+	MiscBitMap uint32
 
 	CanCaptcha bool
-
-	Device *FakeDevice
 }
 
 type FakeDevice struct {

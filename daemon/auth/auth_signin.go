@@ -44,19 +44,19 @@ func (m *Manager) SignIn(username, password string) (*Response, error) {
 
 func (m *Manager) signInWithPassword(uin int64, hash [16]byte) (*Response, error) {
 	username := strconv.FormatInt(uin, 10)
-	fake, sess, seq, serverTime := m.c.GetFake(uin), m.c.GetSession(uin), m.c.GetNextSeq(), m.c.GetServerTime()
+	fake, sess, seq, serverTime := m.c.GetFakeSource(uin), m.c.GetSession(uin), m.c.GetNextSeq(), m.c.GetServerTime()
 	extraData := m.GetExtraData(uin)
 	tlvs := make(map[uint16]tlv.Codec)
-	tlvs[0x0018] = tlv.NewT18(constant.AppID, 0, uin, 0)
+	tlvs[0x0018] = tlv.NewT18(constant.DstAppID, 0, uin, 0)
 	tlvs[0x0001] = tlv.NewT1(uin, fake.Device.IPv4Address, serverTime)
 	a1 := m.c.GetTickets(uin).A1
 	if len(a1.Sig) == 0 {
-		tlvs[0x0106] = tlv.NewT106(constant.AppID, constant.SubAppID, 0, uin, serverTime, fake.Device.IPv4Address, true, hash, 0, username, a1.Key, true, fake.Device.GUID[:], 1, fake.SSOVer)
+		tlvs[0x0106] = tlv.NewT106(constant.DstAppID, constant.OpenAppID, 0, uin, serverTime, fake.Device.IPv4Address, true, hash, 0, username, a1.Key, true, fake.Device.GUID[:], 1, fake.App.SSOVer)
 	} else {
 		tlvs[0x0106] = tlv.NewTLV(0x0106, 0x0000, bytes.NewBuffer(a1.Sig))
 	}
-	tlvs[0x0116] = tlv.NewT116(fake.MiscBitmap, constant.SubSigMap, constant.SubAppIDList)
-	tlvs[0x0100] = tlv.NewT100(constant.AppID, constant.SubAppID, 0, constant.SigMap, fake.SSOVer)
+	tlvs[0x0116] = tlv.NewT116(fake.App.MiscBitMap, constant.SubSigMap, constant.SubAppIDList)
+	tlvs[0x0100] = tlv.NewT100(constant.DstAppID, constant.OpenAppID, 0, constant.MainSigMap, fake.App.SSOVer)
 	tlvs[0x0107] = tlv.NewT107(0, 0, 0, 1)
 	if len(sess.KSID) != 0 {
 		tlvs[0x0108] = tlv.NewT108(sess.KSID)
@@ -64,7 +64,7 @@ func (m *Manager) signInWithPassword(uin int64, hash [16]byte) (*Response, error
 	if len(sess.Auth) != 0 {
 		tlvs[0x0104] = tlv.NewT104(sess.Auth)
 	}
-	tlvs[0x0142] = tlv.NewT142([]byte(fake.PkgName))
+	tlvs[0x0142] = tlv.NewT142([]byte(fake.App.PkgName))
 	if !checkUsername(username) {
 		tlvs[0x0112] = tlv.NewT112([]byte(username))
 	}
@@ -101,9 +101,9 @@ func (m *Manager) signInWithPassword(uin int64, hash [16]byte) (*Response, error
 		tlv.NewT16E([]byte(fake.Device.OS.BuildModel)),
 	)
 	tlvs[0x0145] = tlv.NewT145(fake.Device.GUID)
-	tlvs[0x0147] = tlv.NewT147(constant.AppID, []byte(fake.VerName), fake.SigHash)
-	if fake.MiscBitmap&0x80 != 0 {
-		tlvs[0x0166] = tlv.NewT166(fake.ImageType)
+	tlvs[0x0147] = tlv.NewT147(constant.DstAppID, []byte(fake.App.VerName), fake.App.SigHash)
+	if fake.App.MiscBitMap&0x80 != 0 {
+		tlvs[0x0166] = tlv.NewT166(fake.App.ImageType)
 	}
 	if len(extraData.T16A) != 0 {
 		tlvs[0x016a] = tlv.NewT16A(extraData.T16A)
@@ -111,7 +111,7 @@ func (m *Manager) signInWithPassword(uin int64, hash [16]byte) (*Response, error
 	tlvs[0x0154] = tlv.NewT154(seq)
 	tlvs[0x0141] = tlv.NewT141(fake.Device.SIMOPName, fake.Device.OS.NetworkType, fake.Device.APNName)
 	tlvs[0x0008] = tlv.NewT8(0, constant.LocaleID, 0)
-	tlvs[0x0511] = tlv.NewT511(constant.Domains)
+	tlvs[0x0511] = tlv.NewT511(constant.AppDomains)
 	if len(extraData.T172) != 0 {
 		tlvs[0x0172] = tlv.NewT172(extraData.T172)
 	}
@@ -130,7 +130,7 @@ func (m *Manager) signInWithPassword(uin int64, hash [16]byte) (*Response, error
 	tlvs[0x0187] = tlv.NewT187(md5.Sum([]byte(fake.Device.MACAddress)))
 	tlvs[0x0188] = tlv.NewT188(md5.Sum([]byte(fake.Device.OS.BuildID)))
 	tlvs[0x0194] = tlv.NewT194(md5.Sum([]byte(fake.Device.IMSI)))
-	if fake.CanCaptcha {
+	if fake.App.CanCaptcha {
 		tlvs[0x0191] = tlv.NewT191(0x82)
 	} else {
 		tlvs[0x0191] = tlv.NewT191(0x00)
@@ -138,7 +138,7 @@ func (m *Manager) signInWithPassword(uin int64, hash [16]byte) (*Response, error
 	// DISABLED: SetNeedForPayToken
 	// tlvs[0x0201] = tlv.NewT201(nil, nil, []byte("qq"), nil)
 	tlvs[0x0202] = tlv.NewT202(md5.Sum([]byte(fake.Device.BSSIDAddress)), []byte(fake.Device.SSIDAddress))
-	tlvs[0x0177] = tlv.NewT177(fake.BuildAt, fake.SDKVer)
+	tlvs[0x0177] = tlv.NewT177(fake.App.BuildAt, fake.App.SDKVer)
 	tlvs[0x0516] = tlv.NewTLV(0x0516, 0x0004, bytes.NewBuffer([]byte{0, 0, 0, 0}))       // SourceType
 	tlvs[0x0521] = tlv.NewTLV(0x0521, 0x0006, bytes.NewBuffer([]byte{0, 0, 0, 0, 0, 0})) // ProductType
 	if len(extraData.Login) != 0 {
@@ -180,12 +180,12 @@ func (m *Manager) requestSignIn(seq int32, uin int64, typ uint16, tlvs map[uint1
 func (m *Manager) signInWithoutPassword(uin int64, changeD2 bool) (*Response, error) {
 	username := strconv.FormatInt(uin, 10)
 	tickets := m.c.GetTickets(uin)
-	fake, sess, seq := m.c.GetFake(uin), m.c.GetSession(uin), m.c.GetNextSeq()
+	fake, sess, seq := m.c.GetFakeSource(uin), m.c.GetSession(uin), m.c.GetNextSeq()
 	extraData := m.GetExtraData(uin)
 	tlvs := make(map[uint16]tlv.Codec)
-	tlvs[0x0100] = tlv.NewT100(constant.AppID, constant.SubAppID, 0, constant.SigMap, fake.SSOVer)
+	tlvs[0x0100] = tlv.NewT100(constant.DstAppID, constant.OpenAppID, 0, constant.MainSigMap, fake.App.SSOVer)
 	tlvs[0x010a] = tlv.NewT10A(tickets.A2.Sig)
-	tlvs[0x0116] = tlv.NewT116(fake.MiscBitmap, constant.SubSigMap, constant.SubAppIDList)
+	tlvs[0x0116] = tlv.NewT116(fake.App.MiscBitMap, constant.SubSigMap, constant.SubAppIDList)
 	if len(sess.KSID) != 0 {
 		tlvs[0x0108] = tlv.NewT108(sess.KSID)
 	}
@@ -235,17 +235,17 @@ func (m *Manager) signInWithoutPassword(uin int64, changeD2 bool) (*Response, er
 	} else {
 		tlvs[0x0143] = tlv.NewT143(tickets.D2.Sig)
 	}
-	tlvs[0x0142] = tlv.NewT142([]byte(fake.PkgName))
+	tlvs[0x0142] = tlv.NewT142([]byte(fake.App.PkgName))
 	tlvs[0x0154] = tlv.NewT154(seq)
-	tlvs[0x0018] = tlv.NewT18(constant.AppID, 0, uin, 0)
+	tlvs[0x0018] = tlv.NewT18(constant.DstAppID, 0, uin, 0)
 	tlvs[0x0141] = tlv.NewT141(fake.Device.SIMOPName, fake.Device.OS.NetworkType, fake.Device.APNName)
 	tlvs[0x0008] = tlv.NewT8(0, constant.LocaleID, 0)
-	tlvs[0x0511] = tlv.NewT511(constant.Domains)
-	tlvs[0x0147] = tlv.NewT147(constant.AppID, []byte(fake.VerName), fake.SigHash)
+	tlvs[0x0511] = tlv.NewT511(constant.AppDomains)
+	tlvs[0x0147] = tlv.NewT147(constant.DstAppID, []byte(fake.App.VerName), fake.App.SigHash)
 	if len(extraData.T172) != 0 {
 		tlvs[0x0172] = tlv.NewT172(extraData.T172)
 	}
-	tlvs[0x0177] = tlv.NewT177(fake.BuildAt, fake.SDKVer)
+	tlvs[0x0177] = tlv.NewT177(fake.App.BuildAt, fake.App.SDKVer)
 	tlvs[0x0187] = tlv.NewT187(md5.Sum([]byte(fake.Device.MACAddress)))
 	tlvs[0x0188] = tlv.NewT188(md5.Sum([]byte(fake.Device.OS.BuildID)))
 	tlvs[0x0194] = tlv.NewT194(md5.Sum([]byte(fake.Device.IMSI)))
