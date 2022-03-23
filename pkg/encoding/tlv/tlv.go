@@ -57,7 +57,7 @@ func (t *TLV) ReadFrom(b *bytes.Buffer) error {
 	if t.l, err = b.ReadUint16(); err != nil {
 		return err
 	}
-	v := make([]byte, t.l-2)
+	v := make([]byte, t.l)
 	if _, err = b.Read(v); err != nil {
 		return err
 	}

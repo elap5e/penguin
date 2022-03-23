@@ -22,7 +22,9 @@ import (
 	"math/rand"
 	"net"
 	"sync/atomic"
+	"time"
 
+	"github.com/elap5e/penguin/pkg/crypto/ecdh"
 	"github.com/elap5e/penguin/pkg/encoding/tlv"
 	"github.com/elap5e/penguin/pkg/net/msf/rpc"
 	"github.com/elap5e/penguin/pkg/net/msf/rpc/tcp"
@@ -30,7 +32,11 @@ import (
 
 func NewClient(ctx context.Context) rpc.Client {
 	conn, _ := net.Dial("tcp", "14.22.5.202:8080")
-	c := &client{seq: rand.Int31n(100000)}
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	c := &client{
+		seq:      r.Int31n(100000),
+		sessions: make(map[int64]*rpc.Session),
+	}
 	c.rs = rpc.NewSender(c, tcp.NewCodec(c, conn))
 	go c.rs.Run(ctx)
 	return c
@@ -39,6 +45,8 @@ func NewClient(ctx context.Context) rpc.Client {
 type client struct {
 	rs  rpc.Sender
 	seq int32
+
+	sessions map[int64]*rpc.Session
 }
 
 func (c *client) Close() error {
@@ -63,7 +71,6 @@ func (c *client) GetNextSeq() int32 {
 }
 
 func (c *client) GetFakeSource(uin int64) *rpc.FakeSource {
-	// TODO: hardcoded for now
 	r := rand.New(rand.NewSource(uin))
 	buf := make([]byte, 20)
 	_, err := r.Read(buf)
@@ -135,19 +142,28 @@ func (c *client) GetFakeSource(uin int64) *rpc.FakeSource {
 }
 
 func (c *client) GetServerTime() int64 {
-	return 0
+	return time.Now().Unix()
 }
 
 func (c *client) GetSession(uin int64) *rpc.Session {
-	return &rpc.Session{
-		Auth:         []byte{},
-		Cookie:       []byte{},
-		KSID:         []byte{},
-		RandomKey:    [16]byte{},
-		KeyVersion:   0,
-		PublicKey:    []byte{},
-		SharedSecret: [16]byte{},
+	session := c.sessions[uin]
+	if session == nil {
+		r := rand.New(rand.NewSource(uin))
+		c.sessions[uin] = &rpc.Session{}
+		session = c.sessions[uin]
+		session.RandomKey = [16]byte{}
+		r.Read(session.RandomKey[:])
+		session.RandomPass = [16]byte{}
+		r.Read(session.RandomPass[:])
+		strs := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+		for i := range session.RandomPass {
+			session.RandomPass[i] = strs[session.RandomPass[i]%52]
+		}
+		session.PrivateKey, _ = ecdh.GenerateKey()
+		session.KeyVersion = ecdh.ServerKeyVersion
+		session.SharedSecret = session.PrivateKey.SharedSecret(ecdh.ServerPublicKey)
 	}
+	return session
 }
 
 func (c *client) GetTickets(uin int64) *rpc.Tickets {
@@ -168,8 +184,12 @@ func (c *client) GetTickets(uin int64) *rpc.Tickets {
 }
 
 func (c *client) SetSession(uin int64, tlvs map[uint16]tlv.Codec) {}
-func (c *client) SetSessionAuth(uin int64, auth []byte)           {}
-func (c *client) SetSessionKSID(uin int64, ksid []byte)           {}
+func (c *client) SetSessionAuth(uin int64, auth []byte) {
+	c.GetSession(uin).Auth = auth
+}
+func (c *client) SetSessionKSID(uin int64, ksid []byte) {
+	c.GetSession(uin).KSID = ksid
+}
 func (c *client) SetTickets(uin int64, tlvs map[uint16]tlv.Codec) {}
 
 var _ rpc.Client = (*client)(nil)

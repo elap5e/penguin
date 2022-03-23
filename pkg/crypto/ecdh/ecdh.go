@@ -16,6 +16,7 @@ package ecdh
 
 import (
 	"crypto/elliptic"
+	"crypto/md5"
 	"crypto/rand"
 	"encoding/hex"
 	"math/big"
@@ -41,9 +42,9 @@ func (priv *PrivateKey) Public() *PublicKey {
 	return &priv.PublicKey
 }
 
-func (priv *PrivateKey) SharedSecret(pub *PublicKey) []byte {
+func (priv *PrivateKey) SharedSecret(pub *PublicKey) [16]byte {
 	sx, _ := priv.PublicKey.Curve.ScalarMult(pub.X, pub.Y, priv.D.Bytes())
-	return sx.Bytes()
+	return md5.Sum(sx.Bytes()[:16])
 }
 
 func GenerateKey() (*PrivateKey, error) {

@@ -16,22 +16,14 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"log"
-	"math/rand"
 
-	"github.com/elap5e/penguin/pkg/net/msf"
-	"github.com/elap5e/penguin/pkg/net/msf/rpc"
-	"github.com/elap5e/penguin/pkg/net/msf/service"
+	"github.com/elap5e/penguin/daemon"
 )
 
 func main() {
-	c := msf.NewClient(context.Background())
-	call := <-c.Go(service.MethodHeartbeatAlive, &rpc.Args{
-		Uin:     10000,
-		Seq:     rand.Int31n(100000),
-		Payload: []byte{0, 0, 0, 4},
-	}, &rpc.Reply{}, make(chan *rpc.Call, 1)).Done
-	p, _ := json.MarshalIndent(call.Reply, "", "  ")
-	log.Printf("call.Reply:\n%s", string(p))
+	d := daemon.New(context.Background())
+	if err := d.Run(); err != nil {
+		log.Println(err)
+	}
 }

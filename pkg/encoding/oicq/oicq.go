@@ -16,20 +16,21 @@ package oicq
 
 import (
 	"github.com/elap5e/penguin/pkg/encoding/tlv"
+	"github.com/elap5e/penguin/pkg/net/msf/rpc"
 )
 
 type Data struct {
-	Version       uint16
-	ServiceMethod uint16
-	Uin           int64
-	EncryptMethod EncryptMethod
-	RandomKey     [16]byte
-	KeyVersion    int16
-	PublicKey     []byte
-	SharedSecret  [16]byte
-	Type          uint16
-	Code          uint8
-	TLVs          map[uint16]tlv.Codec
+	Version       uint16               `json:"version,omitempty"`
+	ServiceMethod uint16               `json:"service_method,omitempty"`
+	Uin           int64                `json:"uin,omitempty"`
+	EncryptMethod EncryptMethod        `json:"encrypt_method,omitempty"`
+	RandomKey     rpc.Key16Bytes       `json:"random_key,omitempty"`
+	KeyVersion    int16                `json:"key_version,omitempty"`
+	PublicKey     []byte               `json:"public_key,omitempty"`
+	SharedSecret  rpc.Key16Bytes       `json:"shared_secret,omitempty"`
+	Type          uint16               `json:"type,omitempty"`
+	Code          uint8                `json:"code,omitempty"`
+	TLVs          map[uint16]tlv.Codec `json:"tlvs,omitempty"`
 }
 
 type EncryptMethod uint8

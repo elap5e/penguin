@@ -16,7 +16,10 @@ package auth
 
 import (
 	"crypto/md5"
+	"encoding/json"
+	"log"
 	"strconv"
+	"time"
 
 	"github.com/elap5e/penguin/daemon/constant"
 	"github.com/elap5e/penguin/pkg/bytes"
@@ -34,9 +37,11 @@ func (m *Manager) SignIn(username, password string) (*Response, error) {
 		return nil, err
 	}
 	tickets := m.c.GetTickets(uin)
-	if len(tickets.D2.Key) != 0 {
+	p, _ := json.MarshalIndent(tickets, "", "  ")
+	log.Printf("tickets:\n%s", string(p))
+	if time.Now().Before(tickets.D2.Exp) {
 		return m.signInWithoutPassword(uin, false)
-	} else if len(tickets.A2.Key) != 0 {
+	} else if time.Now().Before(tickets.A2.Exp) {
 		return m.signInWithoutPassword(uin, true)
 	}
 	return m.signInWithPassword(uin, md5.Sum([]byte(password)))
@@ -45,6 +50,8 @@ func (m *Manager) SignIn(username, password string) (*Response, error) {
 func (m *Manager) signInWithPassword(uin int64, hash [16]byte) (*Response, error) {
 	username := strconv.FormatInt(uin, 10)
 	fake, sess, seq, serverTime := m.c.GetFakeSource(uin), m.c.GetSession(uin), m.c.GetNextSeq(), m.c.GetServerTime()
+	p, _ := json.MarshalIndent(sess, "", "  ")
+	log.Printf("sess:\n%s", string(p))
 	extraData := m.GetExtraData(uin)
 	tlvs := make(map[uint16]tlv.Codec)
 	tlvs[0x0018] = tlv.NewT18(constant.DstAppID, 0, uin, 0)

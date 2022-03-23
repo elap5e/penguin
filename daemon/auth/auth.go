@@ -15,10 +15,13 @@
 package auth
 
 import (
+	"context"
 	"crypto/md5"
+	"encoding/json"
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 
 	"github.com/elap5e/penguin/pkg/bytes"
 	"github.com/elap5e/penguin/pkg/crypto/tea"
@@ -28,50 +31,60 @@ import (
 )
 
 type Manager struct {
+	ctx context.Context
+
 	c rpc.Client
 
 	mapExtarData map[int64]*ExtraData
 }
 
+func NewManager(ctx context.Context, c rpc.Client) *Manager {
+	return &Manager{
+		ctx:          ctx,
+		c:            c,
+		mapExtarData: make(map[int64]*ExtraData),
+	}
+}
+
 type ExtraData struct {
-	Login []byte
-	T16A  []byte
-	T172  []byte
+	Login []byte `json:"login,omitempty"`
+	T16A  []byte `json:"t16a,omitempty"`
+	T172  []byte `json:"t172,omitempty"`
 
-	SessionAuth  []byte
-	PictureSign  []byte
-	PictureData  []byte
-	CaptchaSign  string
-	ErrorCode    uint32
-	ErrorTitle   string
-	ErrorMessage string
-	Message      string
-	SMSMobile    string
+	SessionAuth  []byte `json:"session_auth,omitempty"`
+	PictureSign  []byte `json:"picture_sign,omitempty"`
+	PictureData  []byte `json:"picture_data,omitempty"`
+	CaptchaSign  string `json:"captcha_sign,omitempty"`
+	ErrorCode    uint32 `json:"error_code,omitempty"`
+	ErrorTitle   string `json:"error_title,omitempty"`
+	ErrorMessage string `json:"error_message,omitempty"`
+	Message      string `json:"message,omitempty"`
+	SMSMobile    string `json:"sms_mobile,omitempty"`
 
-	T119 []byte
-	T150 []byte
-	T161 []byte
-	T174 []byte
-	T17B []byte
-	T401 [16]byte
-	T402 []byte
-	T403 []byte
-	T542 []byte
-	T546 []byte
-	T547 []byte
+	T119 []byte         `json:"t119,omitempty"`
+	T150 []byte         `json:"t150,omitempty"`
+	T161 []byte         `json:"t161,omitempty"`
+	T174 []byte         `json:"t174,omitempty"`
+	T17B []byte         `json:"t17b,omitempty"`
+	T401 rpc.Key16Bytes `json:"t401,omitempty"`
+	T402 []byte         `json:"t402,omitempty"`
+	T403 []byte         `json:"t403,omitempty"`
+	T542 []byte         `json:"t542,omitempty"`
+	T546 []byte         `json:"t546,omitempty"`
+	T547 []byte         `json:"t547,omitempty"`
 }
 
 type Request struct {
-	ServiceMethod string
-	Seq           int32
-	Data          *oicq.Data
+	ServiceMethod string     `json:"service_method,omitempty"`
+	Seq           int32      `json:"seq,omitempty"`
+	Data          *oicq.Data `json:"data,omitempty"`
 }
 
 type Response struct {
-	ServiceMethod string
-	Seq           int32
-	Data          *oicq.Data
-	ExtraData     *ExtraData
+	ServiceMethod string     `json:"service_method,omitempty"`
+	Seq           int32      `json:"seq,omitempty"`
+	Data          *oicq.Data `json:"data,omitempty"`
+	ExtraData     *ExtraData `json:"extra_data,omitempty"`
 }
 
 func (resp *Response) SetExtraData(tlvs map[uint16]tlv.Codec) error {
@@ -79,6 +92,11 @@ func (resp *Response) SetExtraData(tlvs map[uint16]tlv.Codec) error {
 	if extraData == nil {
 		resp.ExtraData = &ExtraData{}
 		extraData = resp.ExtraData
+	}
+	if v, ok := tlvs[0x000a].(*tlv.TLV); ok {
+		buf, _ := v.GetValue()
+		extraData.ErrorCode, _ = buf.ReadUint32()
+		extraData.ErrorTitle, _ = buf.ReadStringL16V()
 	}
 	if v, ok := tlvs[0x0104].(*tlv.TLV); ok {
 		extraData.SessionAuth = v.MustGetValue().Bytes()
@@ -137,17 +155,28 @@ func (resp *Response) SetExtraData(tlvs map[uint16]tlv.Codec) error {
 }
 
 func (m *Manager) GetExtraData(uin int64) *ExtraData {
-	return m.mapExtarData[uin]
+	extraData := m.mapExtarData[uin]
+	if extraData == nil {
+		m.mapExtarData[uin] = &ExtraData{}
+		extraData = m.mapExtarData[uin]
+	}
+	return extraData
 }
 
 func (m *Manager) request(req *Request) (*Response, error) {
+	if req.Seq < 1 {
+		req.Seq = m.c.GetNextSeq()
+	}
+
 	data := req.Data
 	sess := m.c.GetSession(data.Uin)
 	data.RandomKey = sess.RandomKey
 	data.KeyVersion = sess.KeyVersion
-	data.PublicKey = sess.PublicKey
+	data.PublicKey = sess.PrivateKey.Public().Bytes()
 	data.SharedSecret = sess.SharedSecret
 
+	p, _ := json.MarshalIndent(req, "", "  ")
+	log.Printf("d.athm.request:\n%s", string(p))
 	p, err := oicq.Marshal(data)
 	if err != nil {
 		return nil, err
@@ -173,11 +202,11 @@ func (m *Manager) request(req *Request) (*Response, error) {
 	if err := resp.SetExtraData(data.TLVs); err != nil {
 		return nil, err
 	}
+	p, _ = json.MarshalIndent(resp, "", "  ")
+	log.Printf("d.athm.response:\n%s", string(p))
 
 	extraData := m.GetExtraData(data.Uin)
 	switch data.Code {
-	default:
-		log.Printf("unknown code: 0x%02x", data.Code)
 	case 0x00:
 		// success
 		extraData.Login = resp.ExtraData.Login
@@ -224,11 +253,15 @@ func (m *Manager) request(req *Request) (*Response, error) {
 		// verify captcha or picture
 		m.c.SetSessionAuth(data.Uin, resp.ExtraData.SessionAuth)
 
-		extraData.T546 = resp.ExtraData.T546 // TODO: check
+		var code string
+		extraData.T547 = resp.ExtraData.T546 // TODO: check
 		if resp.ExtraData.CaptchaSign != "" {
-			log.Println("verify captcha, url:", resp.ExtraData.CaptchaSign)
+			log.Println("verify captcha, url:", strings.ReplaceAll(resp.ExtraData.CaptchaSign, "https://", "https://elap5e.github.io/kits/"))
 			// TODO: verify captcha
-			return m.VerifyCaptcha(data.Uin, []byte("code"))
+			fmt.Printf(">>> ")
+			fmt.Scanln(&code)
+			log.Printf("[%s]\n", code)
+			return m.VerifyCaptcha(data.Uin, []byte(code))
 		} else {
 			log.Println("verify picture")
 			// TODO: verify picture
@@ -272,34 +305,36 @@ func (m *Manager) request(req *Request) (*Response, error) {
 		log.Println("resend sms code, mobile:", resp.ExtraData.SMSMobile)
 		return m.resendSMSCode(data.Uin)
 	case 0x01:
-		log.Println("invalid login, error:", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
+		log.Printf("invalid login, error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
 		return nil, fmt.Errorf("invalid password")
 	case 0x06:
-		log.Println("not implement, error:", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
+		log.Printf("not implement, error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
 	case 0x09:
-		log.Println("invalid service, error:", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
+		log.Printf("invalid service, error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
 	case 0x0a:
-		log.Println("error:", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
+		log.Printf("error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
 		return nil, fmt.Errorf("service temporarily unavailable")
 	case 0x10:
-		log.Println("session expired, error:", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
+		log.Printf("session expired, error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
 	case 0x28:
-		log.Println("protection mode, error:", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
+		log.Printf("protection mode, error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
 	case 0x9a:
-		log.Println("error:", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
+		log.Printf("error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
 		return nil, fmt.Errorf("service temporarily unavailable")
 	case 0xa1:
-		log.Println("error:", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
+		log.Printf("error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
 		return nil, fmt.Errorf("too many sms verify requests")
 	case 0xa2:
-		log.Println("error:", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
+		log.Printf("error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
 		return nil, fmt.Errorf("frequent sms verify requests")
 	case 0xa4:
-		log.Println("error:", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
+		log.Printf("error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
 		return nil, fmt.Errorf("bad requests")
 	case 0xed:
-		log.Println("invalid device, error:", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
+		log.Printf("invalid device, error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
 		return nil, fmt.Errorf("too many failures")
+	default:
+		log.Printf("unknown code: 0x%02x", data.Code)
 	}
 	return resp, nil
 }

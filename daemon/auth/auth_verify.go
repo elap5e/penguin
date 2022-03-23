@@ -38,7 +38,7 @@ func (m *Manager) VerifyCaptcha(uin int64, code []byte, sign ...[]byte) (*Respon
 	extraData := m.GetExtraData(uin)
 	fake, sess := m.c.GetFakeSource(uin), m.c.GetSession(uin)
 	tlvs := make(map[uint16]tlv.Codec)
-	if len(sign) > 0 {
+	if len(sign) == 0 {
 		tlvs[0x0193] = tlv.NewT193(code)
 	} else {
 		tlvs[0x0002] = tlv.NewT2(code, sign[0])

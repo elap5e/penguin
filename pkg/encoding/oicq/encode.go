@@ -26,7 +26,7 @@ func Marshal(d *Data) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	b, err := marshalHead(d)
+	b, err := marshalBody(d)
 	if err != nil {
 		return nil, err
 	}

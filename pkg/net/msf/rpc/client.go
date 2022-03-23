@@ -15,8 +15,11 @@
 package rpc
 
 import (
+	"encoding/hex"
 	"net"
+	"time"
 
+	"github.com/elap5e/penguin/pkg/crypto/ecdh"
 	"github.com/elap5e/penguin/pkg/encoding/tlv"
 )
 
@@ -37,27 +40,39 @@ type Client interface {
 }
 
 type Session struct {
-	Auth   []byte
-	Cookie []byte
-	KSID   []byte
+	Auth   []byte `json:"auth,omitempty"`
+	Cookie []byte `json:"cookie,omitempty"`
+	KSID   []byte `json:"ksid,omitempty"`
 
-	RandomKey  [16]byte
-	RandomPass [16]byte
+	RandomKey  Key16Bytes `json:"random_key,omitempty"`
+	RandomPass Key16Bytes `json:"random_pass,omitempty"`
 
-	KeyVersion   int16
-	PublicKey    []byte
-	SharedSecret [16]byte
+	PrivateKey   *ecdh.PrivateKey `json:"-"`
+	KeyVersion   int16            `json:"key_version,omitempty"`
+	SharedSecret Key16Bytes       `json:"shared_secret,omitempty"`
 }
 
 type Tickets struct {
-	A1 Ticket
-	A2 Ticket
-	D2 Ticket
+	A1 Ticket `json:"a1,omitempty"`
+	A2 Ticket `json:"a2,omitempty"`
+	D2 Ticket `json:"d2,omitempty"`
 }
 
 type Ticket struct {
-	Key [16]byte
-	Sig []byte
+	Key Key16Bytes `json:"key,omitempty"`
+	Sig []byte     `json:"sig,omitempty"`
+	Exp time.Time  `json:"exp,omitempty"`
+	Iss time.Time  `json:"iss,omitempty"`
+}
+
+type Key16Bytes [16]byte
+
+func (v Key16Bytes) MarshalJSON() ([]byte, error) {
+	return []byte("\"" + hex.EncodeToString(v[:]) + "\""), nil
+}
+
+func (v *Key16Bytes) UnmarshalJSON(p []byte) error {
+	return nil
 }
 
 type FakeSource struct {

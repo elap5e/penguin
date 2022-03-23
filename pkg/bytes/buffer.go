@@ -36,18 +36,6 @@ func (b *Buffer) ReadBool() (bool, error) {
 	return n != 0, nil
 }
 
-func (b *Buffer) ReadInt8() (int8, error) {
-	n, err := b.ReadByte()
-	if err != nil {
-		return 0, err
-	}
-	return int8(n), nil
-}
-
-func (b *Buffer) ReadByte() (uint8, error) {
-	return b.ReadByte()
-}
-
 func (b *Buffer) ReadInt16() (int16, error) {
 	n, err := b.ReadUint16()
 	if err != nil {
@@ -121,7 +109,7 @@ func (b *Buffer) ReadStringL16V() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	p := make([]byte, n-2)
+	p := make([]byte, n)
 	if _, err := b.Read(p); err != nil {
 		return "", err
 	}
@@ -133,7 +121,7 @@ func (b *Buffer) ReadStringL16() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	p := make([]byte, n)
+	p := make([]byte, n-2)
 	if _, err := b.Read(p); err != nil {
 		return "", err
 	}
@@ -203,7 +191,7 @@ func (b *Buffer) WriteBytesL16V(s []byte, l ...int16) (int, error) {
 			n = int(l[0])
 		}
 	}
-	n, _ = b.WriteUint16(uint16(n))
+	b.WriteUint16(uint16(n))
 	n, _ = b.Write(s[:n])
 	return n + 2, nil
 }
@@ -229,7 +217,7 @@ func (b *Buffer) WriteStringL16V(s string, l ...int16) (int, error) {
 			n = int(l[0])
 		}
 	}
-	n, _ = b.WriteUint16(uint16(n))
+	b.WriteUint16(uint16(n))
 	n, _ = b.WriteString(s)
 	return n + 2, nil
 }
