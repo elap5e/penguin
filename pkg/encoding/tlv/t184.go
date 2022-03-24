@@ -15,34 +15,42 @@
 package tlv
 
 import (
+	"crypto/md5"
+	"encoding/binary"
+
 	"github.com/elap5e/penguin/pkg/bytes"
 )
 
-type T542 struct {
+type T184 struct {
 	*TLV
-	token []byte
+	salt     uint64
+	password string
 }
 
-func NewT542(token []byte) *T542 {
-	return &T542{
-		TLV:   NewTLV(0x0542, 0x0000, nil),
-		token: token,
+func NewT184(salt uint64, password string) *T184 {
+	return &T184{
+		TLV:      NewTLV(0x0184, 0x0000, nil),
+		salt:     salt,
+		password: password,
 	}
 }
 
-func (t *T542) ReadFrom(b *bytes.Buffer) error {
+func (t *T184) ReadFrom(b *bytes.Buffer) error {
 	if err := t.TLV.ReadFrom(b); err != nil {
 		return err
 	}
-	v, err := t.TLV.GetValue()
+	_, err := t.TLV.GetValue()
 	if err != nil {
 		return err
 	}
-	t.token = v.Bytes()
-	return nil
+	panic("not implement")
 }
 
-func (t *T542) WriteTo(b *bytes.Buffer) error {
-	t.TLV.SetValue(bytes.NewBuffer(t.token))
+func (t *T184) WriteTo(b *bytes.Buffer) error {
+	v := md5.Sum([]byte(t.password))
+	tmp := append(v[:], make([]byte, 8)...)
+	binary.BigEndian.PutUint64(tmp[16:], t.salt)
+	v = md5.Sum(tmp)
+	t.TLV.SetValue(bytes.NewBuffer(v[:]))
 	return t.TLV.WriteTo(b)
 }

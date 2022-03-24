@@ -17,12 +17,18 @@ package auth
 import (
 	"context"
 	"crypto/md5"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
+	"net"
 	"strconv"
 	"strings"
 
+	"google.golang.org/protobuf/proto"
+
+	"github.com/elap5e/penguin/daemon/auth/pb"
 	"github.com/elap5e/penguin/pkg/bytes"
 	"github.com/elap5e/penguin/pkg/crypto/tea"
 	"github.com/elap5e/penguin/pkg/encoding/oicq"
@@ -46,6 +52,13 @@ func NewManager(ctx context.Context, c rpc.Client) *Manager {
 	}
 }
 
+type CaptchaSign struct {
+	Ticket string `json:"ticket"`
+	Random string `json:"random"`
+	Return string `json:"return"`
+	AppID  uint64 `json:"app_id"`
+}
+
 type ExtraData struct {
 	Login []byte `json:"login,omitempty"`
 	T16A  []byte `json:"t16a,omitempty"`
@@ -61,11 +74,17 @@ type ExtraData struct {
 	Message      string `json:"message,omitempty"`
 	SMSMobile    string `json:"sms_mobile,omitempty"`
 
+	Salt uint64 `json:"salt,omitempty"`
+
+	SignInCodeSign []byte                     `json:"signin_code_sign,omitempty"`
+	ThirdPartLogin *pb.ThirdPartLogin_RspBody `json:"third_part_login,omitempty"`
+
 	T119 []byte          `json:"t119,omitempty"`
 	T150 []byte          `json:"t150,omitempty"`
 	T161 []byte          `json:"t161,omitempty"`
 	T174 []byte          `json:"t174,omitempty"`
 	T17B []byte          `json:"t17b,omitempty"`
+	T182 []byte          `json:"t182,omitempty"`
 	T401 *rpc.Key16Bytes `json:"t401,omitempty"`
 	T402 []byte          `json:"t402,omitempty"`
 	T403 []byte          `json:"t403,omitempty"`
@@ -93,63 +112,65 @@ func (resp *Response) SetExtraData(tlvs map[uint16]tlv.Codec) error {
 		resp.ExtraData = &ExtraData{}
 		extraData = resp.ExtraData
 	}
-	if v, ok := tlvs[0x000a].(*tlv.TLV); ok {
-		buf, _ := v.GetValue()
-		extraData.ErrorCode, _ = buf.ReadUint32()
-		extraData.ErrorTitle, _ = buf.ReadStringL16V()
-	}
-	if v, ok := tlvs[0x0104].(*tlv.TLV); ok {
-		extraData.SessionAuth = v.MustGetValue().Bytes()
-	}
-	if v, ok := tlvs[0x0105].(*tlv.TLV); ok {
-		buf, _ := v.GetValue()
-		extraData.PictureSign, _ = buf.ReadBytesL16V()
-		extraData.PictureData, _ = buf.ReadBytesL16V()
-	}
-	if v, ok := tlvs[0x0119].(*tlv.TLV); ok {
-		extraData.T119 = v.MustGetValue().Bytes()
-	}
-	if v, ok := tlvs[0x0174].(*tlv.TLV); ok {
-		extraData.T174 = v.MustGetValue().Bytes()
-	}
-	if v, ok := tlvs[0x017b].(*tlv.TLV); ok {
-		extraData.T17B = v.MustGetValue().Bytes()
-	}
-	if v, ok := tlvs[0x0192].(*tlv.TLV); ok {
-		extraData.CaptchaSign = string(v.MustGetValue().Bytes())
-	}
-	if v, ok := tlvs[0x0146].(*tlv.TLV); ok {
-		buf, _ := v.GetValue()
-		extraData.ErrorCode, _ = buf.ReadUint32()
-		extraData.ErrorTitle, _ = buf.ReadStringL16V()
-		extraData.ErrorMessage, _ = buf.ReadStringL16V()
-	}
-	if v, ok := tlvs[0x0150].(*tlv.TLV); ok {
-		extraData.T150 = v.MustGetValue().Bytes()
-	}
-	if v, ok := tlvs[0x0161].(*tlv.TLV); ok {
-		extraData.T161 = v.MustGetValue().Bytes()
-	}
-	if v, ok := tlvs[0x017e].(*tlv.TLV); ok {
-		extraData.Message = string(v.MustGetValue().Bytes())
-	}
-	if v, ok := tlvs[0x0178].(*tlv.TLV); ok {
-		buf, _ := v.GetValue()
-		_, _ = buf.ReadStringL16V()
-		mobile, _ := buf.ReadStringL16V()
-		extraData.SMSMobile = mobile
-	}
-	if v, ok := tlvs[0x0402].(*tlv.TLV); ok {
-		extraData.T402 = v.MustGetValue().Bytes()
-	}
-	if v, ok := tlvs[0x0403].(*tlv.TLV); ok {
-		extraData.T403 = v.MustGetValue().Bytes()
-	}
-	if v, ok := tlvs[0x0537].(*tlv.TLV); ok {
-		extraData.Login, _ = v.MustGetValue().ReadBytesL16V()
-	}
-	if v, ok := tlvs[0x0546].(*tlv.TLV); ok {
-		extraData.T546 = v.MustGetValue().Bytes()
+	for k, v := range tlvs {
+		v := v.(*tlv.TLV)
+		switch k {
+		default:
+			log.Printf("t%x not parsed:\n%s\n", k, hex.Dump(v.MustGetValue().Bytes()))
+		case 0x000a:
+			buf, _ := v.GetValue()
+			extraData.ErrorCode, _ = buf.ReadUint32()
+			extraData.ErrorTitle, _ = buf.ReadStringL16V()
+		case 0x0104:
+			extraData.SessionAuth = v.MustGetValue().Bytes()
+		case 0x0105:
+			buf, _ := v.GetValue()
+			extraData.PictureSign, _ = buf.ReadBytesL16V()
+			extraData.PictureData, _ = buf.ReadBytesL16V()
+		case 0x0119:
+			extraData.T119 = v.MustGetValue().Bytes()
+		case 0x0126:
+			buf, _ := v.GetValue()
+			_, _ = buf.ReadUint16()
+			extraData.SignInCodeSign, _ = buf.ReadBytesL16V()
+		case 0x0174:
+			extraData.T174 = v.MustGetValue().Bytes()
+		case 0x017b:
+			extraData.T17B = v.MustGetValue().Bytes()
+		case 0x0182:
+			extraData.T182 = v.MustGetValue().Bytes()
+		case 0x0183:
+			extraData.Salt, _ = v.MustGetValue().ReadUint64()
+		case 0x0192:
+			extraData.CaptchaSign = string(v.MustGetValue().Bytes())
+		case 0x0146:
+			buf, _ := v.GetValue()
+			extraData.ErrorCode, _ = buf.ReadUint32()
+			extraData.ErrorTitle, _ = buf.ReadStringL16V()
+			extraData.ErrorMessage, _ = buf.ReadStringL16V()
+		case 0x0150:
+			extraData.T150 = v.MustGetValue().Bytes()
+		case 0x0161:
+			extraData.T161 = v.MustGetValue().Bytes()
+		case 0x017e:
+			extraData.Message = string(v.MustGetValue().Bytes())
+		case 0x0178:
+			buf, _ := v.GetValue()
+			_, _ = buf.ReadStringL16V()
+			mobile, _ := buf.ReadStringL16V()
+			extraData.SMSMobile = mobile
+		case 0x0402:
+			extraData.T402 = v.MustGetValue().Bytes()
+		case 0x0403:
+			extraData.T403 = v.MustGetValue().Bytes()
+		case 0x0537:
+			extraData.Login, _ = v.MustGetValue().ReadBytesL16V()
+		case 0x0543:
+			extraData.ThirdPartLogin = &pb.ThirdPartLogin_RspBody{}
+			_ = proto.Unmarshal(v.MustGetValue().Bytes(), extraData.ThirdPartLogin)
+		case 0x0546:
+			extraData.T546 = v.MustGetValue().Bytes()
+		}
 	}
 	return nil
 }
@@ -182,6 +203,27 @@ func (m *Manager) request(req *Request) (*Response, error) {
 	data, extraData := resp.Data, m.GetExtraData(resp.Data.Uin)
 	switch data.Code {
 	case 0x00:
+		// VerifySignInCode
+		if data.Type == 0x0012 {
+			m.c.SetSessionAuth(data.Uin, resp.ExtraData.SessionAuth)
+
+			login := resp.ExtraData.ThirdPartLogin.MsgRspCmd_18.MsgRspPhoneSmsExtendLogin
+			for k, v := range login.BindUinInfo {
+				log.Printf("%d: %s(%s) photo:%s", k, v.Nick, v.MaskUin, v.ImageUrl)
+			}
+			log.Println(login.UnbindWording)
+
+			// select account and input password
+			var code string
+			fmt.Printf(">>> ")
+			fmt.Scanln(&code)
+			line, _ := strconv.Atoi(code)
+			info := login.BindUinInfo[line]
+			extraData.T542 = info.EncryptUin
+
+			return m.name2Uin(info.Nick)
+		}
+
 		// success
 		extraData.Login = resp.ExtraData.Login
 
@@ -230,10 +272,21 @@ func (m *Manager) request(req *Request) (*Response, error) {
 		var code string
 		extraData.T546 = resp.ExtraData.T546 // TODO: check
 		if resp.ExtraData.CaptchaSign != "" {
-			log.Println("verify captcha, url:", strings.ReplaceAll(resp.ExtraData.CaptchaSign, "https://", "https://elap5e.github.io/kits/"))
-			fmt.Printf(">>> ")
-			fmt.Scanln(&code)
-			return m.VerifyCaptcha(data.Uin, []byte(code))
+			l, err := net.Listen("tcp", "127.0.0.1:0")
+			if err != nil {
+				return nil, err
+			}
+			addr := l.Addr().(*net.TCPAddr).String()
+			log.Println("verify captcha, url:", strings.ReplaceAll(
+				resp.ExtraData.CaptchaSign,
+				"https://ssl.captcha.qq.com/template/wireless_mqq_captcha.html",
+				"http://"+addr+"/index.html",
+			))
+			sign, err := serveHTTPVerifyCaptcha(l)
+			if err != nil {
+				return nil, err
+			}
+			return m.VerifyCaptcha(data.Uin, []byte(sign.Ticket))
 		} else {
 			log.Println("verify picture")
 			fmt.Printf(">>> ")
@@ -250,6 +303,18 @@ func (m *Manager) request(req *Request) (*Response, error) {
 		fmt.Printf(">>> ")
 		fmt.Scanln(&code)
 		return m.VerifySMSCode(data.Uin, []byte(code))
+	case 0xd0:
+		// verify signin code
+		m.c.SetSessionAuth(data.Uin, resp.ExtraData.SessionAuth)
+
+		extraData.SignInCodeSign = resp.ExtraData.SignInCodeSign
+		extraData.T182 = resp.ExtraData.T182
+		extraData.Salt = resp.ExtraData.Salt
+		log.Println("verify signin code")
+		var code string
+		fmt.Printf(">>> ")
+		fmt.Scanln(&code)
+		return m.VerifySignInCode([]byte(code))
 	case 0xcc:
 		// unlock device
 		m.c.SetSessionAuth(data.Uin, resp.ExtraData.SessionAuth)
@@ -352,4 +417,14 @@ func checkUsername(username string) bool {
 		return false
 	}
 	return true
+}
+
+func randomPassword() string {
+	password := [16]byte{}
+	rand.Read(password[:])
+	strs := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	for i := range password {
+		password[i] = strs[password[i]%52]
+	}
+	return string(password[:])
 }

@@ -15,6 +15,14 @@
 package auth
 
 import (
+	"fmt"
+	"log"
+	"net"
+	"strings"
+
+	"google.golang.org/protobuf/proto"
+
+	"github.com/elap5e/penguin/daemon/auth/pb"
 	"github.com/elap5e/penguin/daemon/constant"
 	"github.com/elap5e/penguin/pkg/bytes"
 	"github.com/elap5e/penguin/pkg/encoding/tlv"
@@ -38,6 +46,40 @@ func (m *Manager) verifyCaptcha(uin int64, code []byte, sign ...[]byte) (*Respon
 	tlvs[0x0116] = tlv.NewT116(fake.App.MiscBitMap, constant.SubSigMap, constant.SubAppIDList)
 	tlvs[0x0547] = tlv.NewT547(m.GetExtraData(uin).T547)
 	return m.requestSignIn(0, uin, 2, tlvs)
+}
+
+func (m *Manager) verifySignInWithCodeCaptach(username string) ([]byte, error) {
+	account := username
+	country := uint32(86)
+	if strings.HasPrefix(username, "00") {
+		return nil, fmt.Errorf("temperory not support country code %s", username)
+	}
+	l, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		return nil, err
+	}
+	addr := l.Addr().(*net.TCPAddr).String()
+	log.Println("verify captcha, url: http://" + addr + "/index.html")
+	sign, err := serveHTTPVerifySignInWithCodeCaptach(l)
+	if err != nil {
+		return nil, err
+	}
+	return proto.Marshal(&pb.GatewayVerify_ReqBody{
+		MsgReqBindPhoneLogin: &pb.GatewayVerify_ReqBindPhoneLogin{
+			MsgPicVerifyInfo: &pb.GatewayVerify_PicVerifyInfo{
+				VerifySig: []byte(sign.Ticket),
+				RandKey:   []byte(sign.Random),
+				Appid:     sign.AppID,
+			},
+		},
+		MsgReqCmd_17: &pb.GatewayVerify_ReqCmd17{
+			MsgReqPhoneSmsExtendLogin: &pb.GatewayVerify_ReqPhoneSmsExtendLogin{
+				SupportFlag: 1,
+			},
+			MobilePhone: account,
+			CountryCode: country,
+		},
+	})
 }
 
 func (m *Manager) VerifySMSCode(uin int64, code []byte) (*Response, error) {

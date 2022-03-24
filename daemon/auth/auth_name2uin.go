@@ -25,7 +25,7 @@ import (
 
 // ACTION_WTLOGIN_REFRESH_SMS_DATA
 func (m *Manager) name2Uin(username string) (*Response, error) {
-	fake, sess, seq := m.c.GetFakeSource(0), m.c.GetSession(0), m.c.GetNextSeq()
+	extraData, fake, sess, seq := m.GetExtraData(0), m.c.GetFakeSource(0), m.c.GetSession(0), m.c.GetNextSeq()
 	tlvs := make(map[uint16]tlv.Codec)
 	tlvs[0x0100] = tlv.NewT100(constant.DstAppID, constant.OpenAppID, 0, constant.MainSigMap, fake.App.SSOVer)
 	tlvs[0x0112] = tlv.NewT112([]byte(username))
@@ -69,6 +69,8 @@ func (m *Manager) name2Uin(username string) (*Response, error) {
 	})
 	// DISABLED: nativeGetTestData
 	// tlvs[0x0548] = tlv.NewT548([]byte("nativeGetTestData"))
+	tlvs[0x0104] = tlv.NewT104(sess.Auth)
+	tlvs[0x0542] = tlv.NewT542(extraData.T542)
 	return m.requestName2Uin(seq, 0, 4, tlvs)
 }
 

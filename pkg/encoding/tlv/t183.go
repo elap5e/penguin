@@ -18,19 +18,19 @@ import (
 	"github.com/elap5e/penguin/pkg/bytes"
 )
 
-type T542 struct {
+type T183 struct {
 	*TLV
-	token []byte
+	salt uint64
 }
 
-func NewT542(token []byte) *T542 {
-	return &T542{
-		TLV:   NewTLV(0x0542, 0x0000, nil),
-		token: token,
+func NewT183(salt uint64) *T183 {
+	return &T183{
+		TLV:  NewTLV(0x0183, 0x0000, nil),
+		salt: salt,
 	}
 }
 
-func (t *T542) ReadFrom(b *bytes.Buffer) error {
+func (t *T183) ReadFrom(b *bytes.Buffer) error {
 	if err := t.TLV.ReadFrom(b); err != nil {
 		return err
 	}
@@ -38,11 +38,15 @@ func (t *T542) ReadFrom(b *bytes.Buffer) error {
 	if err != nil {
 		return err
 	}
-	t.token = v.Bytes()
+	if t.salt, err = v.ReadUint64(); err != nil {
+		return err
+	}
 	return nil
 }
 
-func (t *T542) WriteTo(b *bytes.Buffer) error {
-	t.TLV.SetValue(bytes.NewBuffer(t.token))
+func (t *T183) WriteTo(b *bytes.Buffer) error {
+	v := bytes.NewBuffer([]byte{})
+	v.WriteUint64(t.salt)
+	t.TLV.SetValue(v)
 	return t.TLV.WriteTo(b)
 }

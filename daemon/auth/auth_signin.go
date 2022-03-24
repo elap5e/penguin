@@ -43,7 +43,11 @@ func (m *Manager) SignIn(username, password string) (*Response, error) {
 		} else {
 			username = "00" + username[1:]
 		}
-		return m.signInWithCode(username)
+		token, err := m.verifySignInWithCodeCaptach(username)
+		if err != nil {
+			return nil, err
+		}
+		return m.signInWithCode(username, token)
 	} else if !checkUsername(username) {
 		re, err := regexp.Compile(`^([0-9]{5,10})@qq\.com$`)
 		if err != nil {

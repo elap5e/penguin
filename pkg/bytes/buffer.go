@@ -68,6 +68,22 @@ func (b *Buffer) ReadUint32() (uint32, error) {
 	return binary.BigEndian.Uint32(p), nil
 }
 
+func (b *Buffer) ReadInt64() (int64, error) {
+	n, err := b.ReadUint64()
+	if err != nil {
+		return 0, err
+	}
+	return int64(n), nil
+}
+
+func (b *Buffer) ReadUint64() (uint64, error) {
+	p := make([]byte, 8)
+	if _, err := b.Read(p); err != nil {
+		return 0, err
+	}
+	return binary.BigEndian.Uint64(p), nil
+}
+
 func (b *Buffer) ReadBytesL16V() ([]byte, error) {
 	n, err := b.ReadUint16()
 	if err != nil {

@@ -18,19 +18,21 @@ import (
 	"github.com/elap5e/penguin/pkg/bytes"
 )
 
-type T542 struct {
+type T182 struct {
 	*TLV
-	token []byte
+	msgCnt    uint16
+	timeLimit uint16
 }
 
-func NewT542(token []byte) *T542 {
-	return &T542{
-		TLV:   NewTLV(0x0542, 0x0000, nil),
-		token: token,
+func NewT182(msgCnt, timeLimit uint16) *T182 {
+	return &T182{
+		TLV:       NewTLV(0x0182, 0x0000, nil),
+		msgCnt:    msgCnt,
+		timeLimit: timeLimit,
 	}
 }
 
-func (t *T542) ReadFrom(b *bytes.Buffer) error {
+func (t *T182) ReadFrom(b *bytes.Buffer) error {
 	if err := t.TLV.ReadFrom(b); err != nil {
 		return err
 	}
@@ -38,11 +40,31 @@ func (t *T542) ReadFrom(b *bytes.Buffer) error {
 	if err != nil {
 		return err
 	}
-	t.token = v.Bytes()
+	if _, err = v.ReadByte(); err != nil {
+		return err
+	}
+	if t.msgCnt, err = v.ReadUint16(); err != nil {
+		return err
+	}
+	if t.timeLimit, err = v.ReadUint16(); err != nil {
+		return err
+	}
 	return nil
 }
 
-func (t *T542) WriteTo(b *bytes.Buffer) error {
-	t.TLV.SetValue(bytes.NewBuffer(t.token))
+func (t *T182) GetMessageCount() (uint16, error) {
+	return t.msgCnt, nil
+}
+
+func (t *T182) GetTimeLimit() (uint16, error) {
+	return t.timeLimit, nil
+}
+
+func (t *T182) WriteTo(b *bytes.Buffer) error {
+	v := bytes.NewBuffer([]byte{})
+	v.WriteByte(0)
+	v.WriteUint16(t.msgCnt)
+	v.WriteUint16(t.timeLimit)
+	t.TLV.SetValue(v)
 	return t.TLV.WriteTo(b)
 }

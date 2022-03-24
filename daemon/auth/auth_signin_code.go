@@ -16,6 +16,7 @@ package auth
 
 import (
 	"crypto/md5"
+	"log"
 
 	"github.com/elap5e/penguin/daemon/constant"
 	"github.com/elap5e/penguin/pkg/bytes"
@@ -23,7 +24,7 @@ import (
 	"github.com/elap5e/penguin/pkg/encoding/tlv/pb"
 )
 
-func (m *Manager) signInWithCode(username string) (*Response, error) {
+func (m *Manager) signInWithCode(username string, token []byte) (*Response, error) {
 	fake, sess, seq := m.c.GetFakeSource(0), m.c.GetSession(0), m.c.GetNextSeq()
 	tlvs := make(map[uint16]tlv.Codec)
 	tlvs[0x0100] = tlv.NewT100(constant.DstAppID, constant.OpenAppID, 0, constant.MainSigMap, fake.App.SSOVer)
@@ -50,7 +51,23 @@ func (m *Manager) signInWithCode(username string) (*Response, error) {
 	tlvs[0x0116] = tlv.NewT116(fake.App.MiscBitMap, constant.SubSigMap, constant.SubAppIDList)
 	// DISABLED: nativeGetTestData
 	// tlvs[0x0548] = tlv.NewT548([]byte("nativeGetTestData"))
+	tlvs[0x0542] = tlv.NewT542(token)
 	return m.requestSignIn(seq, 0, 17, tlvs)
+}
+
+func (m *Manager) VerifySignInCode(code []byte) (*Response, error) {
+	extraData, fake, sess := m.GetExtraData(0), m.c.GetFakeSource(0), m.c.GetSession(0)
+	password := randomPassword()
+	log.Println(password)
+	tlvs := make(map[uint16]tlv.Codec)
+	tlvs[0x0104] = tlv.NewT104(sess.Auth)
+	tlvs[0x0008] = tlv.NewT8(0, constant.LocaleID, 0)
+	tlvs[0x0127] = tlv.NewT127(code, extraData.SignInCodeSign)
+	tlvs[0x0184] = tlv.NewT184(extraData.Salt, password)
+	tlvs[0x0116] = tlv.NewT116(fake.App.MiscBitMap, constant.SubSigMap, constant.SubAppIDList)
+	// DISABLED: nativeGetTestData
+	// tlvs[0x0548] = tlv.NewT548([]byte("nativeGetTestData"))
+	return m.requestSignIn(0, 0, 18, tlvs)
 }
 
 // ACTION_WTLOGIN_REFRESH_SMS_VERIFY_LOGIN_CODE

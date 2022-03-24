@@ -18,19 +18,19 @@ import (
 	"github.com/elap5e/penguin/pkg/bytes"
 )
 
-type T542 struct {
+type T126 struct {
 	*TLV
-	token []byte
+	random []byte
 }
 
-func NewT542(token []byte) *T542 {
-	return &T542{
-		TLV:   NewTLV(0x0542, 0x0000, nil),
-		token: token,
+func NewT126(random []byte) *T126 {
+	return &T126{
+		TLV:    NewTLV(0x0126, 0, nil),
+		random: random,
 	}
 }
 
-func (t *T542) ReadFrom(b *bytes.Buffer) error {
+func (t *T126) ReadFrom(b *bytes.Buffer) error {
 	if err := t.TLV.ReadFrom(b); err != nil {
 		return err
 	}
@@ -38,11 +38,23 @@ func (t *T542) ReadFrom(b *bytes.Buffer) error {
 	if err != nil {
 		return err
 	}
-	t.token = v.Bytes()
+	if _, err = v.ReadUint16(); err != nil {
+		return err
+	}
+	if t.random, err = v.ReadBytesL16V(); err != nil {
+		return err
+	}
 	return nil
 }
 
-func (t *T542) WriteTo(b *bytes.Buffer) error {
-	t.TLV.SetValue(bytes.NewBuffer(t.token))
+func (t *T126) GetRandom() ([]byte, error) {
+	return t.random, nil
+}
+
+func (t *T126) WriteTo(b *bytes.Buffer) error {
+	v := bytes.NewBuffer([]byte{})
+	v.WriteUint16(0)
+	v.WriteBytesL16V(t.random)
+	t.TLV.SetValue(v)
 	return t.TLV.WriteTo(b)
 }

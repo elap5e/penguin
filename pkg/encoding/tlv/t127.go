@@ -18,19 +18,21 @@ import (
 	"github.com/elap5e/penguin/pkg/bytes"
 )
 
-type T542 struct {
+type T127 struct {
 	*TLV
-	token []byte
+	code []byte
+	sign []byte
 }
 
-func NewT542(token []byte) *T542 {
-	return &T542{
-		TLV:   NewTLV(0x0542, 0x0000, nil),
-		token: token,
+func NewT127(code, sign []byte) *T127 {
+	return &T127{
+		TLV:  NewTLV(0x0127, 0x0000, nil),
+		code: code,
+		sign: sign,
 	}
 }
 
-func (t *T542) ReadFrom(b *bytes.Buffer) error {
+func (t *T127) ReadFrom(b *bytes.Buffer) error {
 	if err := t.TLV.ReadFrom(b); err != nil {
 		return err
 	}
@@ -38,11 +40,23 @@ func (t *T542) ReadFrom(b *bytes.Buffer) error {
 	if err != nil {
 		return err
 	}
-	t.token = v.Bytes()
+	if _, err = v.ReadUint16(); err != nil {
+		return err
+	}
+	if t.code, err = v.ReadBytesL16V(); err != nil {
+		return err
+	}
+	if t.sign, err = v.ReadBytesL16V(); err != nil {
+		return err
+	}
 	return nil
 }
 
-func (t *T542) WriteTo(b *bytes.Buffer) error {
-	t.TLV.SetValue(bytes.NewBuffer(t.token))
+func (t *T127) WriteTo(b *bytes.Buffer) error {
+	v := bytes.NewBuffer([]byte{})
+	v.WriteUint16(0x0000)
+	v.WriteBytesL16V(t.code)
+	v.WriteBytesL16V(t.sign)
+	t.TLV.SetValue(v)
 	return t.TLV.WriteTo(b)
 }
