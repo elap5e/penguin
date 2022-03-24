@@ -16,7 +16,9 @@ package daemon
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/elap5e/penguin/config"
 	"github.com/elap5e/penguin/daemon/account"
 	"github.com/elap5e/penguin/daemon/auth"
 	"github.com/elap5e/penguin/daemon/contact"
@@ -27,6 +29,7 @@ import (
 
 type Daemon struct {
 	ctx context.Context
+	cfg *config.Config
 
 	c rpc.Client
 
@@ -36,9 +39,10 @@ type Daemon struct {
 	msgm *message.Manager
 }
 
-func New(ctx context.Context) *Daemon {
+func New(ctx context.Context, cfg *config.Config) *Daemon {
 	d := &Daemon{
 		ctx: ctx,
+		cfg: cfg,
 		c:   msf.NewClient(ctx),
 	}
 	d.athm = auth.NewManager(d.ctx, d.c)
@@ -46,8 +50,8 @@ func New(ctx context.Context) *Daemon {
 }
 
 func (d *Daemon) Run() error {
-	if _, err := d.athm.SignIn("10000", "123456"); err != nil {
-		return err
+	if _, err := d.athm.SignIn(d.cfg.Username, d.cfg.Password); err != nil {
+		return fmt.Errorf("sign in: %w", err)
 	}
 	return nil
 }

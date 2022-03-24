@@ -16,9 +16,10 @@ package auth
 
 import (
 	"crypto/md5"
-	"encoding/json"
-	"log"
+	"fmt"
+	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/elap5e/penguin/daemon/constant"
@@ -29,36 +30,54 @@ import (
 	"github.com/elap5e/penguin/pkg/net/msf/service"
 )
 
-// ACTION_WTLOGIN_GET_ST_WITH_PASSWD
-// ACTION_WTLOGIN_GET_ST_WITHOUT_PASSWD
+const (
+	LoginTypeUin = uint32(1)
+	LoginTypeSMS = uint32(3)
+)
+
 func (m *Manager) SignIn(username, password string) (*Response, error) {
-	uin, err := strconv.ParseInt(username, 10, 64)
-	if err != nil {
-		return nil, err
+	uin := int64(0)
+	if strings.HasPrefix(username, "+") {
+		if strings.HasPrefix(username, "+86") {
+			username = username[3:]
+		} else {
+			username = "00" + username[1:]
+		}
+		return m.signInWithCode(username)
+	} else if !checkUsername(username) {
+		re, err := regexp.Compile(`^([0-9]{5,10})@qq\.com$`)
+		if err != nil {
+			return nil, err
+		}
+		if str := re.FindString(username); str != "" {
+			uin, err = strconv.ParseInt(str, 10, 64)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			return nil, fmt.Errorf("not a valid username")
+		}
 	}
 	tickets := m.c.GetTickets(uin)
-	p, _ := json.MarshalIndent(tickets, "", "  ")
-	log.Printf("tickets:\n%s", string(p))
 	if time.Now().Before(tickets.D2.Exp) {
-		return m.signInWithoutPassword(uin, false)
+		return m.signInWithoutPassword(username, false)
 	} else if time.Now().Before(tickets.A2.Exp) {
-		return m.signInWithoutPassword(uin, true)
+		return m.signInWithoutPassword(username, true)
 	}
-	return m.signInWithPassword(uin, md5.Sum([]byte(password)))
+	return m.signInWithPassword(username, md5.Sum([]byte(password)), uin, 0, LoginTypeUin)
 }
 
-func (m *Manager) signInWithPassword(uin int64, hash [16]byte) (*Response, error) {
-	username := strconv.FormatInt(uin, 10)
+// ACTION_WTLOGIN_GET_ST_WITH_PASSWD
+// ACTION_WTLOGIN_GET_ST_VIA_SMS_VERIFY_LOGIN
+func (m *Manager) signInWithPassword(username string, hash [16]byte, uin, salt int64, loginType uint32) (*Response, error) {
 	fake, sess, seq, serverTime := m.c.GetFakeSource(uin), m.c.GetSession(uin), m.c.GetNextSeq(), m.c.GetServerTime()
-	p, _ := json.MarshalIndent(sess, "", "  ")
-	log.Printf("sess:\n%s", string(p))
 	extraData := m.GetExtraData(uin)
 	tlvs := make(map[uint16]tlv.Codec)
 	tlvs[0x0018] = tlv.NewT18(constant.DstAppID, 0, uin, 0)
 	tlvs[0x0001] = tlv.NewT1(uin, fake.Device.IPv4Address, serverTime)
 	a1 := m.c.GetTickets(uin).A1
 	if len(a1.Sig) == 0 {
-		tlvs[0x0106] = tlv.NewT106(constant.DstAppID, constant.OpenAppID, 0, uin, serverTime, fake.Device.IPv4Address, true, hash, 0, username, a1.Key, true, fake.Device.GUID[:], 1, fake.App.SSOVer)
+		tlvs[0x0106] = tlv.NewT106(constant.DstAppID, constant.OpenAppID, 0, uin, serverTime, fake.Device.IPv4Address, true, hash, salt, username, a1.Key, true, fake.Device.GUID[:], loginType, fake.App.SSOVer)
 	} else {
 		tlvs[0x0106] = tlv.NewTLV(0x0106, 0x0000, bytes.NewBuffer(a1.Sig))
 	}
@@ -78,15 +97,15 @@ func (m *Manager) signInWithPassword(uin int64, hash [16]byte) (*Response, error
 	tlvs[0x0144] = tlv.NewT144(a1.Key,
 		tlv.NewT109(md5.Sum([]byte(fake.Device.OS.BuildID))),
 		tlv.NewT52D(&pb.DeviceReport{
-			Bootloader:   []byte(fake.Device.Bootloader),
-			ProcVersion:  []byte(fake.Device.ProcVersion),
-			Codename:     []byte(fake.Device.Codename),
-			Incremental:  []byte(fake.Device.Incremental),
-			Fingerprint:  []byte(fake.Device.Fingerprint),
-			BootId:       []byte(fake.Device.BootID),
-			AndroidId:    []byte(fake.Device.OS.BuildID),
-			Baseband:     []byte(fake.Device.Baseband),
-			InnerVersion: []byte(fake.Device.InnerVersion),
+			Bootloader:  []byte(fake.Device.Bootloader),
+			Version:     []byte(fake.Device.ProcVersion),
+			Codename:    []byte(fake.Device.Codename),
+			Incremental: []byte(fake.Device.Incremental),
+			Fingerprint: []byte(fake.Device.Fingerprint),
+			BootId:      []byte(fake.Device.BootID),
+			AndroidId:   []byte(fake.Device.OS.BuildID),
+			Baseband:    []byte(fake.Device.Baseband),
+			InnerVer:    []byte(fake.Device.InnerVersion),
 		}),
 		tlv.NewT124(
 			[]byte(fake.Device.OS.Type),
@@ -122,8 +141,9 @@ func (m *Manager) signInWithPassword(uin int64, hash [16]byte) (*Response, error
 	if len(extraData.T172) != 0 {
 		tlvs[0x0172] = tlv.NewT172(extraData.T172)
 	}
-	// TODO: LoginType == 3
-	// tlvs[0x0185] = tlv.NewT185(0x01)
+	if loginType == LoginTypeSMS {
+		tlvs[0x0185] = tlv.NewT185(1)
+	}
 	// TODO: code2d
 	// tlvs[0x0400] = tlv.NewT400(
 	// 	h.hashedGUID,
@@ -177,15 +197,20 @@ func (m *Manager) requestSignIn(seq int32, uin int64, typ uint16, tlvs map[uint1
 			Version:       0x1f41,
 			ServiceMethod: 0x0810,
 			Uin:           uin,
-			EncryptMethod: oicq.EncryptMethodECDH,
+			EncryptMethod: oicq.EncryptMethodECDH0x87,
 			Type:          typ,
 			TLVs:          tlvs,
 		},
 	})
 }
 
-func (m *Manager) signInWithoutPassword(uin int64, changeD2 bool) (*Response, error) {
-	username := strconv.FormatInt(uin, 10)
+// ACTION_WTLOGIN_GET_ST_WITHOUT_PASSWD
+// ACTION_WTLOGIN_GET_OPEN_KEY_WITHOUT_PASSWD
+func (m *Manager) signInWithoutPassword(username string, changeD2 bool) (*Response, error) {
+	uin, err := strconv.ParseInt(username, 10, 64)
+	if err != nil {
+		return nil, err
+	}
 	tickets := m.c.GetTickets(uin)
 	fake, sess, seq := m.c.GetFakeSource(uin), m.c.GetSession(uin), m.c.GetNextSeq()
 	extraData := m.GetExtraData(uin)
@@ -205,15 +230,15 @@ func (m *Manager) signInWithoutPassword(uin int64, changeD2 bool) (*Response, er
 	tlvs[0x0144] = tlv.NewT144(key,
 		tlv.NewT109(md5.Sum([]byte(fake.Device.OS.BuildID))),
 		tlv.NewT52D(&pb.DeviceReport{
-			Bootloader:   []byte(fake.Device.Bootloader),
-			ProcVersion:  []byte(fake.Device.ProcVersion),
-			Codename:     []byte(fake.Device.Codename),
-			Incremental:  []byte(fake.Device.Incremental),
-			Fingerprint:  []byte(fake.Device.Fingerprint),
-			BootId:       []byte(fake.Device.BootID),
-			AndroidId:    []byte(fake.Device.OS.BuildID),
-			Baseband:     []byte(fake.Device.Baseband),
-			InnerVersion: []byte(fake.Device.InnerVersion),
+			Bootloader:  []byte(fake.Device.Bootloader),
+			Version:     []byte(fake.Device.ProcVersion),
+			Codename:    []byte(fake.Device.Codename),
+			Incremental: []byte(fake.Device.Incremental),
+			Fingerprint: []byte(fake.Device.Fingerprint),
+			BootId:      []byte(fake.Device.BootID),
+			AndroidId:   []byte(fake.Device.OS.BuildID),
+			Baseband:    []byte(fake.Device.Baseband),
+			InnerVer:    []byte(fake.Device.InnerVersion),
 		}),
 		tlv.NewT124(
 			[]byte(fake.Device.OS.Type),
@@ -275,7 +300,7 @@ func (m *Manager) requestSignInA2(seq int32, uin int64, typ uint16, tlvs map[uin
 			Version:       0x1f41,
 			ServiceMethod: 0x0810,
 			Uin:           uin,
-			EncryptMethod: oicq.EncryptMethodECDH,
+			EncryptMethod: oicq.EncryptMethodECDH0x87,
 			Type:          typ,
 			TLVs:          tlvs,
 		},

@@ -36,11 +36,12 @@ type Data struct {
 type EncryptMethod uint8
 
 var (
-	EncryptMethod0x00 EncryptMethod = 0x00
-	EncryptMethod0x03 EncryptMethod = 0x03
-	EncryptMethodECDH EncryptMethod = 0x07 | 0x80 // 0x07: no password login?
-	EncryptMethodST   EncryptMethod = 0x45
-	EncryptMethodNULL EncryptMethod = 0xff
+	EncryptMethod0x00     EncryptMethod = 0x00
+	EncryptMethod0x03     EncryptMethod = 0x03
+	EncryptMethodECDH     EncryptMethod = 0x07 // 0x07: no password login?
+	EncryptMethodECDH0x87 EncryptMethod = 0x87
+	EncryptMethodST       EncryptMethod = 0x45
+	EncryptMethodNULL     EncryptMethod = 0xff
 )
 
 func GetEncryptMethod(v uint8) EncryptMethod {

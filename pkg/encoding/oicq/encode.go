@@ -46,7 +46,9 @@ func marshalHead(d *Data) ([]byte, error) {
 	b.WriteByte(0x03)
 	switch d.EncryptMethod {
 	case EncryptMethodECDH:
-		b.WriteByte(0x07 | 0x80)
+		b.WriteByte(0x07)
+	case EncryptMethodECDH0x87:
+		b.WriteByte(0x87)
 	case EncryptMethodST:
 		b.WriteByte(0x45)
 	}
@@ -60,7 +62,7 @@ func marshalHead(d *Data) ([]byte, error) {
 func marshalBody(d *Data) ([]byte, error) {
 	b := bytes.NewBuffer([]byte{})
 	switch d.EncryptMethod {
-	case EncryptMethodECDH:
+	case EncryptMethodECDH, EncryptMethodECDH0x87:
 		b.WriteByte(0x02)
 		b.WriteByte(0x01)
 		b.Write(d.RandomKey[:])

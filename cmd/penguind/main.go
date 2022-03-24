@@ -18,12 +18,14 @@ import (
 	"context"
 	"log"
 
+	"github.com/elap5e/penguin/config"
 	"github.com/elap5e/penguin/daemon"
 )
 
 func main() {
-	d := daemon.New(context.Background())
-	if err := d.Run(); err != nil {
+	cfg := config.OpenFile("config.json")
+	dmn := daemon.New(context.Background(), cfg)
+	if err := dmn.Run(); err != nil {
 		log.Println(err)
 	}
 }

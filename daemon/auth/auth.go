@@ -164,40 +164,22 @@ func (m *Manager) GetExtraData(uin int64) *ExtraData {
 }
 
 func (m *Manager) request(req *Request) (*Response, error) {
-	if req.Seq < 1 {
+	if req.Seq == 0 {
 		req.Seq = m.c.GetNextSeq()
 	}
 
-	data := req.Data
-	sess := m.c.GetSession(data.Uin)
-	data.RandomKey = sess.RandomKey
-	data.KeyVersion = sess.KeyVersion
-	data.PublicKey = sess.PrivateKey.Public().Bytes()
-	data.SharedSecret = sess.SharedSecret
+	sess := m.c.GetSession(req.Data.Uin)
+	req.Data.RandomKey = sess.RandomKey
+	req.Data.KeyVersion = sess.KeyVersion
+	req.Data.PublicKey = sess.PrivateKey.Public().Bytes()
+	req.Data.SharedSecret = sess.SharedSecret
 
-	p, _ := json.MarshalIndent(req, "", "  ")
-	log.Printf("d.athm.request:\n%s", string(p))
-	p, err := oicq.Marshal(data)
+	resp, err := m.call(req)
 	if err != nil {
 		return nil, err
 	}
 
-	args, reply := rpc.Args{Uin: data.Uin, Seq: req.Seq, Payload: p}, rpc.Reply{}
-	if err = m.c.Call(req.ServiceMethod, &args, &reply); err != nil {
-		return nil, err
-	}
-
-	resp := &Response{ServiceMethod: reply.ServiceMethod, Seq: reply.Seq, Data: data}
-	if err := oicq.Unmarshal(reply.Payload, data); err != nil {
-		return nil, err
-	}
-	if err := resp.SetExtraData(data.TLVs); err != nil {
-		return nil, err
-	}
-	p, _ = json.MarshalIndent(resp, "", "  ")
-	log.Printf("d.athm.response:\n%s", string(p))
-
-	extraData := m.GetExtraData(data.Uin)
+	data, extraData := resp.Data, m.GetExtraData(resp.Data.Uin)
 	switch data.Code {
 	case 0x00:
 		// success
@@ -281,7 +263,7 @@ func (m *Manager) request(req *Request) (*Response, error) {
 				extraData.T402...),
 		))
 		log.Println("unlock device")
-		return m.UnlockDevice(data.Uin)
+		return m.unlockDevice(data.Uin)
 	case 0xef:
 		// resend sms code
 		m.c.SetSessionAuth(data.Uin, resp.ExtraData.SessionAuth)
@@ -323,6 +305,12 @@ func (m *Manager) request(req *Request) (*Response, error) {
 	case 0xa4:
 		log.Printf("error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
 		return nil, fmt.Errorf("bad requests")
+	case 0xd5:
+		log.Printf("phone number not valid, error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
+		return nil, fmt.Errorf("phone number not valid")
+	case 0xdb:
+		log.Printf("phone number not registered, error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
+		return nil, fmt.Errorf("phone number not registered")
 	case 0xeb:
 		log.Printf("version too low, error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
 		return nil, fmt.Errorf("too many failures")
@@ -332,6 +320,29 @@ func (m *Manager) request(req *Request) (*Response, error) {
 	default:
 		log.Printf("unknown code: 0x%02x", data.Code)
 	}
+	return resp, nil
+}
+
+func (m *Manager) call(req *Request) (*Response, error) {
+	p, _ := json.MarshalIndent(req, "", "  ")
+	log.Printf("d.athm.request:\n%s", string(p))
+	p, err := oicq.Marshal(req.Data)
+	if err != nil {
+		return nil, err
+	}
+	args, reply := rpc.Args{Uin: req.Data.Uin, Seq: req.Seq, Payload: p}, rpc.Reply{}
+	if err = m.c.Call(req.ServiceMethod, &args, &reply); err != nil {
+		return nil, err
+	}
+	resp := &Response{ServiceMethod: reply.ServiceMethod, Seq: reply.Seq, Data: req.Data}
+	if err := oicq.Unmarshal(reply.Payload, resp.Data); err != nil {
+		return nil, err
+	}
+	if err := resp.SetExtraData(resp.Data.TLVs); err != nil {
+		return nil, err
+	}
+	p, _ = json.MarshalIndent(resp, "", "  ")
+	log.Printf("d.athm.response:\n%s", string(p))
 	return resp, nil
 }
 

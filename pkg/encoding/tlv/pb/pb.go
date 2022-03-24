@@ -12,6 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:generate protoc --go_out=. device_report.proto
+//go:generate protoc --go_out=$GOPATH/src device_report.proto
 
 package pb

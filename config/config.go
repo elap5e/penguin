@@ -12,19 +12,39 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package auth
+package config
 
 import (
-	"github.com/elap5e/penguin/daemon/constant"
-	"github.com/elap5e/penguin/pkg/encoding/tlv"
+	"encoding/json"
+	"io/ioutil"
+	"log"
+	"os"
 )
 
-func (m *Manager) unlockDevice(uin int64) (*Response, error) {
-	fake, sess := m.c.GetFakeSource(uin), m.c.GetSession(uin)
-	tlvs := make(map[uint16]tlv.Codec)
-	tlvs[0x0008] = tlv.NewT8(0, constant.LocaleID, 0)
-	tlvs[0x0104] = tlv.NewT104(sess.Auth)
-	tlvs[0x0116] = tlv.NewT116(fake.App.MiscBitMap, constant.SubSigMap, constant.SubAppIDList)
-	tlvs[0x0401] = tlv.NewT401(m.GetExtraData(uin).T401.Get())
-	return m.requestSignIn(0, uin, 20, tlvs)
+type Config struct {
+	Username string `json:"username,omitempty"`
+	Password string `json:"password,omitempty"`
+}
+
+func OpenFile(name string) *Config {
+	data, err := ioutil.ReadFile(name)
+	if os.IsNotExist(err) {
+		data, err = json.MarshalIndent(defaultConfig, "", "  ")
+		if err == nil {
+			err = ioutil.WriteFile(name, data, 0644)
+		}
+	}
+	if err != nil {
+		log.Fatalln(err)
+	}
+	var cfg Config
+	err = json.Unmarshal(data, &cfg)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	return &cfg
+}
+
+var defaultConfig = &Config{
+	Username: "10000",
 }
