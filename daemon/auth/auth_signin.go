@@ -20,7 +20,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/elap5e/penguin/daemon/constant"
 	"github.com/elap5e/penguin/pkg/bytes"
@@ -61,9 +60,9 @@ func (m *Manager) SignIn(username, password string) (*Response, error) {
 		return nil, err
 	}
 	tickets := m.c.GetTickets(uin)
-	if time.Now().Before(tickets.D2.Exp) {
+	if tickets.D2.Valid() {
 		return m.signInWithoutPassword(username, false)
-	} else if time.Now().Before(tickets.A2.Exp) {
+	} else if tickets.A2.Valid() {
 		return m.signInWithoutPassword(username, true)
 	}
 	return m.signInWithPassword(username, md5.Sum([]byte(password)), uin, 0, LoginTypeUin)
@@ -289,9 +288,9 @@ func (m *Manager) signInWithoutPassword(username string, changeD2 bool) (*Respon
 	// DISABLED: tgt
 	// tlvs[0x0544] = tlv.NewT544(uin, fake.Device.GUID, fake.SDKVer, 10)
 	if !changeD2 {
-		return m.requestSignIn(seq, uin, 10, tlvs)
+		return m.requestSignInA2(seq, uin, 10, tlvs)
 	}
-	return m.requestSignIn(seq, uin, 11, tlvs)
+	return m.requestSignInA2(seq, uin, 11, tlvs)
 }
 
 func (m *Manager) requestSignInA2(seq int32, uin int64, typ uint16, tlvs map[uint16]tlv.Codec) (*Response, error) {

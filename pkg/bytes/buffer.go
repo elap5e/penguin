@@ -17,6 +17,7 @@ package bytes
 import (
 	"bytes"
 	"encoding/binary"
+	"math"
 	"reflect"
 )
 
@@ -250,4 +251,12 @@ func (b *Buffer) WriteStringL32(s string) (int, error) {
 	n, _ = b.WriteUint32(uint32(n + 4))
 	n, _ = b.WriteString(s)
 	return n + 4, nil
+}
+
+func (b *Buffer) WriteFloat32(v float32) (int, error) {
+	return b.WriteUint32(math.Float32bits(v))
+}
+
+func (b *Buffer) WriteFloat64(v float64) (int, error) {
+	return b.WriteUint64(math.Float64bits(v))
 }

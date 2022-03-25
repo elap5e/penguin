@@ -17,10 +17,8 @@ package tcp
 import (
 	"compress/zlib"
 	"encoding/binary"
-	"encoding/hex"
 	"fmt"
 	"io"
-	"log"
 	"strconv"
 
 	"github.com/elap5e/penguin/pkg/bytes"
@@ -46,7 +44,7 @@ func (c *codec) ReadResponseHeader(resp *rpc.Response) (err error) {
 		return err
 	}
 
-	log.Printf("dump of read:\n%s", hex.Dump(c.buf.Bytes()))
+	// log.Printf("dump of read:\n%s", hex.Dump(c.buf.Bytes()))
 	// Skip the first 4 bytes for the length of the response.
 	if _, err = c.buf.ReadUint32(); err != nil {
 		return err
@@ -95,7 +93,7 @@ func (c *codec) ReadResponseHeader(resp *rpc.Response) (err error) {
 	}
 
 	var n uint32
-	log.Printf("dump of read body:\n%s", hex.Dump(c.buf.Bytes()))
+	// log.Printf("dump of read body:\n%s", hex.Dump(c.buf.Bytes()))
 	// Read the first 4 bytes for the length of the response body header.
 	if n, err = c.buf.ReadUint32(); err != nil {
 		return err

@@ -18,7 +18,7 @@ import (
 	"github.com/elap5e/penguin/pkg/encoding/jce"
 )
 
-func Marshal(v *Data, opts map[string]interface{}) ([]byte, error) {
+func Marshal(v *Data, opts map[string]any) ([]byte, error) {
 	var err error
 	switch v.Version {
 	case 1, 2:

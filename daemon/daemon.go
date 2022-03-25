@@ -23,6 +23,7 @@ import (
 	"github.com/elap5e/penguin/daemon/auth"
 	"github.com/elap5e/penguin/daemon/contact"
 	"github.com/elap5e/penguin/daemon/message"
+	"github.com/elap5e/penguin/daemon/service"
 	"github.com/elap5e/penguin/pkg/net/msf"
 	"github.com/elap5e/penguin/pkg/net/msf/rpc"
 )
@@ -37,6 +38,7 @@ type Daemon struct {
 	athm *auth.Manager
 	cntm *contact.Manager
 	msgm *message.Manager
+	svcm *service.Manager
 }
 
 func New(ctx context.Context, cfg *config.Config) *Daemon {

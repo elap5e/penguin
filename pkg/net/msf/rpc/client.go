@@ -17,6 +17,7 @@ package rpc
 import (
 	"encoding/hex"
 	"net"
+	"strconv"
 	"time"
 
 	"github.com/elap5e/penguin/pkg/crypto/ecdh"
@@ -54,22 +55,53 @@ type Session struct {
 }
 
 type Tickets struct {
-	A1 *Ticket `json:"a1,omitempty"`
-	A2 *Ticket `json:"a2,omitempty"`
-	D2 *Ticket `json:"d2,omitempty"`
+	Domains  map[string]string `json:"domains,omitempty"`
+	A1       *Ticket           `json:"a1,omitempty"`
+	A2       *Ticket           `json:"a2,omitempty"`
+	A5       *Ticket           `json:"a5,omitempty"`
+	A8       *Ticket           `json:"a8,omitempty"`
+	D2       *Ticket           `json:"d2,omitempty"`
+	LSKey    *Ticket           `json:"lskey,omitempty"`
+	SKey     *Ticket           `json:"skey,omitempty"`
+	SID      *Ticket           `json:"sid,omitempty"`
+	Sig64    *Ticket           `json:"sig64,omitempty"`
+	SuperKey *Ticket           `json:"super_key,omitempty"`
+	ST       *Ticket           `json:"st,omitempty"`
+	STWeb    *Ticket           `json:"stweb,omitempty"`
+	VKey     *Ticket           `json:"vkey,omitempty"`
 }
 
 type Ticket struct {
 	Key Key16Bytes `json:"key,omitempty"`
 	Sig []byte     `json:"sig,omitempty"`
-	Exp time.Time  `json:"exp,omitempty"`
-	Iss time.Time  `json:"iss,omitempty"`
+	Exp int64      `json:"exp,omitempty"`
+	Iss int64      `json:"iss,omitempty"`
+}
+
+func (t Ticket) Valid() bool {
+	return time.Now().Before(time.Unix(t.Exp, 0))
 }
 
 type Key16Bytes [16]byte
 
 func (v Key16Bytes) MarshalJSON() ([]byte, error) {
-	return []byte("\"" + hex.EncodeToString(v[:]) + "\""), nil
+	return []byte(strconv.Quote(hex.EncodeToString(v[:]))), nil
+}
+
+func (v *Key16Bytes) UnmarshalJSON(b []byte) error {
+	unquoted, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	p, err := hex.DecodeString(unquoted)
+	if err != nil {
+		return err
+	}
+	if v == nil {
+		v = new(Key16Bytes)
+	}
+	copy(v[:], p[:])
+	return nil
 }
 
 func (v *Key16Bytes) Get() [16]byte {

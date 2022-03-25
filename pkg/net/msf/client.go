@@ -170,15 +170,8 @@ func (c *client) GetSession(uin int64) *rpc.Session {
 func (c *client) GetTickets(uin int64) *rpc.Tickets {
 	tickets := c.stickets[uin]
 	if tickets == nil {
-		r := rand.New(rand.NewSource(uin))
-		c.stickets[uin] = &rpc.Tickets{}
+		c.stickets[uin] = getTickets(uin)
 		tickets = c.stickets[uin]
-		tickets.A1 = &rpc.Ticket{
-			Key: [16]byte{},
-		}
-		r.Read(tickets.A1.Key[:])
-		tickets.A2 = &rpc.Ticket{}
-		tickets.D2 = &rpc.Ticket{}
 	}
 	return tickets
 }
@@ -193,6 +186,13 @@ func (c *client) SetSessionCookie(uin int64, cookie []byte) {
 func (c *client) SetSessionKSID(uin int64, ksid []byte) {
 	c.GetSession(uin).KSID = ksid
 }
-func (c *client) SetTickets(uin int64, tlvs map[uint16]tlv.Codec) {}
+func (c *client) SetTickets(uin int64, tlvs map[uint16]tlv.Codec) {
+	tickets := c.stickets[uin]
+	if tickets == nil {
+		c.stickets[uin] = getTickets(uin)
+		tickets = c.stickets[uin]
+	}
+	setTickets(uin, tickets, tlvs)
+}
 
 var _ rpc.Client = (*client)(nil)

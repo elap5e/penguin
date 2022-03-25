@@ -18,7 +18,7 @@ import (
 	"github.com/elap5e/penguin/pkg/encoding/jce"
 )
 
-func Unmarshal(data []byte, v *Data, opts map[string]interface{}) error {
+func Unmarshal(data []byte, v *Data, opts map[string]any) error {
 	if err := jce.Unmarshal(data, v, true); err != nil {
 		return err
 	}

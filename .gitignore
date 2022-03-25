@@ -1,5 +1,6 @@
 .idea/
 .vscode/
+.penguin/
 build/
 config*.json
 *.java
