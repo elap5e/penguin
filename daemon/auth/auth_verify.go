@@ -34,7 +34,7 @@ func (m *Manager) VerifyCaptcha(uin int64, code []byte, sign ...[]byte) (*Respon
 
 // ACTION_WTLOGIN_CHECK_PICTURE_AND_GET_ST
 func (m *Manager) verifyCaptcha(uin int64, code []byte, sign ...[]byte) (*Response, error) {
-	fake, sess := m.c.GetFakeSource(uin), m.c.GetSession(uin)
+	extraData, fake, sess := m.GetExtraData(uin), m.c.GetFakeSource(uin), m.c.GetSession(uin)
 	tlvs := make(map[uint16]tlv.Codec)
 	if len(sign) == 0 {
 		tlvs[0x0193] = tlv.NewT193(code)
@@ -44,13 +44,12 @@ func (m *Manager) verifyCaptcha(uin int64, code []byte, sign ...[]byte) (*Respon
 	tlvs[0x0008] = tlv.NewT8(0, constant.LocaleID, 0)
 	tlvs[0x0104] = tlv.NewT104(sess.Auth)
 	tlvs[0x0116] = tlv.NewT116(fake.App.MiscBitMap, constant.SubSigMap, constant.SubAppIDList)
-	tlvs[0x0547] = tlv.NewT547(m.GetExtraData(uin).T547)
+	tlvs[0x0547] = tlv.NewT547(extraData.T547)
 	return m.requestSignIn(0, uin, 2, tlvs)
 }
 
 func (m *Manager) verifySignInWithCodeCaptach(username string) ([]byte, error) {
-	account := username
-	country := uint32(86)
+	account, country := username, uint32(86)
 	if strings.HasPrefix(username, "00") {
 		return nil, fmt.Errorf("temperory not support country code %s", username)
 	}
@@ -88,8 +87,7 @@ func (m *Manager) VerifySMSCode(uin int64, code []byte) (*Response, error) {
 
 // ACTION_WTLOGIN_CHECK_SMS_AND_GET_ST
 func (m *Manager) verifySMSCode(uin int64, code []byte) (*Response, error) {
-	extraData := m.GetExtraData(uin)
-	fake, sess := m.c.GetFakeSource(uin), m.c.GetSession(uin)
+	extraData, fake, sess := m.GetExtraData(uin), m.c.GetFakeSource(uin), m.c.GetSession(uin)
 	tlvs := make(map[uint16]tlv.Codec)
 	tlvs[0x0008] = tlv.NewT8(0, constant.LocaleID, 0)
 	tlvs[0x0104] = tlv.NewT104(sess.Auth)
@@ -104,8 +102,7 @@ func (m *Manager) verifySMSCode(uin int64, code []byte) (*Response, error) {
 
 // ACTION_WTLOGIN_REFRESH_SMS_DATA
 func (m *Manager) resendSMSCode(uin int64) (*Response, error) {
-	extraData := m.GetExtraData(uin)
-	fake, sess := m.c.GetFakeSource(uin), m.c.GetSession(uin)
+	extraData, fake, sess := m.GetExtraData(uin), m.c.GetFakeSource(uin), m.c.GetSession(uin)
 	tlvs := make(map[uint16]tlv.Codec)
 	tlvs[0x0008] = tlv.NewT8(0, constant.LocaleID, 0)
 	tlvs[0x0104] = tlv.NewT104(sess.Auth)

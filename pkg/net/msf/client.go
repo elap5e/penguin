@@ -31,16 +31,16 @@ import (
 )
 
 func NewClient(ctx context.Context) rpc.Client {
-	conn, _ := net.Dial("tcp", "125.94.60.148:14000")
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	c := &client{
-		seq:      r.Int31n(100000),
+	conn, _ := net.Dial("tcp", "msfwifi.3g.qq.com:8080")
+	rr := rand.New(rand.NewSource(time.Now().UnixNano()))
+	cl := &client{
+		seq:      rr.Int31n(100000),
 		sessions: make(map[int64]*rpc.Session),
 		stickets: make(map[int64]*rpc.Tickets),
 	}
-	c.rs = rpc.NewSender(c, tcp.NewCodec(c, conn))
-	go c.rs.Run(ctx)
-	return c
+	cl.rs = rpc.NewSender(cl, tcp.NewCodec(cl, conn))
+	go cl.rs.Run(ctx)
+	return cl
 }
 
 type client struct {
@@ -82,14 +82,11 @@ func (c *client) GetFakeSource(uin int64) *rpc.FakeSource {
 	ipv4 := net.IPv4(192, 168, 0, buf[0])
 	mac1 := fmt.Sprintf("00:50:%02x:%02x:00:%02x", buf[1], buf[2], buf[0])
 	mac2 := fmt.Sprintf("00:50:%02x:%02x:00:%02x", buf[1], buf[2], buf[3])
-	uuid := fmt.Sprintf(
-		"%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
-		buf[4], buf[5], buf[6], buf[7], buf[8], buf[9], buf[10], buf[11],
-		buf[12], buf[13], buf[14], buf[15], buf[16], buf[17], buf[18], buf[19],
-	)
+	uuid := fmt.Sprintf("%08x-%04x-%04x-%04x-%012x", buf[4:7], buf[8:9], buf[10:11], buf[12:13], buf[14:19])
 	imei := fmt.Sprintf("86030802%07d", r.Int31n(10000000))
 	imsi := fmt.Sprintf("460001%09d", r.Int31n(1000000000))
-	osid := fmt.Sprintf("RKQ1.%07d.002", r.Int31n(10000000))
+	osid := fmt.Sprintf("QKQ1.%07d.002", r.Int31n(10000000))
+	code := fmt.Sprintf("%07d", r.Int31n(10000000))
 	return &rpc.FakeSource{
 		App: &rpc.FakeApp{
 			FixID:      537044845,
@@ -108,11 +105,11 @@ func (c *client) GetFakeSource(uin int64) *rpc.FakeSource {
 		Device: &rpc.FakeDevice{
 			OS: rpc.FakeDeviceOS{
 				Type:        "android",
-				Version:     "11",
+				Version:     "10",
 				BuildBrand:  []byte("Xiaomi"),
 				BuildModel:  "Redmi K20",
 				BuildID:     osid,
-				SDKVersion:  uint32(30),
+				SDKVersion:  uint32(23), // uint32(30)
 				NetworkType: 0x0002,
 			},
 			APNName:       []byte("wifi"),
@@ -120,11 +117,11 @@ func (c *client) GetFakeSource(uin int64) *rpc.FakeSource {
 			Bootloader:    "unknown",
 			ProcVersion:   "Linux version 2.6.18-92.el5 (brewbuilder@ls20-bc2-13.build.redhat.com)",
 			Codename:      "davinci",
-			Incremental:   "20.10.20",
-			Fingerprint:   "Xiaomi/davinci/davinci:11/" + osid + "/20.10.20:user/release-keys",
+			Incremental:   "V12.0.3.0." + code,
+			Fingerprint:   "Xiaomi/davinci/davinci:10/" + osid + "/V12.0.3.0." + code + ":user/release-keys",
 			BootID:        uuid,
 			Baseband:      "4.3.c5-00069-SM6150_GEN_PACK-1",
-			InnerVersion:  "20.10.20",
+			InnerVersion:  "V12.0.3.0." + code,
 			NetworkType:   0x01,
 			NetIPFamily:   0x03,
 			IPv4Address:   ipv4,

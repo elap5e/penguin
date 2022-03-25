@@ -170,6 +170,7 @@ func (resp *Response) SetExtraData(tlvs map[uint16]tlv.Codec) error {
 			_ = proto.Unmarshal(v.MustGetValue().Bytes(), extraData.ThirdPartLogin)
 		case 0x0546:
 			extraData.T546 = v.MustGetValue().Bytes()
+			extraData.T547 = calcPow(extraData.T546)
 		}
 	}
 	return nil
@@ -271,6 +272,7 @@ func (m *Manager) request(req *Request) (*Response, error) {
 
 		var code string
 		extraData.T546 = resp.ExtraData.T546 // TODO: check
+		extraData.T547 = resp.ExtraData.T547 // TODO: check
 		if resp.ExtraData.CaptchaSign != "" {
 			l, err := net.Listen("tcp", "127.0.0.1:0")
 			if err != nil {

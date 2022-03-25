@@ -36,7 +36,6 @@ const (
 )
 
 func (m *Manager) SignIn(username, password string) (*Response, error) {
-	uin := int64(0)
 	if strings.HasPrefix(username, "+") {
 		if strings.HasPrefix(username, "+86") {
 			username = username[3:]
@@ -53,14 +52,13 @@ func (m *Manager) SignIn(username, password string) (*Response, error) {
 		if err != nil {
 			return nil, err
 		}
-		if str := re.FindString(username); str != "" {
-			uin, err = strconv.ParseInt(str, 10, 64)
-			if err != nil {
-				return nil, err
-			}
-		} else {
+		if username = re.FindString(username); username == "" {
 			return nil, fmt.Errorf("not a valid username")
 		}
+	}
+	uin, err := strconv.ParseInt(username, 10, 64)
+	if err != nil {
+		return nil, err
 	}
 	tickets := m.c.GetTickets(uin)
 	if time.Now().Before(tickets.D2.Exp) {
