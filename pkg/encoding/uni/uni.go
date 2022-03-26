@@ -15,16 +15,16 @@
 package uni
 
 type Data struct {
-	Version     int16             `jce:",1" json:"version,omitempty"`
-	PacketType  uint8             `jce:",2" json:"packet_type,omitempty"`
-	MessageType uint32            `jce:",3" json:"message_type,omitempty"`
-	RequestID   int32             `jce:",4" json:"request_id,omitempty"`
-	ServantName string            `jce:",5" json:"servant_name,omitempty"`
-	FuncName    string            `jce:",6" json:"func_name,omitempty"`
-	Payload     []byte            `jce:",7" json:"payload,omitempty"`
-	Timeout     int32             `jce:",8" json:"timeout,omitempty"`
-	Context     map[string]string `jce:",9" json:"context,omitempty"`
-	Status      map[string]string `jce:",10" json:"status,omitempty"`
+	Version     int16             `jce:"1" json:"version"`
+	PacketType  uint8             `jce:"2" json:"packet_type"`
+	MessageType uint32            `jce:"3" json:"message_type"`
+	RequestID   int32             `jce:"4" json:"request_id"`
+	ServantName string            `jce:"5" json:"servant_name"`
+	FuncName    string            `jce:"6" json:"func_name"`
+	Payload     []byte            `jce:"7" json:"payload"`
+	Timeout     int32             `jce:"8" json:"timeout,omitempty"`
+	Context     map[string]string `jce:"9" json:"context,omitempty"`
+	Status      map[string]string `jce:"10" json:"status,omitempty"`
 }
 
 type Payload map[string]map[string][]byte

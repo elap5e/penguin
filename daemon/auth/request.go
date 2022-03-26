@@ -237,7 +237,7 @@ func (m *Manager) request(req *Request) (*Response, error) {
 
 func (m *Manager) call(req *Request) (*Response, error) {
 	p, _ := json.MarshalIndent(req, "", "  ")
-	log.Printf("d.athm.request:\n%s", string(p))
+	log.Println("[S|ATHM|DUMP]", fmt.Sprintf("uin:%d seq:%d method:%s", req.Data.Uin, req.Seq, req.ServiceMethod), "request:\n"+string(p))
 	p, err := oicq.Marshal(req.Data)
 	if err != nil {
 		return nil, err
@@ -254,6 +254,6 @@ func (m *Manager) call(req *Request) (*Response, error) {
 		return nil, err
 	}
 	p, _ = json.MarshalIndent(resp, "", "  ")
-	log.Printf("d.athm.response:\n%s", string(p))
+	log.Println("[R|ATHM|DUMP]", fmt.Sprintf("uin:%d seq:%d method:%s", resp.Data.Uin, resp.Seq, resp.ServiceMethod), "response:\n"+string(p))
 	return resp, nil
 }

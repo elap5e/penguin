@@ -12,27 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package service
+//go:generate protoc --go_out=$GOPATH/src domain_ip.proto
+//go:generate protoc --go_out=$GOPATH/src oidb_0x769.proto
 
-import (
-	"context"
-
-	"github.com/elap5e/penguin/pkg/net/msf/rpc"
-	"github.com/elap5e/penguin/pkg/net/msf/service"
-)
-
-type Manager struct {
-	ctx context.Context
-
-	c rpc.Client
-}
-
-func NewManager(ctx context.Context, c rpc.Client) *Manager {
-	m := &Manager{
-		ctx: ctx,
-		c:   c,
-	}
-	m.c.Register(service.MethodServiceConfigPushDomain, m.handleConfigPushDomain)
-	m.c.Register(service.MethodServiceConfigPushRequest, m.handleConfigPushRequest)
-	return m
-}
+package pb

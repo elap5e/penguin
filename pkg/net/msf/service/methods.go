@@ -23,3 +23,11 @@ const (
 	MethodAuthSignIn   = "wtlogin.login"
 	MethodAuthSignInA2 = "wtlogin.exchange_emp"
 )
+
+const (
+	MethodServiceRegister = "StatSvc.register"
+
+	MethodServiceConfigPushDomain   = "ConfigPushSvc.PushDomain"
+	MethodServiceConfigPushRequest  = "ConfigPushSvc.PushReq"
+	MethodServiceConfigPushResponse = "ConfigPushSvc.PushResp"
+)

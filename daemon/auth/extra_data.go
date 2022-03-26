@@ -34,7 +34,7 @@ func (resp *Response) SetExtraData(tlvs map[uint16]tlv.Codec) error {
 		v := v.(*tlv.TLV)
 		switch k {
 		default:
-			log.Printf("t%x not parsed:\n%s\n", k, hex.Dump(v.MustGetValue().Bytes()))
+			log.Printf("[D|ATHM|DUMP] t%x not parsed:\n%s", k, hex.Dump(v.MustGetValue().Bytes()))
 		case 0x000a:
 			buf, _ := v.GetValue()
 			extraData.ErrorCode, _ = buf.ReadUint32()

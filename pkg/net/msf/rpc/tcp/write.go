@@ -15,9 +15,7 @@
 package tcp
 
 import (
-	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/elap5e/penguin/pkg/bytes"
@@ -31,8 +29,6 @@ func (c *codec) WriteRequest(req *rpc.Request, args *rpc.Args) error {
 	}
 
 	fake, sess := c.cl.GetFakeSource(args.Uin), c.cl.GetSession(args.Uin)
-	p, _ := json.MarshalIndent(sess, "", "  ")
-	log.Printf("session:\n%s", string(p))
 	body := bytes.NewBuffer([]byte{})
 	body.WriteUint32(0)
 	if req.Version == rpc.VersionDefault {

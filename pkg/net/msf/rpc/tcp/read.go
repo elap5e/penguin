@@ -56,6 +56,7 @@ func (c *codec) ReadResponseHeader(resp *rpc.Response) (err error) {
 	if resp.Version != rpc.VersionDefault && resp.Version != rpc.VersionSimple {
 		return fmt.Errorf("tcp: unsupported version 0x%x", resp.Version)
 	}
+	c.reply.Version = resp.Version
 	// Read next byte to get the encrpyt type.
 	if resp.EncryptType, err = c.buf.ReadByte(); err != nil {
 		return err
@@ -159,6 +160,7 @@ func (c *codec) ReadResponseHeader(resp *rpc.Response) (err error) {
 }
 
 func (c *codec) ReadResponseBody(reply *rpc.Reply) (err error) {
+	reply.Version = c.reply.Version
 	reply.Uin = c.reply.Uin
 	reply.Seq = c.reply.Seq
 	reply.Code = c.reply.Code

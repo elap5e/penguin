@@ -21,6 +21,7 @@ import (
 	"log"
 	"math/rand"
 	"net"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -33,8 +34,9 @@ import (
 func NewClient(ctx context.Context) rpc.Client {
 	conn, _ := net.Dial("tcp", "msfwifi.3g.qq.com:8080")
 	rr := rand.New(rand.NewSource(time.Now().UnixNano()))
-	cl := &client{
+	cl := &Client{
 		seq:      rr.Int31n(100000),
+		handlers: make(map[string]rpc.Handler),
 		sessions: make(map[int64]*rpc.Session),
 		stickets: make(map[int64]*rpc.Tickets),
 	}
@@ -43,28 +45,45 @@ func NewClient(ctx context.Context) rpc.Client {
 	return cl
 }
 
-type client struct {
+type Client struct {
 	rs  rpc.Sender
 	seq int32
 
+	handlers map[string]rpc.Handler
 	sessions map[int64]*rpc.Session
 	stickets map[int64]*rpc.Tickets
 }
 
-func (c *client) Close() error {
+func (c *Client) Close() error {
 	return c.rs.Close()
 }
 
-func (c *client) Go(serviceMethod string, args *rpc.Args, reply *rpc.Reply, done chan *rpc.Call) *rpc.Call {
+func (c *Client) Go(serviceMethod string, args *rpc.Args, reply *rpc.Reply, done chan *rpc.Call) *rpc.Call {
 	return c.rs.Go(serviceMethod, args, reply, done)
 }
 
-func (c *client) Call(serviceMethod string, args *rpc.Args, reply *rpc.Reply) error {
+func (c *Client) Call(serviceMethod string, args *rpc.Args, reply *rpc.Reply) error {
 	call := <-c.Go(serviceMethod, args, reply, make(chan *rpc.Call, 1)).Done
 	return call.Error
 }
 
-func (c *client) GetNextSeq() int32 {
+func (c *Client) Handle(serviceMethod string, reply *rpc.Reply) (*rpc.Args, error) {
+	if handler, ok := c.handlers[strings.ToLower(serviceMethod)]; ok {
+		return handler(reply)
+	}
+	return nil, rpc.ErrNotHandled
+}
+
+func (c *Client) Register(serviceMethod string, handler rpc.Handler) error {
+	key := strings.ToLower(serviceMethod)
+	if _, ok := c.handlers[key]; ok {
+		return fmt.Errorf("service method %s already registered", serviceMethod)
+	}
+	c.handlers[key] = handler
+	return nil
+}
+
+func (c *Client) GetNextSeq() int32 {
 	seq := atomic.AddInt32(&c.seq, 1)
 	if seq > 1000000 {
 		c.seq = rand.Int31n(100000) + 60000
@@ -72,7 +91,7 @@ func (c *client) GetNextSeq() int32 {
 	return seq
 }
 
-func (c *client) GetFakeSource(uin int64) *rpc.FakeSource {
+func (c *Client) GetFakeSource(uin int64) *rpc.FakeSource {
 	r := rand.New(rand.NewSource(uin))
 	buf := make([]byte, 20)
 	_, err := r.Read(buf)
@@ -85,8 +104,7 @@ func (c *client) GetFakeSource(uin int64) *rpc.FakeSource {
 	uuid := fmt.Sprintf("%08x-%04x-%04x-%04x-%012x", buf[4:7], buf[8:9], buf[10:11], buf[12:13], buf[14:19])
 	imei := fmt.Sprintf("86030802%07d", r.Int31n(10000000))
 	imsi := fmt.Sprintf("460001%09d", r.Int31n(1000000000))
-	osid := fmt.Sprintf("QKQ1.%07d.002", r.Int31n(10000000))
-	code := fmt.Sprintf("%07d", r.Int31n(10000000))
+	osid := fmt.Sprintf("RKQ1.%07d.002", r.Int31n(10000000))
 	return &rpc.FakeSource{
 		App: &rpc.FakeApp{
 			FixID:      537044845,
@@ -105,7 +123,7 @@ func (c *client) GetFakeSource(uin int64) *rpc.FakeSource {
 		Device: &rpc.FakeDevice{
 			OS: rpc.FakeDeviceOS{
 				Type:        "android",
-				Version:     "10",
+				Version:     "11",
 				BuildBrand:  []byte("Xiaomi"),
 				BuildModel:  "Redmi K20",
 				BuildID:     osid,
@@ -117,11 +135,11 @@ func (c *client) GetFakeSource(uin int64) *rpc.FakeSource {
 			Bootloader:    "unknown",
 			ProcVersion:   "Linux version 2.6.18-92.el5 (brewbuilder@ls20-bc2-13.build.redhat.com)",
 			Codename:      "davinci",
-			Incremental:   "V12.0.3.0." + code,
-			Fingerprint:   "Xiaomi/davinci/davinci:10/" + osid + "/V12.0.3.0." + code + ":user/release-keys",
+			Incremental:   "20.10.20",
+			Fingerprint:   "Xiaomi/davinci/davinci:11/" + osid + "/20.10.20:user/release-keys",
 			BootID:        uuid,
 			Baseband:      "4.3.c5-00069-SM6150_GEN_PACK-1",
-			InnerVersion:  "V12.0.3.0." + code,
+			InnerVersion:  "20.10.20",
 			NetworkType:   0x01,
 			NetIPFamily:   0x03,
 			IPv4Address:   ipv4,
@@ -140,11 +158,11 @@ func (c *client) GetFakeSource(uin int64) *rpc.FakeSource {
 	}
 }
 
-func (c *client) GetServerTime() int64 {
+func (c *Client) GetServerTime() int64 {
 	return time.Now().Unix()
 }
 
-func (c *client) GetSession(uin int64) *rpc.Session {
+func (c *Client) GetSession(uin int64) *rpc.Session {
 	session := c.sessions[uin]
 	if session == nil {
 		r := rand.New(rand.NewSource(uin))
@@ -167,7 +185,7 @@ func (c *client) GetSession(uin int64) *rpc.Session {
 	return session
 }
 
-func (c *client) GetTickets(uin int64) *rpc.Tickets {
+func (c *Client) GetTickets(uin int64) *rpc.Tickets {
 	tickets := c.stickets[uin]
 	if tickets == nil {
 		c.stickets[uin] = getTickets(uin)
@@ -176,17 +194,17 @@ func (c *client) GetTickets(uin int64) *rpc.Tickets {
 	return tickets
 }
 
-func (c *client) SetSession(uin int64, tlvs map[uint16]tlv.Codec) {}
-func (c *client) SetSessionAuth(uin int64, auth []byte) {
+func (c *Client) SetSession(uin int64, tlvs map[uint16]tlv.Codec) {}
+func (c *Client) SetSessionAuth(uin int64, auth []byte) {
 	c.GetSession(uin).Auth = auth
 }
-func (c *client) SetSessionCookie(uin int64, cookie []byte) {
+func (c *Client) SetSessionCookie(uin int64, cookie []byte) {
 	c.GetSession(uin).Cookie = cookie
 }
-func (c *client) SetSessionKSID(uin int64, ksid []byte) {
+func (c *Client) SetSessionKSID(uin int64, ksid []byte) {
 	c.GetSession(uin).KSID = ksid
 }
-func (c *client) SetTickets(uin int64, tlvs map[uint16]tlv.Codec) {
+func (c *Client) SetTickets(uin int64, tlvs map[uint16]tlv.Codec) {
 	tickets := c.stickets[uin]
 	if tickets == nil {
 		c.stickets[uin] = getTickets(uin)
@@ -195,4 +213,4 @@ func (c *client) SetTickets(uin int64, tlvs map[uint16]tlv.Codec) {
 	setTickets(uin, tickets, tlvs)
 }
 
-var _ rpc.Client = (*client)(nil)
+var _ rpc.Client = (*Client)(nil)

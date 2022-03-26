@@ -21,13 +21,13 @@ import (
 	"github.com/elap5e/penguin/pkg/bytes"
 )
 
-func Marshal(v interface{}, opts ...bool) ([]byte, error) {
+func Marshal(v any, opts ...bool) ([]byte, error) {
 	simple := false
 	if len(opts) != 0 && opts[0] {
 		simple = true
 	}
 
-	e := encoder{}
+	e := &encoder{Buffer: bytes.NewBuffer([]byte{})}
 	err := e.marshal(v, simple)
 	if err != nil {
 		return nil, err
@@ -38,16 +38,34 @@ func Marshal(v interface{}, opts ...bool) ([]byte, error) {
 }
 
 type encoder struct {
-	bytes.Buffer
+	*bytes.Buffer
 }
 
-func (e *encoder) marshal(v interface{}, simple bool) error {
+func (e *encoder) marshal(v any, simple bool) error {
 	if !simple {
 		e.reflectValue(reflect.ValueOf(v), 0x00)
 	} else {
 		e.reflectValue(reflect.ValueOf(v), 0xff)
 	}
 	return nil
+}
+
+func isEmptyValue(v reflect.Value) bool {
+	switch v.Kind() {
+	case reflect.Array, reflect.Map, reflect.Slice, reflect.String:
+		return v.Len() == 0
+	case reflect.Bool:
+		return !v.Bool()
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return v.Int() == 0
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return v.Uint() == 0
+	case reflect.Float32, reflect.Float64:
+		return v.Float() == 0
+	case reflect.Interface, reflect.Pointer:
+		return v.IsNil()
+	}
+	return false
 }
 
 func (e *encoder) reflectValue(v reflect.Value, t uint8) {
@@ -67,28 +85,28 @@ type encoderFunc func(e *encoder, v reflect.Value, t uint8)
 
 func typeEncoder(t reflect.Type) encoderFunc {
 	switch t.Kind() {
-	case reflect.Interface:
-		return interfaceEncoder
-	case reflect.Ptr:
-		return newPtrEncoder(t)
-	case reflect.Slice:
-		return newSliceEncoder(t)
-	case reflect.Struct:
-		return newStructEncoder(t)
-	case reflect.Array:
-		return newArrayEncoder(t)
-	case reflect.Map:
-		return newMapEncoder(t)
-	case reflect.String:
-		return stringEncoder
-	case reflect.Float64, reflect.Float32:
-		return floatEncoder
-	case reflect.Int64, reflect.Int32, reflect.Int, reflect.Int16, reflect.Int8:
-		return intEncoder
-	case reflect.Uint64, reflect.Uint32, reflect.Uint, reflect.Uint16, reflect.Uint8:
-		return uintEncoder
 	case reflect.Bool:
 		return boolEncoder
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return intEncoder
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return uintEncoder
+	case reflect.Float32, reflect.Float64:
+		return floatEncoder
+	case reflect.String:
+		return stringEncoder
+	case reflect.Interface:
+		return interfaceEncoder
+	case reflect.Struct:
+		return newStructEncoder(t)
+	case reflect.Map:
+		return newMapEncoder(t)
+	case reflect.Slice:
+		return newSliceEncoder(t)
+	case reflect.Array:
+		return newArrayEncoder(t)
+	case reflect.Pointer:
+		return newPtrEncoder(t)
 	default:
 		return nil
 	}
@@ -136,10 +154,11 @@ func newSliceEncoder(t reflect.Type) encoderFunc {
 }
 
 type field struct {
-	name  string
-	tag   uint8
-	index []int
-	typ   reflect.Type
+	name      string
+	tag       uint8
+	index     []int
+	typ       reflect.Type
+	omitEmpty bool
 
 	encoder encoderFunc
 }
@@ -165,28 +184,26 @@ func typeFields(t reflect.Type) structFields {
 			for i := 0; i < f.typ.NumField(); i++ {
 				sf := f.typ.Field(i)
 				tag := sf.Tag.Get("jce")
-				if tag == "-" {
+				if tag == "" {
 					continue
 				}
-				name, tag := parseTag(tag)
-				if tag == "-" {
-					continue
+				name, opts := parseTag(sf.Tag.Get("json"))
+				if name == "" {
+					name = sf.Name
 				}
 				index := make([]int, len(f.index)+1)
 				copy(index, f.index)
 				index[len(f.index)] = i
 
 				ft := sf.Type
-				if name != "" || ft.Kind() != reflect.Struct {
-					if name == "" {
-						name = sf.Name
-					}
+				if ft.Kind() != reflect.Struct {
 					t, _ := strconv.ParseUint(tag, 10, 8)
 					field := field{
-						name:  name,
-						tag:   uint8(t),
-						index: index,
-						typ:   ft,
+						name:      name,
+						tag:       uint8(t),
+						index:     index,
+						typ:       ft,
+						omitEmpty: opts.Contains("omitempty"),
 					}
 					fields = append(fields, field)
 					if count[f.typ] > 1 {
@@ -234,7 +251,11 @@ func (se structEncoder) encode(e *encoder, v reflect.Value, t uint8) {
 	}
 	for i := range se.fields.list {
 		f := &se.fields.list[i]
-		f.encoder(e, v.Field(i), f.tag)
+		fv := v.Field(i)
+		if f.omitEmpty && isEmptyValue(fv) {
+			continue
+		}
+		f.encoder(e, fv, f.tag)
 	}
 }
 

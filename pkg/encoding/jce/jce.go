@@ -18,9 +18,29 @@ import (
 	"strings"
 )
 
-func parseTag(tag string) (string, string) {
-	if idx := strings.Index(tag, ","); idx != -1 {
-		return tag[:idx], tag[idx+1:]
+type tagOptions string
+
+// parseTag splits a struct field's json tag into its name and
+// comma-separated options.
+func parseTag(tag string) (string, tagOptions) {
+	tag, opt, _ := strings.Cut(tag, ",")
+	return tag, tagOptions(opt)
+}
+
+// Contains reports whether a comma-separated list of options
+// contains a particular substr flag. substr must be surrounded by a
+// string boundary or commas.
+func (o tagOptions) Contains(optionName string) bool {
+	if len(o) == 0 {
+		return false
 	}
-	return tag, "-"
+	s := string(o)
+	for s != "" {
+		var name string
+		name, s, _ = strings.Cut(s, ",")
+		if name == optionName {
+			return true
+		}
+	}
+	return false
 }

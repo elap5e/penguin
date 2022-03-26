@@ -21,7 +21,7 @@ import (
 	"reflect"
 )
 
-func Unmarshal(data []byte, v interface{}, opts ...bool) error {
+func Unmarshal(data []byte, v any, opts ...bool) error {
 	simple := false
 	if len(opts) != 0 && opts[0] {
 		simple = true
@@ -43,7 +43,7 @@ type decoder struct {
 	typ    uint8
 }
 
-func (d *decoder) unmarshal(v interface{}, simple bool) error {
+func (d *decoder) unmarshal(v any, simple bool) error {
 	if !simple {
 		_, _ = d.decodeHead()
 	}

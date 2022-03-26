@@ -14,9 +14,14 @@
 
 package rpc
 
+import (
+	"errors"
+)
+
 type Call struct {
 	ServiceMethod string
 	Seq           int32
+	Version       uint32
 	Args          *Args
 	Reply         *Reply
 	Error         error
@@ -34,6 +39,7 @@ func (call *Call) done() {
 }
 
 type Args struct {
+	Version       uint32 `json:"version,omitempty"`
 	Uin           int64  `json:"uin,omitempty"`
 	Seq           int32  `json:"seq,omitempty"`
 	ServiceMethod string `json:"service_method,omitempty"`
@@ -42,6 +48,7 @@ type Args struct {
 }
 
 type Reply struct {
+	Version       uint32 `json:"version,omitempty"`
 	Uin           int64  `json:"uin,omitempty"`
 	Seq           int32  `json:"seq,omitempty"`
 	Code          int32  `json:"code,omitempty"`
@@ -68,3 +75,7 @@ type Response struct {
 	EncryptType   uint8  `json:"encrypt_type,omitempty"`
 	Username      string `json:"username,omitempty"`
 }
+
+var (
+	ErrNotHandled = errors.New("not handled")
+)

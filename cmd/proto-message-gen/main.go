@@ -192,7 +192,7 @@ func parseMessage(index int, lines []string) (*Message, int) {
 					}
 				}
 				if code := codes[tmp[1]]; code != 0 {
-					field := parseField(code, tmp[1], tmp[0])
+					field := parseField(code, tmp[1], tmp[0], line)
 					msg.Fields = append(msg.Fields, field)
 					length := len(field.Name) + len(field.Type) + 1
 					if length > msg.Length {
@@ -217,12 +217,13 @@ func parseName(name string) string {
 	return name
 }
 
-func parseField(code uint64, name, typ string) *Field {
-	note := name
+func parseType(typ string, line string) string {
 	if typ == "PBBoolField" {
 		typ = "bool"
 	} else if typ == "PBBytesField" {
 		typ = "bytes"
+	} else if typ == "PBEnumField" {
+		typ = "int32"
 	} else if typ == "PBFixed32Field" {
 		typ = "fixed32"
 	} else if typ == "PBFixed64Field" {
@@ -243,7 +244,7 @@ func parseField(code uint64, name, typ string) *Field {
 		typ = "uint32"
 	} else if typ == "PBUInt64Field" {
 		typ = "uint64"
-	} else if strings.HasPrefix(typ, "PBRepeatField") {
+	} else if strings.HasPrefix(typ, "PBRepeatField<") {
 		re, _ := regexp.Compile("PBRepeatField<(.*)>")
 		switch tmp := re.FindStringSubmatch(typ)[1]; tmp {
 		case "ByteStringMicro":
@@ -258,13 +259,25 @@ func parseField(code uint64, name, typ string) *Field {
 			typ = "string"
 		}
 		typ = "repeated " + parseName(typ)
-	} else if strings.HasPrefix(typ, "PBRepeatMessageField") {
+	} else if strings.HasPrefix(typ, "PBRepeatField") {
+		re, _ := regexp.Compile("initRepeat\\((.*)\\.")
+		typ = "repeated " + parseType(re.FindStringSubmatch(line)[1], line)
+	} else if strings.HasPrefix(typ, "PBRepeatMessageField<") {
 		re, _ := regexp.Compile("PBRepeatMessageField<(.*)>")
 		typ = "repeated " + parseName(re.FindStringSubmatch(typ)[1])
+	} else if strings.HasPrefix(typ, "PBRepeatMessageField") {
+		re, _ := regexp.Compile("initRepeatMessage\\((.*)\\.")
+		typ = "repeated " + parseType(re.FindStringSubmatch(line)[1], line)
 	} else {
 		typ = parseName(typ)
 	}
+	return typ
+}
+
+func parseField(code uint64, name, typ, line string) *Field {
+	note := name
 	strs := strings.Split(parseName(name), "_")
+	typ = parseType(typ, line)
 	for {
 		if len(strs) == 1 {
 			break

@@ -17,6 +17,7 @@ package daemon
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/elap5e/penguin/config"
 	"github.com/elap5e/penguin/daemon/account"
@@ -48,12 +49,19 @@ func New(ctx context.Context, cfg *config.Config) *Daemon {
 		c:   msf.NewClient(ctx),
 	}
 	d.athm = auth.NewManager(d.ctx, d.c)
+	d.svcm = service.NewManager(d.ctx, d.c)
 	return d
 }
 
 func (d *Daemon) Run() error {
-	if _, err := d.athm.SignIn(d.cfg.Username, d.cfg.Password); err != nil {
-		return fmt.Errorf("sign in: %w", err)
+	asResp, err := d.athm.SignIn(d.cfg.Username, d.cfg.Password)
+	if err != nil {
+		return fmt.Errorf("sign in, error: %v", err)
 	}
+	srResp, err := d.svcm.RegisterAppRegister(asResp.Data.Uin)
+	if err != nil {
+		return fmt.Errorf("register app register, error: %v", err)
+	}
+	log.Println("register app register, resp:", srResp)
 	return nil
 }

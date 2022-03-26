@@ -15,34 +15,65 @@
 package service
 
 import (
+	"encoding/hex"
+	"log"
+
+	"google.golang.org/protobuf/proto"
+
+	"github.com/elap5e/penguin/daemon/constant"
+	"github.com/elap5e/penguin/daemon/service/pb"
 	"github.com/elap5e/penguin/pkg/encoding/uni"
+	"github.com/elap5e/penguin/pkg/net/msf/rpc"
+	"github.com/elap5e/penguin/pkg/net/msf/service"
+)
+
+type StatusType uint32
+
+var (
+	StatusTypeOnline     StatusType = 11
+	StatusTypeOffline    StatusType = 21
+	StatusTypeAway       StatusType = 31
+	StatusTypeInvisiable StatusType = 41
+	StatusTypeBusy       StatusType = 50
+	StatusTypeQMe        StatusType = 60
+	StatusTypeDND        StatusType = 70
+	StatusTypeReceiveMsg StatusType = 95
+)
+
+type RegisterType uint8
+
+const (
+	RegisterTypeAppRegister RegisterType = iota
+	RegisterTypeCreateDefaultRegInfo
+	RegisterTypeFillRegProxy
+	RegisterTypeSetOnlineStatus
 )
 
 type RegisterRequest struct {
-	Uin          int64  `jce:"0" json:"uin,omitempty"`
-	Bid          int64  `jce:"1" json:"bid,omitempty"`
-	ConnectType  uint8  `jce:"2" json:"connect_type,omitempty"` // constant 0x00
-	Other        string `jce:"3" json:"other,omitempty"`        // constant ""
-	Status       uint32 `jce:"4" json:"status,omitempty"`
-	OnlinePush   bool   `jce:"5" json:"online_push,omitempty"`    // constant false
-	IsOnline     bool   `jce:"6" json:"is_online,omitempty"`      // constant false
-	IsShowOnline bool   `jce:"7" json:"is_show_online,omitempty"` // constant false
-	KickPC       bool   `jce:"8" json:"kick_pc,omitempty"`
-	KickWeak     bool   `jce:"9" json:"kick_weak,omitempty"` // constant false
-	Timestamp    uint64 `jce:"10" json:"timestamp,omitempty"`
-	SDKVersion   uint32 `jce:"11" json:"sdk_version,omitempty"`
-	NetworkType  uint8  `jce:"12" json:"network_type,omitempty"`  // 0x00: mobile; 0x01: wifi
-	BuildVersion string `jce:"13" json:"build_version,omitempty"` // constant ""
-	RegisterType bool   `jce:"14" json:"register_type,omitempty"` // false: appRegister, fillRegProxy, createDefaultRegInfo; true: others
-	DeviceParam  []byte `jce:"15" json:"device_param,omitempty"`  // constant nil
-	GUID         []byte `jce:"16" json:"guid,omitempty"`          // placeholder
-	LocaleID     uint32 `jce:"17" json:"locale_id,omitempty"`     // constant 0x00000804
-	SlientPush   bool   `jce:"18" json:"slient_push,omitempty"`   // constant false
-	DeviceName   string `jce:"19" json:"device_name,omitempty"`
-	DeviceType   string `jce:"20" json:"device_type,omitempty"`
-	OSVersion    string `jce:"21" json:"os_version,omitempty"`
-	OpenPush     bool   `jce:"22" json:"open_push,omitempty"` // constant true
-	LargeSeq     uint32 `jce:"23" json:"large_seq,omitempty"` // constant 0x00000000
+	Uin          int64      `jce:"0" json:"uin"`
+	Bid          int64      `jce:"1" json:"bid"`
+	ConnectType  uint8      `jce:"2" json:"connect_type"`
+	Other        string     `jce:"3" json:"other"`
+	Status       StatusType `jce:"4" json:"status"`
+	OnlinePush   bool       `jce:"5" json:"online_push"`
+	IsOnline     bool       `jce:"6" json:"is_online"`
+	IsShowOnline bool       `jce:"7" json:"is_show_online"`
+	KickPC       bool       `jce:"8" json:"kick_pc"`
+	KickWeak     bool       `jce:"9" json:"kick_weak"`
+	Timestamp    int64      `jce:"10" json:"timestamp"`
+	SDKVersion   uint32     `jce:"11" json:"sdk_version"`
+	NetworkType  uint8      `jce:"12" json:"network_type"`
+	BuildVersion string     `jce:"13" json:"build_version"`
+	RegisterType bool       `jce:"14" json:"register_type"`
+	DeviceParam  []byte     `jce:"15" json:"device_param"`
+	GUID         []byte     `jce:"16" json:"guid"`
+	LocaleID     uint32     `jce:"17" json:"locale_id"`
+	SlientPush   bool       `jce:"18" json:"slient_push"`
+	DeviceName   string     `jce:"19" json:"device_name"`
+	DeviceType   string     `jce:"20" json:"device_type"`
+	OSVersion    string     `jce:"21" json:"os_version"`
+	OpenPush     bool       `jce:"22" json:"open_push"`
+	LargeSeq     int64      `jce:"23" json:"large_seq"`
 
 	LastWatchStart uint32          `jce:"24" json:"last_watch_start,omitempty"`
 	BindUin        []uint64        `jce:"25" json:"bind_uin,omitempty"`
@@ -53,15 +84,15 @@ type RegisterRequest struct {
 	VendorName     string          `jce:"30" json:"vendor_name,omitempty"`
 	VendorOSName   string          `jce:"31" json:"vendor_os_name,omitempty"`
 	IOSIDFA        string          `jce:"32" json:"ios_idfa,omitempty"`
-	Body0x769      []byte          `jce:"33" json:"body_0x796,omitempty"`
-	IsSetStatus    bool            `jce:"34" json:"is_set_status,omitempty"`
+	Body0x769      []byte          `jce:"33" json:"body_0x796"`
+	IsSetStatus    bool            `jce:"34" json:"is_set_status"`
 	ServerBuffer   []byte          `jce:"35" json:"server_buffer,omitempty"`
-	SetMute        bool            `jce:"36" json:"set_mute,omitempty"`
-	NotifySwitch   uint8           `jce:"37" json:"notify_switch,omitempty"`
-	ExtraStatus    uint64          `jce:"38" json:"extra_status,omitempty"`
-	BatteryStatus  uint32          `jce:"39" json:"battery_status,omitempty"`
+	SetMute        bool            `jce:"36" json:"set_mute"`
+	NotifySwitch   bool            `jce:"37" json:"notify_switch,omitempty"`
+	ExtraStatus    int64           `jce:"38" json:"extra_status"`
+	BatteryStatus  uint32          `jce:"39" json:"battery_status"`
 	TimActiveFlag  bool            `jce:"40" json:"tim_active_flag,omitempty"`
-	BindUinNotify  string          `jce:"41" json:"bind_uin_notify,omitempty"`
+	BindUinNotify  bool            `jce:"41" json:"bind_uin_notify"`
 	VendorPushInfo *VendorPushInfo `jce:"42" json:"vendor_push_info,omitempty"`
 	VendorDeviceID int64           `jce:"43" json:"vendor_device_id,omitempty"`
 	CustomStatus   []byte          `jce:"45" json:"custom_status,omitempty"`
@@ -71,65 +102,163 @@ type VendorPushInfo struct {
 	Type uint64 `jce:"0" json:"type,omitempty"`
 }
 
-type AccountSetStatusResponse struct {
-	Uin            int64  `jce:"0" json:"uin,omitempty"`
-	Bid            int64  `jce:"1" json:"bid,omitempty"`
-	ReplyCode      uint8  `jce:"2" json:"reply_code,omitempty"`
-	Result         string `jce:"3" json:"result,omitempty"`
-	ServerTime     int64  `jce:"4" json:"server_time,omitempty"`
+type RegisterResponse struct {
+	Uin            int64  `jce:"0" json:"uin"`
+	Bid            int64  `jce:"1" json:"bid"`
+	ReplyCode      uint8  `jce:"2" json:"reply_code"`
+	Result         string `jce:"3" json:"result"`
+	ServerTime     int64  `jce:"4" json:"server_time"`
 	LogQQ          bool   `jce:"5" json:"log_qq,omitempty"`
-	NeedKick       bool   `jce:"6" json:"need_kick,omitempty"`
+	NeedKick       bool   `jce:"6" json:"need_kick"`
 	UpdateFlag     bool   `jce:"7" json:"update_flag,omitempty"`
-	Timestamp      int64  `jce:"8" json:"timestamp,omitempty"`
+	Timestamp      int64  `jce:"8" json:"timestamp"`
 	CrashFlag      bool   `jce:"9" json:"crash_flag,omitempty"`
 	ClientIP       string `jce:"10" json:"client_ip,omitempty"`
 	ClientPort     int32  `jce:"11" json:"client_port,omitempty"`
 	HelloInterval  int32  `jce:"12" json:"hello_interval,omitempty"`
-	LargeSeq       int32  `jce:"13" json:"large_seq,omitempty"`
-	LargeSeqUpdate bool   `jce:"14" json:"large_seq_update,omitempty"`
+	LargeSeq       int32  `jce:"13" json:"large_seq"`
+	LargeSeqUpdate bool   `jce:"14" json:"large_seq_update"`
 
-	Body0x769                []byte `jce:"15" json:"body_0x796,omitempty"`
-	Status                   int32  `jce:"16" json:"status,omitempty"`
-	ExtraStatus              int64  `jce:"17" json:"extra_status,omitempty"`
-	ClientBatteryGetInterval int64  `jce:"18" json:"client_battery_get_interval,omitempty"`
-	ClientAutoStatusInterval int64  `jce:"19" json:"client_auto_status_interval,omitempty"`
+	Body0x769                []byte `jce:"15" json:"body_0x796"`
+	Status                   int32  `jce:"16" json:"status"`
+	ExtraStatus              int64  `jce:"17" json:"extra_status"`
+	ClientBatteryGetInterval int64  `jce:"18" json:"client_battery_get_interval"`
+	ClientAutoStatusInterval int64  `jce:"19" json:"client_auto_status_interval"`
 	CustomStatus             []byte `jce:"21" json:"custom_status,omitempty"`
 }
 
-type Register struct {
-	Uin           int64    `jce:"1" json:"uin,omitempty"`
-	PushIDs       []uint64 `jce:"2" json:"push_ids,omitempty"` // constant
-	Status        uint32   `jce:"3" json:"status,omitempty"`
-	KickPC        bool     `jce:"4" json:"kick_pc,omitempty"`
-	KickWeak      bool     `jce:"5" json:"kick_weak,omitempty"` // constant false
-	Timestamp     uint64   `jce:"6" json:"timestamp,omitempty"`
-	LargeSeq      uint32   `jce:"7" json:"large_seq,omitempty"` // constant 0x00000000
-	ExtraStatus   int64    `jce:"8" json:"extra_status,omitempty"`
-	BatteryCap    int64    `jce:"9" json:"battery_cap,omitempty"`
-	PowerConnect  bool     `jce:"10" json:"power_connect,omitempty"`
-	BindUinNotify int64    `jce:"11" json:"bind_uin_notify,omitempty"`
+type RegisterPush struct {
+	Uin           int64      `jce:"1" json:"uin"`
+	PushIDs       []int64    `jce:"2" json:"push_ids"`
+	Status        StatusType `jce:"3" json:"status"`
+	KickPC        bool       `jce:"4" json:"kick_pc"`
+	KickWeak      bool       `jce:"5" json:"kick_weak"`
+	Timestamp     int64      `jce:"6" json:"timestamp"`
+	LargeSeq      int64      `jce:"7" json:"large_seq"`
+	ExtraStatus   int64      `jce:"8" json:"extra_status"`
+	BatteryCap    int32      `jce:"9" json:"battery_cap"`
+	PowerConnect  int32      `jce:"10" json:"power_connect"`
+	BindUinNotify bool       `jce:"11" json:"bind_uin_notify"`
 }
 
-func (m *Manager) Register(uin int64) {
+// RegPushReason.appRegister
+func (m *Manager) RegisterAppRegister(uin int64) (*RegisterResponse, error) {
+	return m.Register(uin, StatusTypeOnline, false, RegisterTypeAppRegister)
 }
 
-func (m *Manager) pushRegister() (any, error) {
-	buf, err := uni.Marshal(&uni.Data{
-		Version:     0x0003,
-		PacketType:  0x00,
-		MessageType: 0x00000000,
-		RequestID:   m.c.GetNextSeq(),
-		ServantName: "PushService",
-		FuncName:    "SvcReqRegister",
-		Payload:     []byte{},
-		Timeout:     0x00000000,
-		Context:     map[string]string{},
-		Status:      map[string]string{},
-	}, map[string]any{
-		"SvcReqRegister": nil,
+// RegPushReason.setOnlineStatus
+func (m *Manager) RegisterSetOnlineStatus(uin int64) (*RegisterResponse, error) {
+	return m.Register(uin, StatusTypeOnline, false, RegisterTypeSetOnlineStatus)
+}
+
+func (m *Manager) Register(uin int64, status StatusType, kick bool, typ RegisterType) (*RegisterResponse, error) {
+	return m.requestRegisterPush(&RegisterPush{
+		Uin:           uin,
+		PushIDs:       []int64{1, 2, 4}, // constant
+		Status:        status,
+		KickPC:        kick,
+		KickWeak:      false, // constant
+		Timestamp:     0,     // service_register_time
+		LargeSeq:      0,     // friend_list_seq
+		ExtraStatus:   -1,    // constant
+		BatteryCap:    0,     // constant
+		PowerConnect:  -1,    // constant
+		BindUinNotify: false, // sub_account_notify
+	}, typ)
+}
+
+func (m *Manager) requestRegisterPush(push *RegisterPush, typ RegisterType) (*RegisterResponse, error) {
+	fake := m.c.GetFakeSource(push.Uin)
+	bid := int64(0)
+	for _, id := range push.PushIDs {
+		bid |= id
+	}
+	body, err := proto.Marshal(&pb.Oidb_0X769_ReqBody{
+		ConfigList: []*pb.Oidb_0X769_ConfigSeq{
+			{Type: 46, Version: 0}, // key_config_version_patch
+			{Type: 283, Version: 0},
+		},
 	})
 	if err != nil {
 		return nil, err
 	}
-	return buf, nil
+	return m.requestRegister(&RegisterRequest{
+		Uin:          push.Uin,
+		Bid:          bid,
+		ConnectType:  0, // constant
+		Other:        "",
+		Status:       push.Status,
+		OnlinePush:   false,
+		IsOnline:     false,
+		IsShowOnline: false,
+		KickPC:       push.KickPC,
+		KickWeak:     push.KickWeak,
+		Timestamp:    push.Timestamp,
+		SDKVersion:   fake.Device.OS.SDKVersion,
+		NetworkType:  1, // 0:mobile, 1:wifi
+		BuildVersion: "",
+		RegisterType: typ == RegisterTypeAppRegister || typ == RegisterTypeCreateDefaultRegInfo || typ == RegisterTypeFillRegProxy || typ == RegisterTypeSetOnlineStatus,
+		DeviceParam:  nil,
+		GUID:         fake.Device.GUID[:],
+		LocaleID:     constant.LocaleID, // constant
+		SlientPush:   false,             // constant
+		DeviceName:   fake.Device.OS.BuildModel,
+		DeviceType:   fake.Device.OS.BuildModel,
+		OSVersion:    fake.Device.OS.Version,
+		OpenPush:     true, // constant
+		LargeSeq:     push.LargeSeq,
+		// LastWatchStart: nil,
+		// BindUin:        nil,
+		OldSSOIP:  0,
+		NewSSOIP:  0,
+		ChannelID: "",
+		// CPID:           nil,
+		VendorName:   "MIUI",    // TODO: later
+		VendorOSName: "MIUI 13", // TODO: ro.miui.ui.version.name
+		// IOSIDFA:        nil,
+		Body0x769:   body,
+		IsSetStatus: typ == RegisterTypeSetOnlineStatus,
+		// ServerBuffer:   nil,
+		SetMute:       false, // qqsetting_qrlogin_set_mute
+		NotifySwitch:  true,  // constant
+		ExtraStatus:   push.ExtraStatus,
+		BatteryStatus: 0,    // constant
+		TimActiveFlag: true, // constant
+		BindUinNotify: push.BindUinNotify,
+		// VendorPushInfo: nil,
+		// VendorDeviceID: nil,
+		// CustomStatus:   nil,
+	})
+}
+
+func (m *Manager) requestRegister(req *RegisterRequest) (*RegisterResponse, error) {
+	p, err := uni.Marshal(&uni.Data{
+		Version:     3,
+		PacketType:  0,
+		MessageType: 0,
+		RequestID:   0,
+		ServantName: "PushService",
+		FuncName:    "SvcReqRegister",
+		Payload:     nil,
+		Timeout:     0,
+		Context:     nil,
+		Status:      nil,
+	}, map[string]any{
+		"SvcReqRegister": req,
+	})
+	if err != nil {
+		return nil, err
+	}
+	args, reply := rpc.Args{Uin: req.Uin, Payload: p}, rpc.Reply{}
+	if err = m.c.Call(service.MethodServiceRegister, &args, &reply); err != nil {
+		return nil, err
+	}
+	log.Println("[DUMP] service.register.response:\n" + hex.Dump(reply.Payload))
+	data, resp := uni.Data{}, RegisterResponse{}
+	if err := uni.Unmarshal(reply.Payload, &data, map[string]any{
+		"SvcRespRegister": &resp,
+	}); err != nil {
+		return nil, err
+	}
+	return &resp, nil
 }

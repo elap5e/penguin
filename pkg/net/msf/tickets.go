@@ -165,7 +165,7 @@ func setTickets(uin int64, tickets *rpc.Tickets, tlvs map[uint16]tlv.Codec) {
 					tickets.SID.Iss = iss
 					tickets.SID.Exp = iss + int64(exp)
 				default:
-					log.Printf("t%x change time not parsed:%d", key, exp)
+					log.Printf("[DUMP] t%x change time not parsed:%d", key, exp)
 				}
 			}
 		case 0x0143:
@@ -192,7 +192,7 @@ func setTickets(uin int64, tickets *rpc.Tickets, tlvs map[uint16]tlv.Codec) {
 				_, _ = buf.ReadUint16()
 			}
 		default:
-			log.Printf("t%x not parsed:\n%s\n", k, hex.Dump(v.MustGetValue().Bytes()))
+			log.Printf("[DUMP] t%x not parsed:\n%s", k, hex.Dump(v.MustGetValue().Bytes()))
 		}
 	}
 	file := ".penguin/tickets/" + strconv.FormatInt(uin, 10) + ".json"

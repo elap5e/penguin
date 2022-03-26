@@ -28,6 +28,8 @@ type Client interface {
 	Close() error
 	Go(serviceMethod string, args *Args, reply *Reply, done chan *Call) *Call
 	Call(serviceMethod string, args *Args, reply *Reply) error
+	Handle(serviceMethod string, reply *Reply) (*Args, error)
+	Register(serviceMethod string, handler Handler) error
 
 	GetNextSeq() int32
 	GetFakeSource(uin int64) *FakeSource
@@ -40,6 +42,8 @@ type Client interface {
 	SetSessionKSID(uin int64, ksid []byte)
 	SetTickets(uin int64, tlvs map[uint16]tlv.Codec)
 }
+
+type Handler func(reply *Reply) (*Args, error)
 
 type Session struct {
 	Auth   []byte `json:"auth,omitempty"`

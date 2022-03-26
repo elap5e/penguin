@@ -17,8 +17,10 @@ package rpc
 import (
 	"container/list"
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net/rpc"
@@ -82,31 +84,45 @@ func (s *sender) recvLoop(ctx context.Context) {
 		if err != nil {
 			return
 		}
+		info := fmt.Sprintf("version:%d uin:%s seq:%d method:%s", resp.Version, resp.Username, resp.Seq, resp.ServiceMethod)
+		p, _ := json.MarshalIndent(resp, "", "  ")
+		log.Println("[R|DUMP]", info, "response:\n"+string(p))
 		seq := resp.Seq
 		s.mu.Lock()
 		call := s.pending[seq]
 		delete(s.pending, seq)
 		s.mu.Unlock()
 
-		switch {
-		case call == nil:
-			// TODO: server push
-			err = s.codec.ReadResponseBody(nil)
-			if err != nil {
-				err = errors.New("reading error body: " + err.Error())
-			}
-		default:
+		if call != nil {
 			err = s.codec.ReadResponseBody(call.Reply)
 			if err != nil {
 				call.Error = errors.New("reading body " + err.Error())
 			}
 			call.done()
+			p, _ = json.MarshalIndent(call.Reply, "", "  ")
+			log.Println("[R|DUMP]", info, "response.reply:\n"+string(p))
+			log.Println("[R]", info, fmt.Sprintf("payload:%d", len(call.Reply.Payload)))
+		} else {
+			reply := &Reply{}
+			err = s.codec.ReadResponseBody(reply)
+			if err != nil {
+				err = errors.New("reading error body: " + err.Error())
+			}
+			go func() {
+				p, _ := json.MarshalIndent(reply, "", "  ")
+				log.Println("[H|DUMP]", info, "response.reply:\n"+string(p))
+				args, err := s.c.Handle(reply.ServiceMethod, reply)
+				if err != nil {
+					log.Println("[H|DUMP] response.reply.payload:\n" + hex.Dump(reply.Payload))
+					log.Println("[H|SKIP]", info, "error:", err)
+					return
+				}
+				log.Println("[H]", info, fmt.Sprintf("payload:%d", len(reply.Payload)))
+				if args != nil {
+					s.goSend(args.ServiceMethod, args, nil, nil, true)
+				}
+			}()
 		}
-		p, _ := json.MarshalIndent(resp, "", "  ")
-		log.Printf("sender.response:\n%s", string(p))
-		p, _ = json.MarshalIndent(call.Reply, "", "  ")
-		log.Printf("sender.call.Reply:\n%s", string(p))
-		log.Printf("[R] uin:%s ver:%d seq:%d cmd:%s", resp.Username, resp.Version, resp.Seq, resp.ServiceMethod)
 	}
 	s.loopError(err)
 }
@@ -134,7 +150,7 @@ func (s *sender) sendLoop(ctx context.Context) {
 		req = Request{
 			ServiceMethod: call.ServiceMethod,
 			Seq:           call.Seq,
-			Version:       VersionDefault,
+			Version:       call.Version,
 			EncryptType:   EncryptTypeNotNeedEncrypt,
 			Username:      strconv.FormatInt(call.Args.Uin, 10),
 		}
@@ -149,11 +165,12 @@ func (s *sender) sendLoop(ctx context.Context) {
 				call.done()
 			}
 		}
+		info := fmt.Sprintf("version:%d uin:%s seq:%d method:%s", req.Version, req.Username, req.Seq, req.ServiceMethod)
 		p, _ := json.MarshalIndent(req, "", "  ")
-		log.Printf("sender.requset:\n%s", string(p))
+		log.Println("[S|DUMP]", info, "request:\n"+string(p))
 		p, _ = json.MarshalIndent(call.Args, "", "  ")
-		log.Printf("sender.call.Args:\n%s", string(p))
-		log.Printf("[S] uin:%s ver:%d seq:%d cmd:%s", req.Username, req.Version, req.Seq, req.ServiceMethod)
+		log.Println("[S|DUMP]", info, "request.args:\n"+string(p))
+		log.Println("[S]", info, fmt.Sprintf("payload:%d", len(call.Args.Payload)))
 	}
 	s.loopError(err)
 }
@@ -231,7 +248,14 @@ func (s *sender) goSend(serviceMethod string, args *Args, reply *Reply, done cha
 	call := new(Call)
 	call.ServiceMethod = serviceMethod
 	args.ServiceMethod = serviceMethod
+	if args.Seq == 0 {
+		args.Seq = s.c.GetNextSeq()
+	}
 	call.Seq = args.Seq
+	if args.Version == 0 {
+		args.Version = VersionDefault
+	}
+	call.Version = args.Version
 	call.Args = args
 	call.Reply = reply
 	if done == nil {
