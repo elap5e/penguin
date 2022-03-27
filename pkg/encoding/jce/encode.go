@@ -135,7 +135,7 @@ func bytesEncoder(e *encoder, v reflect.Value, t uint8) {
 	b := v.Bytes()
 	e.EncodeHead(0x0d, t)
 	e.EncodeHead(0x00, 0x00)
-	uintEncoder(e, reflect.ValueOf(uint32(len(b))), 0x00)
+	intEncoder(e, reflect.ValueOf(len(b)), 0x00)
 	e.Write(b)
 }
 
@@ -273,7 +273,7 @@ type arrayEncoder struct {
 func (ae arrayEncoder) encode(e *encoder, v reflect.Value, t uint8) {
 	e.EncodeHead(0x09, t)
 	l := v.Len()
-	uintEncoder(e, reflect.ValueOf(uint32(l)), 0x00)
+	intEncoder(e, reflect.ValueOf(l), 0x00)
 	for i := 0; i < l; i++ {
 		ae.elemEnc(e, v.Index(i), 0x00)
 	}
@@ -291,7 +291,7 @@ type mapEncoder struct {
 func (me mapEncoder) encode(e *encoder, v reflect.Value, t uint8) {
 	ks := v.MapKeys()
 	e.EncodeHead(0x08, t)
-	uintEncoder(e, reflect.ValueOf(uint32(len(ks))), 0x00)
+	intEncoder(e, reflect.ValueOf(len(ks)), 0x00)
 	for _, k := range ks {
 		b := v.MapIndex(k)
 		stringEncoder(e, k, 0x00)
@@ -309,7 +309,7 @@ func stringEncoder(e *encoder, v reflect.Value, t uint8) {
 	l := len(b)
 	if l > 255 {
 		e.EncodeHead(0x07, t)
-		uintEncoder(e, reflect.ValueOf(uint32(len(b))), 0x00)
+		intEncoder(e, reflect.ValueOf(len(b)), 0x00)
 		e.WriteString(b)
 		return
 	}
@@ -336,21 +336,21 @@ func intEncoder(e *encoder, v reflect.Value, t uint8) {
 	b := v.Int()
 	switch k {
 	case reflect.Int64:
-		if b>>32 != 0 {
+		if b>>31 != 0 {
 			e.EncodeHead(0x03, t)
 			e.WriteInt64(b)
 			return
 		}
 		fallthrough
 	case reflect.Int32, reflect.Int:
-		if b>>16 != 0 {
+		if b>>15 != 0 {
 			e.EncodeHead(0x02, t)
 			e.WriteInt32(int32(b))
 			return
 		}
 		fallthrough
 	case reflect.Int16:
-		if b>>8 != 0 {
+		if b>>7 != 0 {
 			e.EncodeHead(0x01, t)
 			e.WriteInt16(int16(b))
 			return
@@ -371,21 +371,21 @@ func uintEncoder(e *encoder, v reflect.Value, t uint8) {
 	b := v.Uint()
 	switch k {
 	case reflect.Uint64:
-		if b>>32 != 0 {
+		if b>>31 != 0 {
 			e.EncodeHead(0x03, t)
 			e.WriteUint64(b)
 			return
 		}
 		fallthrough
 	case reflect.Uint32, reflect.Uint:
-		if b>>16 != 0 {
+		if b>>15 != 0 {
 			e.EncodeHead(0x02, t)
 			e.WriteUint32(uint32(b))
 			return
 		}
 		fallthrough
 	case reflect.Uint16:
-		if b>>8 != 0 {
+		if b>>7 != 0 {
 			e.EncodeHead(0x01, t)
 			e.WriteUint16(uint16(b))
 			return
