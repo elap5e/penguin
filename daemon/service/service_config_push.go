@@ -225,15 +225,8 @@ func (m *Manager) handleConfigPushRequest(reply *rpc.Reply) (*rpc.Args, error) {
 	}
 	p, err := uni.Marshal(&uni.Data{
 		Version:     3,
-		PacketType:  0,
-		MessageType: 0,
-		RequestID:   0,
-		ServantName: "QQService.ConfigPushSvc.MainServant",
+		ServantName: data.ServantName,
 		FuncName:    "PushResp",
-		Payload:     nil,
-		Timeout:     0,
-		Context:     nil,
-		Status:      nil,
 	}, map[string]any{
 		"PushResp": resp,
 	})

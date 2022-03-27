@@ -25,7 +25,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/elap5e/penguin/pkg/crypto/ecdh"
 	"github.com/elap5e/penguin/pkg/encoding/tlv"
 	"github.com/elap5e/penguin/pkg/net/msf/rpc"
 	"github.com/elap5e/penguin/pkg/net/msf/rpc/tcp"
@@ -165,24 +164,24 @@ func (c *Client) GetServerTime() int64 {
 func (c *Client) GetSession(uin int64) *rpc.Session {
 	session := c.sessions[uin]
 	if session == nil {
-		r := rand.New(rand.NewSource(uin))
-		c.sessions[uin] = &rpc.Session{}
+		c.sessions[uin] = getSession(uin)
 		session = c.sessions[uin]
-		session.Cookie = make([]byte, 4)
-		r.Read(session.Cookie)
-		session.RandomKey = [16]byte{}
-		r.Read(session.RandomKey[:])
-		session.RandomPass = [16]byte{}
-		r.Read(session.RandomPass[:])
-		strs := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-		for i := range session.RandomPass {
-			session.RandomPass[i] = strs[session.RandomPass[i]%52]
-		}
-		session.PrivateKey, _ = ecdh.GenerateKey()
-		session.KeyVersion = ecdh.ServerKeyVersion
-		session.SharedSecret = session.PrivateKey.SharedSecret(ecdh.ServerPublicKey)
 	}
 	return session
+}
+
+func (c *Client) SetSession(uin int64, tlvs map[uint16]tlv.Codec) {}
+
+func (c *Client) SetSessionAuth(uin int64, auth []byte) {
+	c.GetSession(uin).Auth = auth
+}
+
+func (c *Client) SetSessionCookie(uin int64, cookie []byte) {
+	c.GetSession(uin).Cookie = cookie
+}
+
+func (c *Client) SetSessionKSID(uin int64, ksid []byte) {
+	c.GetSession(uin).KSID = ksid
 }
 
 func (c *Client) GetTickets(uin int64) *rpc.Tickets {
@@ -194,16 +193,6 @@ func (c *Client) GetTickets(uin int64) *rpc.Tickets {
 	return tickets
 }
 
-func (c *Client) SetSession(uin int64, tlvs map[uint16]tlv.Codec) {}
-func (c *Client) SetSessionAuth(uin int64, auth []byte) {
-	c.GetSession(uin).Auth = auth
-}
-func (c *Client) SetSessionCookie(uin int64, cookie []byte) {
-	c.GetSession(uin).Cookie = cookie
-}
-func (c *Client) SetSessionKSID(uin int64, ksid []byte) {
-	c.GetSession(uin).KSID = ksid
-}
 func (c *Client) SetTickets(uin int64, tlvs map[uint16]tlv.Codec) {
 	tickets := c.stickets[uin]
 	if tickets == nil {

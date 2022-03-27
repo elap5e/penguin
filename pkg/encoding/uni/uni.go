@@ -22,9 +22,9 @@ type Data struct {
 	ServantName string            `jce:"5" json:"servant_name"`
 	FuncName    string            `jce:"6" json:"func_name"`
 	Payload     []byte            `jce:"7" json:"payload"`
-	Timeout     int32             `jce:"8" json:"timeout,omitempty"`
-	Context     map[string]string `jce:"9" json:"context,omitempty"`
-	Status      map[string]string `jce:"10" json:"status,omitempty"`
+	Timeout     int32             `jce:"8" json:"timeout"`
+	Context     map[string]string `jce:"9" json:"context"`
+	Status      map[string]string `jce:"10" json:"status"`
 }
 
 type Payload map[string]map[string][]byte

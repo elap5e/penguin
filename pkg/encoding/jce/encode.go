@@ -15,6 +15,7 @@
 package jce
 
 import (
+	"log"
 	"reflect"
 	"strconv"
 
@@ -23,8 +24,8 @@ import (
 
 func Marshal(v any, opts ...bool) ([]byte, error) {
 	simple := false
-	if len(opts) != 0 && opts[0] {
-		simple = true
+	if len(opts) > 0 {
+		simple = opts[0]
 	}
 
 	e := &encoder{Buffer: bytes.NewBuffer([]byte{})}
@@ -108,6 +109,7 @@ func typeEncoder(t reflect.Type) encoderFunc {
 	case reflect.Pointer:
 		return newPtrEncoder(t)
 	default:
+		log.Println("unsupported type:", t)
 		return nil
 	}
 }
@@ -396,6 +398,8 @@ func uintEncoder(e *encoder, v reflect.Value, t uint8) {
 			return
 		}
 		e.EncodeHead(0x0c, t)
+	default:
+		log.Println("unsupported type:", t)
 	}
 }
 

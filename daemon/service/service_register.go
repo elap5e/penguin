@@ -75,31 +75,31 @@ type RegisterRequest struct {
 	OpenPush     bool       `jce:"22" json:"open_push"`
 	LargeSeq     int64      `jce:"23" json:"large_seq"`
 
-	LastWatchStart uint32          `jce:"24" json:"last_watch_start,omitempty"`
-	BindUin        []uint64        `jce:"25" json:"bind_uin,omitempty"`
-	OldSSOIP       uint64          `jce:"26" json:"old_sso_ip,omitempty"`
-	NewSSOIP       uint64          `jce:"27" json:"new_sso_ip,omitempty"`
-	ChannelID      string          `jce:"28" json:"channel_id,omitempty"`
-	CPID           uint64          `jce:"29" json:"cpid,omitempty"`
-	VendorName     string          `jce:"30" json:"vendor_name,omitempty"`
-	VendorOSName   string          `jce:"31" json:"vendor_os_name,omitempty"`
-	IOSIDFA        string          `jce:"32" json:"ios_idfa,omitempty"`
+	LastWatchStart uint32          `jce:"24" json:"last_watch_start"`
+	BindUin        []uint64        `jce:"25" json:"bind_uin"`
+	OldSSOIP       uint64          `jce:"26" json:"old_sso_ip"`
+	NewSSOIP       uint64          `jce:"27" json:"new_sso_ip"`
+	ChannelID      string          `jce:"28" json:"channel_id"`
+	CPID           uint64          `jce:"29" json:"cpid"`
+	VendorName     string          `jce:"30" json:"vendor_name"`
+	VendorOSName   string          `jce:"31" json:"vendor_os_name"`
+	IOSIDFA        string          `jce:"32" json:"ios_idfa"`
 	Body0x769      []byte          `jce:"33" json:"body_0x796"`
 	IsSetStatus    bool            `jce:"34" json:"is_set_status"`
-	ServerBuffer   []byte          `jce:"35" json:"server_buffer,omitempty"`
+	ServerBuffer   []byte          `jce:"35" json:"server_buffer"`
 	SetMute        bool            `jce:"36" json:"set_mute"`
-	NotifySwitch   bool            `jce:"37" json:"notify_switch,omitempty"`
+	NotifySwitch   bool            `jce:"37" json:"notify_switch"`
 	ExtraStatus    int64           `jce:"38" json:"extra_status"`
 	BatteryStatus  uint32          `jce:"39" json:"battery_status"`
-	TimActiveFlag  bool            `jce:"40" json:"tim_active_flag,omitempty"`
+	TimActiveFlag  bool            `jce:"40" json:"tim_active_flag"`
 	BindUinNotify  bool            `jce:"41" json:"bind_uin_notify"`
 	VendorPushInfo *VendorPushInfo `jce:"42" json:"vendor_push_info,omitempty"`
-	VendorDeviceID int64           `jce:"43" json:"vendor_device_id,omitempty"`
-	CustomStatus   []byte          `jce:"45" json:"custom_status,omitempty"`
+	VendorDeviceID int64           `jce:"43" json:"vendor_device_id"`
+	CustomStatus   []byte          `jce:"45" json:"custom_status"`
 }
 
 type VendorPushInfo struct {
-	Type uint64 `jce:"0" json:"type,omitempty"`
+	Type uint64 `jce:"0" json:"type"`
 }
 
 type RegisterResponse struct {
@@ -108,14 +108,14 @@ type RegisterResponse struct {
 	ReplyCode      uint8  `jce:"2" json:"reply_code"`
 	Result         string `jce:"3" json:"result"`
 	ServerTime     int64  `jce:"4" json:"server_time"`
-	LogQQ          bool   `jce:"5" json:"log_qq,omitempty"`
+	LogQQ          bool   `jce:"5" json:"log_qq"`
 	NeedKick       bool   `jce:"6" json:"need_kick"`
-	UpdateFlag     bool   `jce:"7" json:"update_flag,omitempty"`
+	UpdateFlag     bool   `jce:"7" json:"update_flag"`
 	Timestamp      int64  `jce:"8" json:"timestamp"`
-	CrashFlag      bool   `jce:"9" json:"crash_flag,omitempty"`
-	ClientIP       string `jce:"10" json:"client_ip,omitempty"`
-	ClientPort     int32  `jce:"11" json:"client_port,omitempty"`
-	HelloInterval  int32  `jce:"12" json:"hello_interval,omitempty"`
+	CrashFlag      bool   `jce:"9" json:"crash_flag"`
+	ClientIP       string `jce:"10" json:"client_ip"`
+	ClientPort     int32  `jce:"11" json:"client_port"`
+	HelloInterval  int32  `jce:"12" json:"hello_interval"`
 	LargeSeq       int32  `jce:"13" json:"large_seq"`
 	LargeSeqUpdate bool   `jce:"14" json:"large_seq_update"`
 
@@ -124,7 +124,7 @@ type RegisterResponse struct {
 	ExtraStatus              int64  `jce:"17" json:"extra_status"`
 	ClientBatteryGetInterval int64  `jce:"18" json:"client_battery_get_interval"`
 	ClientAutoStatusInterval int64  `jce:"19" json:"client_auto_status_interval"`
-	CustomStatus             []byte `jce:"21" json:"custom_status,omitempty"`
+	CustomStatus             []byte `jce:"21" json:"custom_status"`
 }
 
 type RegisterPush struct {
@@ -160,7 +160,7 @@ func (m *Manager) Register(uin int64, status StatusType, kick bool, typ Register
 		KickWeak:      false, // constant
 		Timestamp:     0,     // service_register_time
 		LargeSeq:      0,     // friend_list_seq
-		ExtraStatus:   -1,    // constant
+		ExtraStatus:   0,     // constant -1
 		BatteryCap:    0,     // constant
 		PowerConnect:  -1,    // constant
 		BindUinNotify: false, // sub_account_notify
@@ -197,7 +197,7 @@ func (m *Manager) requestRegisterPush(push *RegisterPush, typ RegisterType) (*Re
 		SDKVersion:   fake.Device.OS.SDKVersion,
 		NetworkType:  1, // 0:mobile, 1:wifi
 		BuildVersion: "",
-		RegisterType: typ == RegisterTypeAppRegister || typ == RegisterTypeCreateDefaultRegInfo || typ == RegisterTypeFillRegProxy || typ == RegisterTypeSetOnlineStatus,
+		RegisterType: !(typ == RegisterTypeAppRegister || typ == RegisterTypeCreateDefaultRegInfo || typ == RegisterTypeFillRegProxy || typ == RegisterTypeSetOnlineStatus),
 		DeviceParam:  nil,
 		GUID:         fake.Device.GUID[:],
 		LocaleID:     constant.LocaleID, // constant
@@ -207,26 +207,26 @@ func (m *Manager) requestRegisterPush(push *RegisterPush, typ RegisterType) (*Re
 		OSVersion:    fake.Device.OS.Version,
 		OpenPush:     true, // constant
 		LargeSeq:     push.LargeSeq,
-		// LastWatchStart: nil,
+		// LastWatchStart: 0,
 		// BindUin:        nil,
-		OldSSOIP:  0,
-		NewSSOIP:  0,
-		ChannelID: "",
-		// CPID:           nil,
-		VendorName:   "MIUI",    // TODO: later
-		VendorOSName: "MIUI 13", // TODO: ro.miui.ui.version.name
-		// IOSIDFA:        nil,
+		// OldSSOIP:       0,
+		// NewSSOIP:       0,
+		// ChannelID:      "",
+		// CPID:           0,
+		// VendorName:     "MIUI",    // TODO: later
+		// VendorOSName:   "MIUI 13", // TODO: ro.miui.ui.version.name
+		// IOSIDFA:        "",
 		Body0x769:   body,
 		IsSetStatus: typ == RegisterTypeSetOnlineStatus,
 		// ServerBuffer:   nil,
-		SetMute:       false, // qqsetting_qrlogin_set_mute
-		NotifySwitch:  true,  // constant
-		ExtraStatus:   push.ExtraStatus,
-		BatteryStatus: 0,    // constant
-		TimActiveFlag: true, // constant
-		BindUinNotify: push.BindUinNotify,
+		SetMute: false, // qqsetting_qrlogin_set_mute
+		// NotifySwitch:   false, // constant true
+		// ExtraStatus:    push.ExtraStatus,
+		// BatteryStatus:  0,     // constant
+		// TimActiveFlag:  false, // constant true
+		// BindUinNotify:  push.BindUinNotify,
 		// VendorPushInfo: nil,
-		// VendorDeviceID: nil,
+		// VendorDeviceID: 0,
 		// CustomStatus:   nil,
 	})
 }
@@ -234,15 +234,8 @@ func (m *Manager) requestRegisterPush(push *RegisterPush, typ RegisterType) (*Re
 func (m *Manager) requestRegister(req *RegisterRequest) (*RegisterResponse, error) {
 	p, err := uni.Marshal(&uni.Data{
 		Version:     3,
-		PacketType:  0,
-		MessageType: 0,
-		RequestID:   0,
 		ServantName: "PushService",
 		FuncName:    "SvcReqRegister",
-		Payload:     nil,
-		Timeout:     0,
-		Context:     nil,
-		Status:      nil,
 	}, map[string]any{
 		"SvcReqRegister": req,
 	})

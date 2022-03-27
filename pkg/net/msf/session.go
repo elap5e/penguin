@@ -13,3 +13,35 @@
 // limitations under the License.
 
 package msf
+
+import (
+	"math/rand"
+	"time"
+
+	"github.com/elap5e/penguin/pkg/crypto/ecdh"
+	"github.com/elap5e/penguin/pkg/net/msf/rpc"
+)
+
+func newSession() *rpc.Session {
+	var session rpc.Session
+	r := rand.New(rand.NewSource(time.Now().Unix()))
+	session = rpc.Session{}
+	session.Cookie = make([]byte, 4)
+	r.Read(session.Cookie)
+	session.RandomKey = [16]byte{}
+	r.Read(session.RandomKey[:])
+	session.RandomPass = [16]byte{}
+	r.Read(session.RandomPass[:])
+	strs := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	for i := range session.RandomPass {
+		session.RandomPass[i] = strs[session.RandomPass[i]%52]
+	}
+	session.PrivateKey, _ = ecdh.GenerateKey()
+	session.KeyVersion = ecdh.ServerKeyVersion
+	session.SharedSecret = session.PrivateKey.SharedSecret(ecdh.ServerPublicKey)
+	return &session
+}
+
+func getSession(uin int64) *rpc.Session {
+	return newSession()
+}

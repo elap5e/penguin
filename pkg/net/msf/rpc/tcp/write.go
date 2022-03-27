@@ -28,7 +28,9 @@ func (c *codec) WriteRequest(req *rpc.Request, args *rpc.Args) error {
 		return fmt.Errorf("tcp: unsupported version 0x%x", req.Version)
 	}
 
-	fake, sess := c.cl.GetFakeSource(args.Uin), c.cl.GetSession(args.Uin)
+	fake, session, tickets := c.cl.GetFakeSource(args.Uin), c.cl.GetSession(args.Uin), c.cl.GetTickets(args.Uin)
+	// p, _ := json.MarshalIndent(session, "", "  ")
+	// log.Println("session:\n" + string(p))
 	body := bytes.NewBuffer([]byte{})
 	body.WriteUint32(0)
 	if req.Version == rpc.VersionDefault {
@@ -39,13 +41,13 @@ func (c *codec) WriteRequest(req *rpc.Request, args *rpc.Args) error {
 		tmp[0x0] = fake.Device.NetworkType
 		tmp[0xa] = fake.Device.NetIPFamily
 		body.Write(tmp)
-		body.WriteBytesL32(c.cl.GetTickets(args.Uin).A2.Sig)
+		body.WriteBytesL32(tickets.A2.Sig)
 	}
 	body.WriteStringL32(args.ServiceMethod)
-	body.WriteBytesL32(sess.Cookie)
+	body.WriteBytesL32(session.Cookie)
 	if req.Version == rpc.VersionDefault {
 		body.WriteStringL32(fake.Device.IMEI)
-		body.WriteBytesL32(sess.KSID)
+		body.WriteBytesL32(session.KSID)
 		body.WriteStringL16("|" + fake.Device.IMSI + "|A" + fake.App.Revision)
 	}
 	body.WriteBytesL32(args.ReserveField)
@@ -57,7 +59,7 @@ func (c *codec) WriteRequest(req *rpc.Request, args *rpc.Args) error {
 	if method == "heartbeat.ping" || method == "heartbeat.alive" || method == "client.correcttime" {
 		req.EncryptType = rpc.EncryptTypeNotNeedEncrypt
 	} else {
-		cipher, d2 := tea.NewCipher([16]byte{}), c.cl.GetTickets(args.Uin).D2
+		cipher, d2 := tea.NewCipher([16]byte{}), tickets.D2
 		if len(d2.Sig) == 0 ||
 			method == "login.auth" ||
 			method == "login.chguin" ||
@@ -75,7 +77,7 @@ func (c *codec) WriteRequest(req *rpc.Request, args *rpc.Args) error {
 			method == "qqconnectlogin.auth_emp" {
 			req.EncryptType = rpc.EncryptTypeEncryptByZeros
 		} else {
-			cipher.SetKey(d2.Key)
+			cipher.SetKey(d2.Key.Get())
 			req.EncryptType = rpc.EncryptTypeEncryptByD2Key
 		}
 		body = bytes.NewBuffer(cipher.Encrypt(body.Bytes()))
@@ -89,7 +91,7 @@ func (c *codec) WriteRequest(req *rpc.Request, args *rpc.Args) error {
 	switch req.Version {
 	case rpc.VersionDefault:
 		if req.EncryptType == rpc.EncryptTypeEncryptByD2Key {
-			head.WriteBytesL32(c.cl.GetTickets(args.Uin).D2.Sig)
+			head.WriteBytesL32(tickets.D2.Sig)
 		} else {
 			head.WriteUint32(4)
 		}
