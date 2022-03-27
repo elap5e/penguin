@@ -15,9 +15,6 @@
 package service
 
 import (
-	"encoding/hex"
-	"log"
-
 	"google.golang.org/protobuf/proto"
 
 	"github.com/elap5e/penguin/daemon/constant"
@@ -217,23 +214,23 @@ func (m *Manager) requestRegisterPush(push *RegisterPush, typ RegisterType) (*Re
 		OSVersion:      fake.Device.OS.Version,
 		OpenPush:       true, // constant
 		LargeSeq:       push.LargeSeq,
-		LastWatchStart: 0,         // constant
-		BindUinList:    nil,       // constant
-		OldSSOIP:       0,         // constant
-		NewSSOIP:       -1,        // constant
-		ChannelID:      "",        // constant
-		CPID:           0,         // constant
-		VendorName:     "MIUI",    // TODO: later
-		VendorOSName:   "MIUI 13", // TODO: ro.miui.ui.version.name
-		IOSIDFA:        "",        // constant
+		LastWatchStart: 0,   // constant
+		BindUinList:    nil, // constant
+		OldSSOIP:       0,   // constant
+		NewSSOIP:       -1,  // constant
+		ChannelID:      "",  // constant
+		CPID:           0,   // constant
+		VendorName:     "MIUI",
+		VendorOSName:   "V13",
+		IOSIDFA:        "", // constant
 		Body0x769:      body,
 		IsSetStatus:    typ == RegisterTypeSetOnlineStatus,
 		ServerPayload:  nil,
 		SetMute:        false, // qqsetting_qrlogin_set_mute
 		NotifySwitch:   true,  // constant
 		ExtraStatus:    push.ExtraStatus,
-		BatteryStatus:  0,     // constant
-		TimActiveFlag:  false, // constant true
+		BatteryStatus:  0,    // constant
+		TimActiveFlag:  true, // constant
 		BindUinNotify:  push.BindUinNotify,
 		VendorPushInfo: nil, // constant
 		VendorDeviceID: 0,   // constant
@@ -256,7 +253,6 @@ func (m *Manager) requestRegister(req *RegisterRequest) (*RegisterResponse, erro
 	if err = m.c.Call(service.MethodServiceRegister, &args, &reply); err != nil {
 		return nil, err
 	}
-	log.Println("[DUMP] service.register.response:\n" + hex.Dump(reply.Payload))
 	data, resp := uni.Data{}, RegisterResponse{}
 	if err := uni.Unmarshal(reply.Payload, &data, map[string]any{
 		"SvcRespRegister": &resp,

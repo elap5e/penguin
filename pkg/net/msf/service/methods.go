@@ -25,9 +25,41 @@ const (
 )
 
 const (
+	MethodMessageDeleteMessage = "MessageSvc.PbDeleteMsg"
+	MethodMessageGetMessage    = "MessageSvc.PbGetMsg"
+	MethodMessageSendMessage   = "MessageSvc.PbSendMsg"
+	MethodMessageRecallMessage = "PbMessageSvc.PbMsgWithDraw"
+
+	MethodMessagePushNotify = "MessageSvc.PushNotify"
+	MethodMessagePushReaded = "MessageSvc.PushReaded"
+
+	MethodMessageUploadUserImage   = "LongConn.OffPicUp"
+	MethodMessageUploadChatImage   = "ImgStore.GroupPicUp"
+	MethodMessageDownloadChatImage = "ImgStore.GroupPicDown"
+)
+
+const (
+	MethodContactDeleteContact = "friendlist.delFriend"
+	MethodContactGetGroups     = "friendlist.getFriendGroupList"
+	MethodContactSetGroup      = "friendlist.SetGroupReq"
+)
+
+const (
+	MethodChatGetChats = "friendlist.GetTroopListReqV2"
+	MethodChatGetUsers = "friendlist.GetTroopMemberListReq"
+)
+
+const (
 	MethodServiceRegister = "StatSvc.register"
 
 	MethodServiceConfigPushDomain   = "ConfigPushSvc.PushDomain"
 	MethodServiceConfigPushRequest  = "ConfigPushSvc.PushReq"
 	MethodServiceConfigPushResponse = "ConfigPushSvc.PushResp"
+
+	MethodServiceOnlinePushUserMessage   = "OnlinePush.PbC2CMsgSync"
+	MethodServiceOnlinePushChatMessage   = "OnlinePush.PbPushGroupMsg"
+	MethodServiceOnlinePushChatSerivce   = "OnlinePush.PbPushTransMsg"
+	MethodServiceOnlinePushRequest       = "OnlinePush.ReqPush"
+	MethodServiceOnlinePushResponse      = "OnlinePush.RespPush"
+	MethodServiceOnlinePushTicketExpired = "OnlinePush.SidTicketExpired"
 )

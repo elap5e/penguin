@@ -16,10 +16,10 @@ package main
 
 import (
 	"context"
-	"log"
 
 	"github.com/elap5e/penguin/config"
 	"github.com/elap5e/penguin/daemon"
+	"github.com/elap5e/penguin/pkg/log"
 )
 
 func main() {

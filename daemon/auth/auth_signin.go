@@ -60,12 +60,16 @@ func (m *Manager) SignIn(username, password string) (*Response, error) {
 		return nil, err
 	}
 	tickets := m.c.GetTickets(uin)
-	if tickets.D2.Valid() {
-		return m.signInWithoutPassword(username, false)
-	} else if tickets.A2.Valid() {
+	if tickets.A2.Valid() {
 		return m.signInWithoutPassword(username, true)
+	} else if tickets.D2.Valid() {
+		return m.signInWithoutPassword(username, false)
 	}
 	return m.signInWithPassword(username, md5.Sum([]byte(password)), uin, 0, LoginTypeUin)
+}
+
+func (m *Manager) SignInChangeToken(uin int64) (*Response, error) {
+	return m.signInWithoutPassword(strconv.FormatInt(uin, 10), true)
 }
 
 // ACTION_WTLOGIN_GET_ST_WITH_PASSWD

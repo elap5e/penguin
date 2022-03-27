@@ -16,12 +16,12 @@ package auth
 
 import (
 	"encoding/hex"
-	"log"
 
 	"google.golang.org/protobuf/proto"
 
 	"github.com/elap5e/penguin/daemon/auth/pb"
 	"github.com/elap5e/penguin/pkg/encoding/tlv"
+	"github.com/elap5e/penguin/pkg/log"
 )
 
 func (resp *Response) SetExtraData(tlvs map[uint16]tlv.Codec) error {
@@ -34,7 +34,7 @@ func (resp *Response) SetExtraData(tlvs map[uint16]tlv.Codec) error {
 		v := v.(*tlv.TLV)
 		switch k {
 		default:
-			log.Printf("[D|ATHM|DUMP] t%x not parsed:\n%s", k, hex.Dump(v.MustGetValue().Bytes()))
+			log.Trace("t%x not parsed:\n%s", k, hex.Dump(v.MustGetValue().Bytes()))
 		case 0x000a:
 			buf, _ := v.GetValue()
 			extraData.ErrorCode, _ = buf.ReadUint32()

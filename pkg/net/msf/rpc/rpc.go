@@ -44,7 +44,7 @@ type Args struct {
 	Seq           int32  `json:"seq,omitempty"`
 	ServiceMethod string `json:"service_method,omitempty"`
 	ReserveField  []byte `json:"reserve_field,omitempty"`
-	Payload       []byte `json:"payload,omitempty"`
+	Payload       []byte `json:"-"`
 }
 
 type Reply struct {
@@ -57,7 +57,7 @@ type Reply struct {
 	Cookie        []byte `json:"cookie,omitempty"`
 	Flag          uint32 `json:"flag,omitempty"`
 	ReserveField  []byte `json:"reserve_field,omitempty"`
-	Payload       []byte `json:"payload,omitempty"`
+	Payload       []byte `json:"-"`
 }
 
 type Request struct {

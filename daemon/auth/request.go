@@ -18,7 +18,6 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net"
 	"strconv"
 	"strings"
@@ -27,6 +26,7 @@ import (
 	"github.com/elap5e/penguin/pkg/crypto/tea"
 	"github.com/elap5e/penguin/pkg/encoding/oicq"
 	"github.com/elap5e/penguin/pkg/encoding/tlv"
+	"github.com/elap5e/penguin/pkg/log"
 	"github.com/elap5e/penguin/pkg/net/msf/rpc"
 )
 
@@ -233,8 +233,8 @@ func (m *Manager) request(req *Request) (*Response, error) {
 }
 
 func (m *Manager) call(req *Request) (*Response, error) {
-	p, _ := json.MarshalIndent(req, "", "  ")
-	log.Println("[S|ATHM|DUMP]", fmt.Sprintf("uin:%d seq:%d method:%s", req.Data.Uin, req.Seq, req.ServiceMethod), "request:\n"+string(p))
+	p, _ := json.Marshal(req)
+	log.Trace("uin:%d seq:%d cmd:%s meta:%s", req.Data.Uin, req.Seq, req.ServiceMethod, string(p))
 	p, err := oicq.Marshal(req.Data)
 	if err != nil {
 		return nil, err
@@ -250,7 +250,7 @@ func (m *Manager) call(req *Request) (*Response, error) {
 	if err := resp.SetExtraData(resp.Data.TLVs); err != nil {
 		return nil, err
 	}
-	p, _ = json.MarshalIndent(resp, "", "  ")
-	log.Println("[R|ATHM|DUMP]", fmt.Sprintf("uin:%d seq:%d method:%s", resp.Data.Uin, resp.Seq, resp.ServiceMethod), "response:\n"+string(p))
+	p, _ = json.Marshal(resp)
+	log.Trace("uin:%d seq:%d cmd:%s meta:%s", resp.Data.Uin, resp.Seq, resp.ServiceMethod, string(p))
 	return resp, nil
 }

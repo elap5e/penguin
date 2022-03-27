@@ -22,12 +22,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/rpc"
 	"strconv"
 	"sync"
 	"time"
 
+	"github.com/elap5e/penguin/pkg/log"
 	"github.com/elap5e/penguin/pkg/net/msf/service"
 )
 
@@ -84,40 +84,42 @@ func (s *sender) recvLoop(ctx context.Context) {
 		if err != nil {
 			return
 		}
-		info := fmt.Sprintf("version:%d uin:%s seq:%d method:%s", resp.Version, resp.Username, resp.Seq, resp.ServiceMethod)
-		p, _ := json.MarshalIndent(resp, "", "  ")
-		log.Println("[R|DUMP]", info, "response:\n"+string(p))
 		seq := resp.Seq
 		s.mu.Lock()
 		call := s.pending[seq]
 		delete(s.pending, seq)
 		s.mu.Unlock()
 
+		p, _ := json.Marshal(resp)
+		log.Debug("recv:head:%s", p)
+		info := fmt.Sprintf("ver:%d uin:%s seq:%d cmd:%s", resp.Version, resp.Username, resp.Seq, resp.ServiceMethod)
 		if call != nil {
 			err = s.codec.ReadResponseBody(call.Reply)
 			if err != nil {
 				call.Error = errors.New("reading body " + err.Error())
 			}
 			call.done()
-			p, _ = json.MarshalIndent(call.Reply, "", "  ")
-			log.Println("[R|DUMP]", info, "response.reply:\n"+string(p))
-			log.Println("[R]", info, fmt.Sprintf("payload:%d", len(call.Reply.Payload)))
+			p, _ := json.Marshal(call.Reply)
+			log.Trace("recv:%s data:\n%s", p, hex.Dump(call.Reply.Payload))
+			log.Debug("recv:%s data:%d", p, len(call.Reply.Payload))
+			log.Info("recv %s data:%d", info, len(call.Reply.Payload))
 		} else {
 			reply := &Reply{}
 			err = s.codec.ReadResponseBody(reply)
 			if err != nil {
 				err = errors.New("reading error body: " + err.Error())
 			}
+			p, _ := json.Marshal(reply)
+			log.Trace("push:%s data:\n%s", p, hex.Dump(reply.Payload))
+			log.Debug("push:%s data:%d", p, len(reply.Payload))
+			log.Info("push %s data:%d", info, len(reply.Payload))
 			go func() {
-				p, _ := json.MarshalIndent(reply, "", "  ")
-				log.Println("[H|DUMP]", info, "response.reply:\n"+string(p))
 				args, err := s.c.Handle(reply.ServiceMethod, reply)
 				if err != nil {
-					log.Println("[H|DUMP] response.reply.payload:\n" + hex.Dump(reply.Payload))
-					log.Println("[H|SKIP]", info, "error:", err)
+					log.Debug("push:%s data:\n%s", p, hex.Dump(reply.Payload))
+					log.Warn("skip %s data:%d", info, len(reply.Payload))
 					return
 				}
-				log.Println("[H]", info, fmt.Sprintf("payload:%d", len(reply.Payload)))
 				if args != nil {
 					s.goSend(args.ServiceMethod, args, nil, nil, true)
 				}
@@ -155,6 +157,8 @@ func (s *sender) sendLoop(ctx context.Context) {
 			Username:      strconv.FormatInt(call.Args.Uin, 10),
 		}
 		err := s.codec.WriteRequest(&req, call.Args)
+		p, _ := json.Marshal(req)
+		log.Debug("send:head:%s", p)
 		if err != nil {
 			s.mu.Lock()
 			call = s.pending[call.Seq]
@@ -165,12 +169,10 @@ func (s *sender) sendLoop(ctx context.Context) {
 				call.done()
 			}
 		}
-		info := fmt.Sprintf("version:%d uin:%s seq:%d method:%s", req.Version, req.Username, req.Seq, req.ServiceMethod)
-		p, _ := json.MarshalIndent(req, "", "  ")
-		log.Println("[S|DUMP]", info, "request:\n"+string(p))
-		p, _ = json.MarshalIndent(call.Args, "", "  ")
-		log.Println("[S|DUMP]", info, "request.args:\n"+string(p))
-		log.Println("[S]", info, fmt.Sprintf("payload:%d", len(call.Args.Payload)))
+		p, _ = json.Marshal(call.Args)
+		log.Trace("send:%s data:\n%s", p, hex.Dump(call.Args.Payload))
+		log.Debug("send:%s data:%d", p, len(call.Args.Payload))
+		log.Info("send ver:%d uin:%s seq:%d cmd:%s data:%d", req.Version, req.Username, req.Seq, req.ServiceMethod, len(call.Args.Payload))
 	}
 	s.loopError(err)
 }
@@ -225,7 +227,9 @@ func (s *sender) push(call *Call, front bool) {
 		call.done()
 		return
 	}
-	s.pending[call.Seq] = call
+	if call.Reply != nil {
+		s.pending[call.Seq] = call
+	}
 	s.mu.Unlock()
 
 	if front {

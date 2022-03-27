@@ -15,32 +15,21 @@
 package service
 
 import (
-	"context"
-
-	"github.com/elap5e/penguin/daemon/auth"
 	"github.com/elap5e/penguin/pkg/net/msf/rpc"
 	"github.com/elap5e/penguin/pkg/net/msf/service"
 )
 
-type Daemon interface {
-	GetAuthManager() *auth.Manager
-}
-
-type Manager struct {
-	ctx context.Context
-
-	c rpc.Client
-	d Daemon
-}
-
-func NewManager(ctx context.Context, c rpc.Client, d Daemon) *Manager {
-	m := &Manager{
-		ctx: ctx,
-		c:   c,
-		d:   d,
+func (m *Manager) handleOnlinePushSIDTicketExpired(reply *rpc.Reply) (*rpc.Args, error) {
+	if _, err := m.d.GetAuthManager().SignInChangeToken(reply.Uin); err != nil {
+		return nil, err
 	}
-	m.c.Register(service.MethodServiceConfigPushDomain, m.handleConfigPushDomain)
-	m.c.Register(service.MethodServiceConfigPushRequest, m.handleConfigPushRequest)
-	m.c.Register(service.MethodServiceOnlinePushTicketExpired, m.handleOnlinePushSIDTicketExpired)
-	return m
+	if _, err := m.RegisterAppRegister(reply.Uin); err != nil {
+		return nil, err
+	}
+	return &rpc.Args{
+		Version:       rpc.VersionSimple,
+		Uin:           reply.Uin,
+		Seq:           reply.Seq,
+		ServiceMethod: service.MethodServiceOnlinePushTicketExpired,
+	}, nil
 }

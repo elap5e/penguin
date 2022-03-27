@@ -18,7 +18,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"math/rand"
 	"os"
 	"strconv"
@@ -26,6 +25,7 @@ import (
 
 	"github.com/elap5e/penguin/pkg/bytes"
 	"github.com/elap5e/penguin/pkg/encoding/tlv"
+	"github.com/elap5e/penguin/pkg/log"
 	"github.com/elap5e/penguin/pkg/net/msf/rpc"
 )
 
@@ -114,9 +114,9 @@ func setTickets(uin int64, tickets *rpc.Tickets, tlvs map[uint16]tlv.Codec) {
 			tickets.ST.Iss = iss
 			tickets.ST.Exp = -1
 		case 0x0118:
-			log.Printf("[DUMP] t%x main_display_name:\n%s", k, hex.Dump(v.MustGetValue().Bytes()))
+			log.Trace("t%x main_display_name:\n%s", k, hex.Dump(v.MustGetValue().Bytes()))
 		case 0x011a:
-			log.Printf("[DUMP] t%x face, age, gender, nick:\n%s", k, hex.Dump(v.MustGetValue().Bytes()))
+			log.Trace("t%x face, age, gender, nick:\n%s", k, hex.Dump(v.MustGetValue().Bytes()))
 		case 0x011c:
 			tickets.LSKey.Sig = v.MustGetValue().Bytes()
 		case 0x0120:
@@ -163,7 +163,7 @@ func setTickets(uin int64, tickets *rpc.Tickets, tlvs map[uint16]tlv.Codec) {
 					tickets.SID.Iss = iss
 					tickets.SID.Exp = iss + int64(exp)
 				default:
-					log.Printf("[DUMP] t%x change time not parsed:%d", key, exp)
+					log.Trace("t%x change time not parsed:%d", key, exp)
 				}
 			}
 		case 0x0143:
@@ -188,7 +188,7 @@ func setTickets(uin int64, tickets *rpc.Tickets, tlvs map[uint16]tlv.Codec) {
 				_, _ = buf.ReadUint16()
 			}
 		default:
-			log.Printf("[DUMP] t%x not parsed:\n%s", k, hex.Dump(v.MustGetValue().Bytes()))
+			log.Trace("t%x not parsed:\n%s", k, hex.Dump(v.MustGetValue().Bytes()))
 		}
 	}
 	file := ".penguin/tickets/" + strconv.FormatInt(uin, 10) + ".json"
