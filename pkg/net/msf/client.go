@@ -116,7 +116,7 @@ func (c *Client) GetFakeSource(uin int64) *rpc.FakeSource {
 			SDKVer:     "6.0.0.2497",
 			SSOVer:     18,
 			ImageType:  1,
-			MiscBitMap: 0b00001000111101111111111101111100,
+			MiscBitMap: 0b00001000111101111111111101111100, // 150470524
 			CanCaptcha: true,
 		},
 		Device: &rpc.FakeDevice{
@@ -126,8 +126,8 @@ func (c *Client) GetFakeSource(uin int64) *rpc.FakeSource {
 				BuildBrand:  []byte("Xiaomi"),
 				BuildModel:  "Redmi K20",
 				BuildID:     osid,
-				SDKVersion:  uint32(23), // uint32(30)
-				NetworkType: 0x0002,
+				SDKVersion:  uint32(30),
+				NetworkType: 2,
 			},
 			APNName:       []byte("wifi"),
 			SIMOPName:     []byte("CMCC"),
@@ -139,8 +139,8 @@ func (c *Client) GetFakeSource(uin int64) *rpc.FakeSource {
 			BootID:        uuid,
 			Baseband:      "4.3.c5-00069-SM6150_GEN_PACK-1",
 			InnerVersion:  "20.10.20",
-			NetworkType:   0x01,
-			NetIPFamily:   0x03,
+			NetworkType:   1,
+			NetIPFamily:   3,
 			IPv4Address:   ipv4,
 			IPv6Address:   ipv4,
 			MACAddress:    mac1,

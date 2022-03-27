@@ -82,7 +82,7 @@ func (m *Manager) signInWithPassword(username string, hash [16]byte, uin, salt i
 	} else {
 		tlvs[0x0106] = tlv.NewTLV(0x0106, 0x0000, bytes.NewBuffer(a1.Sig))
 	}
-	tlvs[0x0116] = tlv.NewT116(fake.App.MiscBitMap, constant.SubSigMap, constant.SubAppIDList)
+	tlvs[0x0116] = tlv.NewT116(constant.MiscBitMap, constant.SubSigMap, constant.SubAppIDList)
 	tlvs[0x0100] = tlv.NewT100(constant.DstAppID, constant.OpenAppID, 0, constant.MainSigMap, fake.App.SSOVer)
 	tlvs[0x0107] = tlv.NewT107(0, 0, 0, 1)
 	if len(tickets.KSID) != 0 {
@@ -129,7 +129,7 @@ func (m *Manager) signInWithPassword(username string, hash [16]byte, uin, salt i
 	)
 	tlvs[0x0145] = tlv.NewT145(fake.Device.GUID)
 	tlvs[0x0147] = tlv.NewT147(constant.DstAppID, []byte(fake.App.VerName), fake.App.SigHash)
-	if fake.App.MiscBitMap&0x80 != 0 {
+	if constant.MiscBitMap&0x80 != 0 {
 		tlvs[0x0166] = tlv.NewT166(fake.App.ImageType)
 	}
 	if len(extraData.T16A) != 0 {
@@ -218,7 +218,7 @@ func (m *Manager) signInWithoutPassword(username string, changeD2 bool) (*Respon
 	tlvs := make(map[uint16]tlv.Codec)
 	tlvs[0x0100] = tlv.NewT100(constant.DstAppID, constant.OpenAppID, 0, constant.MainSigMap, fake.App.SSOVer)
 	tlvs[0x010a] = tlv.NewT10A(tickets.A2.Sig)
-	tlvs[0x0116] = tlv.NewT116(fake.App.MiscBitMap, constant.SubSigMap, constant.SubAppIDList)
+	tlvs[0x0116] = tlv.NewT116(constant.MiscBitMap, constant.SubSigMap, constant.SubAppIDList)
 	if len(tickets.KSID) != 0 {
 		tlvs[0x0108] = tlv.NewT108(tickets.KSID)
 	}

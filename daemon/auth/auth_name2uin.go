@@ -53,7 +53,7 @@ func (m *Manager) name2Uin(username string) (*Response, error) {
 		fake.Device.GUID[:],
 		fake.Device.OS.BuildBrand,
 	)
-	tlvs[0x0116] = tlv.NewT116(fake.App.MiscBitMap, constant.SubSigMap, constant.SubAppIDList)
+	tlvs[0x0116] = tlv.NewT116(constant.MiscBitMap, constant.SubSigMap, constant.SubAppIDList)
 	tlvs[0x0191] = tlv.NewT191(0x82)
 	tlvs[0x011b] = tlv.NewTLV(0x011b, 1, bytes.NewBuffer([]byte{2}))
 	tlvs[0x052d] = tlv.NewT52D(&pb.DeviceReport{

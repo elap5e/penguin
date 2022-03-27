@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strconv"
 
 	"github.com/elap5e/penguin/config"
 	"github.com/elap5e/penguin/daemon/account"
@@ -54,13 +55,13 @@ func New(ctx context.Context, cfg *config.Config) *Daemon {
 }
 
 func (d *Daemon) Run() error {
-	asResp, err := d.athm.SignIn(d.cfg.Username, d.cfg.Password)
-	if err != nil {
-		return fmt.Errorf("sign in, error: %v", err)
-	}
-	srResp, err := d.svcm.RegisterAppRegister(asResp.Data.Uin)
-	// uin, _ := strconv.ParseInt(d.cfg.Username, 10, 64)
-	// srResp, err := d.svcm.RegisterAppRegister(uin)
+	// asResp, err := d.athm.SignIn(d.cfg.Username, d.cfg.Password)
+	// if err != nil {
+	// 	return fmt.Errorf("sign in, error: %v", err)
+	// }
+	// srResp, err := d.svcm.RegisterAppRegister(asResp.Data.Uin)
+	uin, _ := strconv.ParseInt(d.cfg.Username, 10, 64)
+	srResp, err := d.svcm.RegisterAppRegister(uin)
 	if err != nil {
 		return fmt.Errorf("register app register, error: %v", err)
 	}
