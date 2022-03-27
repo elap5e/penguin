@@ -159,8 +159,8 @@ type ProxyIPChannel struct {
 }
 
 type ProxyIP struct {
-	Type   int64         `jce:"0" json:"type,omitempty"`
-	IPlist []ProxyIPInfo `jce:"1" json:"ip_list,omitempty"`
+	Type   int64          `jce:"0" json:"type,omitempty"`
+	IPlist []*ProxyIPInfo `jce:"1" json:"ip_list,omitempty"`
 }
 
 type ProxyIPInfo struct {

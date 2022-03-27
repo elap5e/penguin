@@ -115,7 +115,7 @@ func (c *Client) GetFakeSource(uin int64) *rpc.FakeSource {
 			BuildAt:    1645432578,
 			SDKVer:     "6.0.0.2497",
 			SSOVer:     18,
-			ImageType:  0x01,
+			ImageType:  1,
 			MiscBitMap: 0b00001000111101111111111101111100,
 			CanCaptcha: true,
 		},
@@ -149,7 +149,7 @@ func (c *Client) GetFakeSource(uin int64) *rpc.FakeSource {
 			IMEI:          imei,
 			IMSI:          imsi,
 			GUID:          md5.Sum(append([]byte(osid), mac1...)),
-			GUIDFlag:      uint32((1 << 24 & 0xFF000000) | (0 << 8 & 0xFF00)),
+			GUIDFlag:      uint32((1 << 24 & 0xff000000) | (0 << 8 & 0xff00)),
 			IsGUIDFileNil: false,
 			IsGUIDGenSucc: true,
 			IsGUIDChanged: false,
@@ -178,10 +178,6 @@ func (c *Client) SetSessionAuth(uin int64, auth []byte) {
 
 func (c *Client) SetSessionCookie(uin int64, cookie []byte) {
 	c.GetSession(uin).Cookie = cookie
-}
-
-func (c *Client) SetSessionKSID(uin int64, ksid []byte) {
-	c.GetSession(uin).KSID = ksid
 }
 
 func (c *Client) GetTickets(uin int64) *rpc.Tickets {

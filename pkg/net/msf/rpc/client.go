@@ -39,7 +39,6 @@ type Client interface {
 	SetSession(uin int64, tlvs map[uint16]tlv.Codec)
 	SetSessionAuth(uin int64, auth []byte)
 	SetSessionCookie(uin int64, cookie []byte)
-	SetSessionKSID(uin int64, ksid []byte)
 	SetTickets(uin int64, tlvs map[uint16]tlv.Codec)
 }
 
@@ -48,7 +47,6 @@ type Handler func(reply *Reply) (*Args, error)
 type Session struct {
 	Auth   []byte `json:"auth,omitempty"`
 	Cookie []byte `json:"cookie,omitempty"`
-	KSID   []byte `json:"ksid,omitempty"`
 
 	RandomKey  Key16Bytes `json:"random_key,omitempty"`
 	RandomPass Key16Bytes `json:"random_pass,omitempty"`
@@ -59,7 +57,6 @@ type Session struct {
 }
 
 type Tickets struct {
-	Domains  map[string]string `json:"domains,omitempty"`
 	A1       *Ticket           `json:"a1,omitempty"`
 	A2       *Ticket           `json:"a2,omitempty"`
 	A5       *Ticket           `json:"a5,omitempty"`
@@ -73,6 +70,8 @@ type Tickets struct {
 	ST       *Ticket           `json:"st,omitempty"`
 	STWeb    *Ticket           `json:"stweb,omitempty"`
 	VKey     *Ticket           `json:"vkey,omitempty"`
+	Domains  map[string]string `json:"domains,omitempty"`
+	KSID     []byte            `json:"ksid,omitempty"`
 }
 
 type Ticket struct {

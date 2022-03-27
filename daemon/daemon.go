@@ -59,6 +59,8 @@ func (d *Daemon) Run() error {
 		return fmt.Errorf("sign in, error: %v", err)
 	}
 	srResp, err := d.svcm.RegisterAppRegister(asResp.Data.Uin)
+	// uin, _ := strconv.ParseInt(d.cfg.Username, 10, 64)
+	// srResp, err := d.svcm.RegisterAppRegister(uin)
 	if err != nil {
 		return fmt.Errorf("register app register, error: %v", err)
 	}

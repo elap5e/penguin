@@ -71,7 +71,7 @@ func (m *Manager) SignIn(username, password string) (*Response, error) {
 // ACTION_WTLOGIN_GET_ST_WITH_PASSWD
 // ACTION_WTLOGIN_GET_ST_VIA_SMS_VERIFY_LOGIN
 func (m *Manager) signInWithPassword(username string, hash [16]byte, uin, salt int64, loginType uint32) (*Response, error) {
-	fake, sess, seq, serverTime := m.c.GetFakeSource(uin), m.c.GetSession(uin), m.c.GetNextSeq(), m.c.GetServerTime()
+	fake, session, tickets, seq, serverTime := m.c.GetFakeSource(uin), m.c.GetSession(uin), m.c.GetTickets(uin), m.c.GetNextSeq(), m.c.GetServerTime()
 	extraData := m.GetExtraData(uin)
 	tlvs := make(map[uint16]tlv.Codec)
 	tlvs[0x0018] = tlv.NewT18(constant.DstAppID, 0, uin, 0)
@@ -85,11 +85,11 @@ func (m *Manager) signInWithPassword(username string, hash [16]byte, uin, salt i
 	tlvs[0x0116] = tlv.NewT116(fake.App.MiscBitMap, constant.SubSigMap, constant.SubAppIDList)
 	tlvs[0x0100] = tlv.NewT100(constant.DstAppID, constant.OpenAppID, 0, constant.MainSigMap, fake.App.SSOVer)
 	tlvs[0x0107] = tlv.NewT107(0, 0, 0, 1)
-	if len(sess.KSID) != 0 {
-		tlvs[0x0108] = tlv.NewT108(sess.KSID)
+	if len(tickets.KSID) != 0 {
+		tlvs[0x0108] = tlv.NewT108(tickets.KSID)
 	}
-	if len(sess.Auth) != 0 {
-		tlvs[0x0104] = tlv.NewT104(sess.Auth)
+	if len(session.Auth) != 0 {
+		tlvs[0x0104] = tlv.NewT104(session.Auth)
 	}
 	tlvs[0x0142] = tlv.NewT142([]byte(fake.App.PkgName))
 	if !checkUsername(username) {
@@ -213,14 +213,14 @@ func (m *Manager) signInWithoutPassword(username string, changeD2 bool) (*Respon
 		return nil, err
 	}
 	tickets := m.c.GetTickets(uin)
-	fake, sess, seq := m.c.GetFakeSource(uin), m.c.GetSession(uin), m.c.GetNextSeq()
+	fake, tickets, seq := m.c.GetFakeSource(uin), m.c.GetTickets(uin), m.c.GetNextSeq()
 	extraData := m.GetExtraData(uin)
 	tlvs := make(map[uint16]tlv.Codec)
 	tlvs[0x0100] = tlv.NewT100(constant.DstAppID, constant.OpenAppID, 0, constant.MainSigMap, fake.App.SSOVer)
 	tlvs[0x010a] = tlv.NewT10A(tickets.A2.Sig)
 	tlvs[0x0116] = tlv.NewT116(fake.App.MiscBitMap, constant.SubSigMap, constant.SubAppIDList)
-	if len(sess.KSID) != 0 {
-		tlvs[0x0108] = tlv.NewT108(sess.KSID)
+	if len(tickets.KSID) != 0 {
+		tlvs[0x0108] = tlv.NewT108(tickets.KSID)
 	}
 	key := [16]byte{}
 	if !changeD2 {

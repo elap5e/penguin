@@ -31,6 +31,8 @@ func (c *codec) WriteRequest(req *rpc.Request, args *rpc.Args) error {
 	fake, session, tickets := c.cl.GetFakeSource(args.Uin), c.cl.GetSession(args.Uin), c.cl.GetTickets(args.Uin)
 	// p, _ := json.MarshalIndent(session, "", "  ")
 	// log.Println("session:\n" + string(p))
+	// p, _ := json.MarshalIndent(tickets, "", "  ")
+	// log.Println("tickets:\n" + string(p))
 	body := bytes.NewBuffer([]byte{})
 	body.WriteUint32(0)
 	if req.Version == rpc.VersionDefault {
@@ -47,7 +49,7 @@ func (c *codec) WriteRequest(req *rpc.Request, args *rpc.Args) error {
 	body.WriteBytesL32(session.Cookie)
 	if req.Version == rpc.VersionDefault {
 		body.WriteStringL32(fake.Device.IMEI)
-		body.WriteBytesL32(session.KSID)
+		body.WriteBytesL32(tickets.KSID)
 		body.WriteStringL16("|" + fake.Device.IMSI + "|A" + fake.App.Revision)
 	}
 	body.WriteBytesL32(args.ReserveField)

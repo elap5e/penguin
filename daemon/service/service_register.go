@@ -36,23 +36,27 @@ var (
 	StatusTypeInvisiable StatusType = 41
 	StatusTypeBusy       StatusType = 50
 	StatusTypeQMe        StatusType = 60
-	StatusTypeDND        StatusType = 70
-	StatusTypeReceiveMsg StatusType = 95
+	StatusTypeDND        StatusType = 70 // do not disturb
+	StatusTypeReceiveMsg StatusType = 95 // receive offline message
 )
 
 type RegisterType uint8
 
 const (
-	RegisterTypeAppRegister RegisterType = iota
-	RegisterTypeCreateDefaultRegInfo
-	RegisterTypeFillRegProxy
+	RegisterTypeMSFBoot RegisterType = iota
+	RegisterTypeAppRegister
 	RegisterTypeSetOnlineStatus
+	RegisterTypeMSFHeartbeatTimeout
+	RegisterTypeMSFNetworkChange
+	RegisterTypeServerPush
+	RegisterTypeFillRegProxy
+	RegisterTypeCreateDefaultRegInfo
 )
 
 type RegisterRequest struct {
 	Uin          int64      `jce:"0" json:"uin"`
 	Bid          int64      `jce:"1" json:"bid"`
-	ConnectType  uint8      `jce:"2" json:"connect_type"`
+	ConnectType  bool       `jce:"2" json:"connect_type"`
 	Other        string     `jce:"3" json:"other"`
 	Status       StatusType `jce:"4" json:"status"`
 	OnlinePush   bool       `jce:"5" json:"online_push"`
@@ -61,8 +65,8 @@ type RegisterRequest struct {
 	KickPC       bool       `jce:"8" json:"kick_pc"`
 	KickWeak     bool       `jce:"9" json:"kick_weak"`
 	Timestamp    int64      `jce:"10" json:"timestamp"`
-	SDKVersion   uint32     `jce:"11" json:"sdk_version"`
-	NetworkType  uint8      `jce:"12" json:"network_type"`
+	SDKVersion   int64      `jce:"11" json:"sdk_version"`
+	NetworkType  bool       `jce:"12" json:"network_type"`
 	BuildVersion string     `jce:"13" json:"build_version"`
 	RegisterType bool       `jce:"14" json:"register_type"`
 	DeviceParam  []byte     `jce:"15" json:"device_param"`
@@ -75,18 +79,18 @@ type RegisterRequest struct {
 	OpenPush     bool       `jce:"22" json:"open_push"`
 	LargeSeq     int64      `jce:"23" json:"large_seq"`
 
-	LastWatchStart uint32          `jce:"24" json:"last_watch_start"`
-	BindUin        []uint64        `jce:"25" json:"bind_uin"`
-	OldSSOIP       uint64          `jce:"26" json:"old_sso_ip"`
-	NewSSOIP       uint64          `jce:"27" json:"new_sso_ip"`
+	LastWatchStart int64           `jce:"24" json:"last_watch_start"`
+	BindUinList    []*BindUinInfo  `jce:"25" json:"bind_uin_list"`
+	OldSSOIP       int64           `jce:"26" json:"old_sso_ip"`
+	NewSSOIP       int64           `jce:"27" json:"new_sso_ip"`
 	ChannelID      string          `jce:"28" json:"channel_id"`
-	CPID           uint64          `jce:"29" json:"cpid"`
+	CPID           int64           `jce:"29" json:"cpid"`
 	VendorName     string          `jce:"30" json:"vendor_name"`
 	VendorOSName   string          `jce:"31" json:"vendor_os_name"`
 	IOSIDFA        string          `jce:"32" json:"ios_idfa"`
 	Body0x769      []byte          `jce:"33" json:"body_0x796"`
 	IsSetStatus    bool            `jce:"34" json:"is_set_status"`
-	ServerBuffer   []byte          `jce:"35" json:"server_buffer"`
+	ServerPayload  []byte          `jce:"35" json:"server_payload"`
 	SetMute        bool            `jce:"36" json:"set_mute"`
 	NotifySwitch   bool            `jce:"37" json:"notify_switch"`
 	ExtraStatus    int64           `jce:"38" json:"extra_status"`
@@ -96,6 +100,12 @@ type RegisterRequest struct {
 	VendorPushInfo *VendorPushInfo `jce:"42" json:"vendor_push_info,omitempty"`
 	VendorDeviceID int64           `jce:"43" json:"vendor_device_id"`
 	CustomStatus   []byte          `jce:"45" json:"custom_status"`
+}
+
+type BindUinInfo struct {
+	Uin          int64      `jce:"0" json:"uin"`
+	CustomStatus []byte     `jce:"1" json:"custom_status"`
+	Status       StatusType `jce:"2" json:"status"`
 }
 
 type VendorPushInfo struct {
@@ -160,7 +170,7 @@ func (m *Manager) Register(uin int64, status StatusType, kick bool, typ Register
 		KickWeak:      false, // constant
 		Timestamp:     0,     // service_register_time
 		LargeSeq:      0,     // friend_list_seq
-		ExtraStatus:   0,     // constant -1
+		ExtraStatus:   1000,  // constant
 		BatteryCap:    0,     // constant
 		PowerConnect:  -1,    // constant
 		BindUinNotify: false, // sub_account_notify
@@ -183,51 +193,51 @@ func (m *Manager) requestRegisterPush(push *RegisterPush, typ RegisterType) (*Re
 		return nil, err
 	}
 	return m.requestRegister(&RegisterRequest{
-		Uin:          push.Uin,
-		Bid:          bid,
-		ConnectType:  0, // constant
-		Other:        "",
-		Status:       push.Status,
-		OnlinePush:   false,
-		IsOnline:     false,
-		IsShowOnline: false,
-		KickPC:       push.KickPC,
-		KickWeak:     push.KickWeak,
-		Timestamp:    push.Timestamp,
-		SDKVersion:   fake.Device.OS.SDKVersion,
-		NetworkType:  1, // 0:mobile, 1:wifi
-		BuildVersion: "",
-		RegisterType: !(typ == RegisterTypeAppRegister || typ == RegisterTypeCreateDefaultRegInfo || typ == RegisterTypeFillRegProxy || typ == RegisterTypeSetOnlineStatus),
-		DeviceParam:  nil,
-		GUID:         fake.Device.GUID[:],
-		LocaleID:     constant.LocaleID, // constant
-		SlientPush:   false,             // constant
-		DeviceName:   fake.Device.OS.BuildModel,
-		DeviceType:   fake.Device.OS.BuildModel,
-		OSVersion:    fake.Device.OS.Version,
-		OpenPush:     true, // constant
-		LargeSeq:     push.LargeSeq,
-		// LastWatchStart: 0,
-		// BindUin:        nil,
-		// OldSSOIP:       0,
-		// NewSSOIP:       0,
-		// ChannelID:      "",
-		// CPID:           0,
-		// VendorName:     "MIUI",    // TODO: later
-		// VendorOSName:   "MIUI 13", // TODO: ro.miui.ui.version.name
-		// IOSIDFA:        "",
-		Body0x769:   body,
-		IsSetStatus: typ == RegisterTypeSetOnlineStatus,
-		// ServerBuffer:   nil,
-		SetMute: false, // qqsetting_qrlogin_set_mute
-		// NotifySwitch:   false, // constant true
-		// ExtraStatus:    push.ExtraStatus,
-		// BatteryStatus:  0,     // constant
-		// TimActiveFlag:  false, // constant true
-		// BindUinNotify:  push.BindUinNotify,
-		// VendorPushInfo: nil,
-		// VendorDeviceID: 0,
-		// CustomStatus:   nil,
+		Uin:            push.Uin,
+		Bid:            bid,
+		ConnectType:    false, // constant
+		Other:          "",    // constant
+		Status:         push.Status,
+		OnlinePush:     false, // constant
+		IsOnline:       false, // constant
+		IsShowOnline:   false, // constant
+		KickPC:         push.KickPC,
+		KickWeak:       push.KickWeak,
+		Timestamp:      push.Timestamp,
+		SDKVersion:     int64(fake.Device.OS.SDKVersion),
+		NetworkType:    true, // false:mobile, ture:wifi
+		BuildVersion:   "",   // constant
+		RegisterType:   !(typ == RegisterTypeAppRegister || typ == RegisterTypeSetOnlineStatus || typ == RegisterTypeFillRegProxy || typ == RegisterTypeCreateDefaultRegInfo),
+		DeviceParam:    nil, // constant
+		GUID:           fake.Device.GUID[:],
+		LocaleID:       constant.LocaleID, // constant
+		SlientPush:     false,             // constant
+		DeviceName:     fake.Device.OS.BuildModel,
+		DeviceType:     fake.Device.OS.BuildModel,
+		OSVersion:      fake.Device.OS.Version,
+		OpenPush:       true, // constant
+		LargeSeq:       push.LargeSeq,
+		LastWatchStart: 0,         // constant
+		BindUinList:    nil,       // constant
+		OldSSOIP:       0,         // constant
+		NewSSOIP:       -1,        // constant
+		ChannelID:      "",        // constant
+		CPID:           0,         // constant
+		VendorName:     "MIUI",    // TODO: later
+		VendorOSName:   "MIUI 13", // TODO: ro.miui.ui.version.name
+		IOSIDFA:        "",        // constant
+		Body0x769:      body,
+		IsSetStatus:    typ == RegisterTypeSetOnlineStatus,
+		ServerPayload:  nil,
+		SetMute:        false, // qqsetting_qrlogin_set_mute
+		NotifySwitch:   true,  // constant
+		ExtraStatus:    push.ExtraStatus,
+		BatteryStatus:  0,     // constant
+		TimActiveFlag:  false, // constant true
+		BindUinNotify:  push.BindUinNotify,
+		VendorPushInfo: nil, // constant
+		VendorDeviceID: 0,   // constant
+		CustomStatus:   nil, // constant
 	})
 }
 

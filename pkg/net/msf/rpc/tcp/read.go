@@ -80,7 +80,8 @@ func (c *codec) ReadResponseHeader(resp *rpc.Response) (err error) {
 	case rpc.EncryptTypeNotNeedEncrypt:
 		// c.buf = bytes.NewBuffer(c.buf.Bytes())
 	case rpc.EncryptTypeEncryptByD2Key:
-		buf, err := tea.NewCipher(c.cl.GetTickets(c.reply.Uin).D2.Key).Decrypt(c.buf.Bytes())
+		tickets := c.cl.GetTickets(c.reply.Uin)
+		buf, err := tea.NewCipher(tickets.D2.Key.Get()).Decrypt(c.buf.Bytes())
 		if err != nil {
 			return err
 		}

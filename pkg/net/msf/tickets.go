@@ -32,7 +32,6 @@ import (
 func newTickets(uin int64) *rpc.Tickets {
 	var tickets rpc.Tickets
 	tickets = rpc.Tickets{
-		Domains:  map[string]string{},
 		A1:       &rpc.Ticket{},
 		A2:       &rpc.Ticket{},
 		A5:       &rpc.Ticket{},
@@ -46,6 +45,8 @@ func newTickets(uin int64) *rpc.Tickets {
 		ST:       &rpc.Ticket{},
 		STWeb:    &rpc.Ticket{},
 		VKey:     &rpc.Ticket{},
+		Domains:  map[string]string{},
+		KSID:     []byte{},
 	}
 	r := rand.New(rand.NewSource(time.Now().Unix()))
 	r.Read(tickets.A1.Key[:])
@@ -77,9 +78,6 @@ func setTickets(uin int64, tickets *rpc.Tickets, tlvs map[uint16]tlv.Codec) {
 	for k, v := range tlvs {
 		v := v.(*tlv.TLV)
 		switch k {
-		// case 0x0108:
-		// case 0x0118:
-		// case 0x011a:
 		// case 0x011d:
 		// case 0x011f:
 		// case 0x0130:
@@ -97,28 +95,28 @@ func setTickets(uin int64, tickets *rpc.Tickets, tlvs map[uint16]tlv.Codec) {
 			tickets.STWeb.Sig = v.MustGetValue().Bytes()
 		case 0x0106:
 			tickets.A1.Sig = v.MustGetValue().Bytes()
-			key := tlvs[0x010c].(*tlv.TLV).MustGetValue().Bytes()
-			copy(tickets.A1.Key[:], key)
+		case 0x0108:
+			tickets.KSID = v.MustGetValue().Bytes()
 		case 0x010a:
 			tickets.A2.Sig = v.MustGetValue().Bytes()
-			key := tlvs[0x010d].(*tlv.TLV).MustGetValue().Bytes()
-			copy(tickets.A2.Key[:], key)
 		case 0x010b:
 			tickets.A5.Sig = v.MustGetValue().Bytes()
 			tickets.A5.Iss = iss
 			tickets.A5.Exp = -1
 		case 0x010c:
-			// ignore 0x0106
+			copy(tickets.A1.Key[:], v.MustGetValue().Bytes())
 		case 0x010d:
-			// ignore 0x010a
+			copy(tickets.A2.Key[:], v.MustGetValue().Bytes())
 		case 0x010e:
-			// ignore 0x0114
+			copy(tickets.ST.Key[:], v.MustGetValue().Bytes())
 		case 0x0114:
 			tickets.ST.Sig = v.MustGetValue().Bytes()
 			tickets.ST.Iss = iss
 			tickets.ST.Exp = -1
-			key := tlvs[0x010e].(*tlv.TLV).MustGetValue().Bytes()
-			copy(tickets.ST.Key[:], key)
+		case 0x0118:
+			log.Printf("[DUMP] t%x main_display_name:\n%s", k, hex.Dump(v.MustGetValue().Bytes()))
+		case 0x011a:
+			log.Printf("[DUMP] t%x face, age, gender, nick:\n%s", k, hex.Dump(v.MustGetValue().Bytes()))
 		case 0x011c:
 			tickets.LSKey.Sig = v.MustGetValue().Bytes()
 		case 0x0120:
@@ -170,8 +168,6 @@ func setTickets(uin int64, tickets *rpc.Tickets, tlvs map[uint16]tlv.Codec) {
 			}
 		case 0x0143:
 			tickets.D2.Sig = v.MustGetValue().Bytes()
-			key := tlvs[0x0305].(*tlv.TLV).MustGetValue().Bytes()
-			copy(tickets.D2.Key[:], key)
 		case 0x0164:
 			tickets.SID.Sig = v.MustGetValue().Bytes()
 		case 0x016d:
@@ -179,7 +175,7 @@ func setTickets(uin int64, tickets *rpc.Tickets, tlvs map[uint16]tlv.Codec) {
 			tickets.SuperKey.Iss = iss
 			tickets.SuperKey.Exp = -1
 		case 0x0305:
-			// ignore 0x0143
+			copy(tickets.D2.Key[:], v.MustGetValue().Bytes())
 		case 0x0512:
 			if tickets.Domains == nil {
 				tickets.Domains = make(map[string]string)

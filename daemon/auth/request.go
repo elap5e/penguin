@@ -107,17 +107,14 @@ func (m *Manager) request(req *Request) (*Response, error) {
 
 		m.c.SetTickets(data.Uin, tlvs)
 		m.c.SetSessionAuth(data.Uin, nil)
-		if v, ok := tlvs[0x0108]; ok {
-			m.c.SetSessionKSID(data.Uin, v.(*tlv.TLV).MustGetValue().Bytes())
-		}
 		return resp, nil
 	case 0x02:
 		// verify captcha or picture
 		m.c.SetSessionAuth(data.Uin, resp.ExtraData.SessionAuth)
 
 		var code string
-		extraData.T546 = resp.ExtraData.T546 // TODO: check
-		extraData.T547 = resp.ExtraData.T547 // TODO: check
+		extraData.T546 = resp.ExtraData.T546
+		extraData.T547 = resp.ExtraData.T547
 		if resp.ExtraData.CaptchaSign != "" {
 			l, err := net.Listen("tcp", "127.0.0.1:0")
 			if err != nil {
