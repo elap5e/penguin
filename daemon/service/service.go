@@ -41,6 +41,8 @@ func NewManager(ctx context.Context, c rpc.Client, d Daemon) *Manager {
 	}
 	m.c.Register(service.MethodServiceConfigPushDomain, m.handleConfigPushDomain)
 	m.c.Register(service.MethodServiceConfigPushRequest, m.handleConfigPushRequest)
-	m.c.Register(service.MethodServiceOnlinePushTicketExpired, m.handleOnlinePushSIDTicketExpired)
+	m.c.Register(service.MethodServiceOnlinePushChatMessage, m.handleOnlinePushMessage)
+	m.c.Register(service.MethodServiceOnlinePushUserMessage, m.handleOnlinePushMessage)
+	m.c.Register(service.MethodServiceOnlinePushTicketExpired, m.handleOnlinePushTicketExpired)
 	return m
 }

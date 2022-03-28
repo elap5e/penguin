@@ -12,7 +12,4 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:generate protoc --go_out=$GOPATH/src gateway_verify.proto
-//go:generate protoc --go_out=$GOPATH/src third_part_login.proto
-
 package pb

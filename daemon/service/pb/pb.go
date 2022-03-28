@@ -12,7 +12,4 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:generate protoc --go_out=$GOPATH/src domain_ip.proto
-//go:generate protoc --go_out=$GOPATH/src oidb_0x769.proto
-
 package pb

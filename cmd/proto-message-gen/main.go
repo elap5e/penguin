@@ -16,6 +16,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -96,6 +97,9 @@ func main() {
 }
 
 func writeFile(dst, dir string, merge *Message) {
+	if _, err := os.Stat(dst); !errors.Is(err, os.ErrNotExist) {
+		return
+	}
 	buf := bytes.NewBuffer(nil)
 	buf.WriteString("syntax = \"proto3\";\n")
 	buf.WriteString("\n")
@@ -230,6 +234,8 @@ func parseType(typ string, line string) string {
 		typ = "fixed64"
 	} else if typ == "PBFloatField" {
 		typ = "float"
+	} else if typ == "PBDoubleField" {
+		typ = "double"
 	} else if typ == "PBInt32Field" {
 		typ = "int32"
 	} else if typ == "PBInt32Field" {
@@ -253,6 +259,8 @@ func parseType(typ string, line string) string {
 			typ = "uint32"
 		case "Float":
 			typ = "float"
+		case "Double":
+			typ = "double"
 		case "Long":
 			typ = "uint64"
 		case "String":
@@ -285,6 +293,8 @@ func parseField(code uint64, name, typ, line string) *Field {
 		if strs[0] == "" ||
 			strs[0] == "bool" ||
 			strs[0] == "bytes" ||
+			strs[0] == "float" ||
+			strs[0] == "double" ||
 			strs[0] == "fixed32" ||
 			strs[0] == "fixed64" ||
 			strs[0] == "int32" ||

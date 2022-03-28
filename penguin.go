@@ -12,6 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:generate protoc --go_out=$GOPATH/src daemon/auth/pb/gateway_verify.proto
+//go:generate protoc --go_out=$GOPATH/src daemon/auth/pb/third_part_login.proto
+
+//go:generate protoc --go_out=$GOPATH/src daemon/message/pb/body.proto
+//go:generate protoc --go_out=$GOPATH/src daemon/message/pb/head.proto
+//go:generate protoc --go_out=$GOPATH/src daemon/message/pb/common.proto
+
+//go:generate protoc --go_out=$GOPATH/src daemon/service/pb/domain_ip.proto
+//go:generate protoc --go_out=$GOPATH/src daemon/service/pb/oidb_0x769.proto
+//go:generate protoc --go_out=$GOPATH/src daemon/service/pb/online_push.proto
+
+//go:generate protoc --go_out=$GOPATH/src pkg/encoding/tlv/pb/device_report.proto
+
 //go:generate go run cmd/proto-message-gen/main.go
 
 package penguin

@@ -19,7 +19,22 @@ import (
 	"github.com/elap5e/penguin/pkg/net/msf/service"
 )
 
-func (m *Manager) handleOnlinePushSIDTicketExpired(reply *rpc.Reply) (*rpc.Args, error) {
+func (m *Manager) handleOnlinePushMessage(reply *rpc.Reply) (*rpc.Args, error) {
+	if _, err := m.d.GetAuthManager().SignInChangeToken(reply.Uin); err != nil {
+		return nil, err
+	}
+	if _, err := m.RegisterAppRegister(reply.Uin); err != nil {
+		return nil, err
+	}
+	return &rpc.Args{
+		Version:       rpc.VersionSimple,
+		Uin:           reply.Uin,
+		Seq:           reply.Seq,
+		ServiceMethod: service.MethodServiceOnlinePushTicketExpired,
+	}, nil
+}
+
+func (m *Manager) handleOnlinePushTicketExpired(reply *rpc.Reply) (*rpc.Args, error) {
 	if _, err := m.d.GetAuthManager().SignInChangeToken(reply.Uin); err != nil {
 		return nil, err
 	}
