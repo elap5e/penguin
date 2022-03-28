@@ -160,6 +160,7 @@ message IMMsgBody {
   // Elem is the message type for the Elem.
   message Elem {
     Text text                               = 1; // text
+    Face face                               = 2; // face
     OnlineImage online_image                = 3; // online_image
     NotOnlineImage not_online_image         = 4; // not_online_image
     TransElem trans_elem_info               = 5; // trans_elem_info

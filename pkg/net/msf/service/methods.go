@@ -50,7 +50,8 @@ const (
 )
 
 const (
-	MethodServiceRegister = "StatSvc.register"
+	MethodServiceRegister            = "StatSvc.register"
+	MethodServiceSetStatusFromClient = "StatSvc.SetStatusFromClient"
 
 	MethodServiceConfigPushDomain   = "ConfigPushSvc.PushDomain"
 	MethodServiceConfigPushRequest  = "ConfigPushSvc.PushReq"

@@ -154,11 +154,11 @@ func (m *Manager) RegisterAppRegister(uin int64) (*RegisterResponse, error) {
 }
 
 // RegPushReason.setOnlineStatus
-func (m *Manager) RegisterSetOnlineStatus(uin int64) (*RegisterResponse, error) {
-	return m.Register(uin, StatusTypeOnline, false, RegisterTypeSetOnlineStatus)
+func (m *Manager) RegisterSetOnlineStatus(uin int64, status StatusType, client ...bool) (*RegisterResponse, error) {
+	return m.Register(uin, status, false, RegisterTypeSetOnlineStatus, client...)
 }
 
-func (m *Manager) Register(uin int64, status StatusType, kick bool, typ RegisterType) (*RegisterResponse, error) {
+func (m *Manager) Register(uin int64, status StatusType, kick bool, typ RegisterType, client ...bool) (*RegisterResponse, error) {
 	return m.requestRegisterPush(&RegisterPush{
 		Uin:           uin,
 		PushIDs:       []int64{1, 2, 4}, // constant
@@ -167,14 +167,14 @@ func (m *Manager) Register(uin int64, status StatusType, kick bool, typ Register
 		KickWeak:      false, // constant
 		Timestamp:     0,     // service_register_time
 		LargeSeq:      0,     // friend_list_seq
-		ExtraStatus:   1000,  // constant
+		ExtraStatus:   0,     // constant
 		BatteryCap:    0,     // constant
 		PowerConnect:  -1,    // constant
 		BindUinNotify: false, // sub_account_notify
-	}, typ)
+	}, typ, client...)
 }
 
-func (m *Manager) requestRegisterPush(push *RegisterPush, typ RegisterType) (*RegisterResponse, error) {
+func (m *Manager) requestRegisterPush(push *RegisterPush, typ RegisterType, client ...bool) (*RegisterResponse, error) {
 	fake := m.c.GetFakeSource(push.Uin)
 	bid := int64(0)
 	for _, id := range push.PushIDs {
@@ -229,16 +229,16 @@ func (m *Manager) requestRegisterPush(push *RegisterPush, typ RegisterType) (*Re
 		SetMute:        false, // qqsetting_qrlogin_set_mute
 		NotifySwitch:   true,  // constant
 		ExtraStatus:    push.ExtraStatus,
-		BatteryStatus:  0,    // constant
-		TimActiveFlag:  true, // constant
+		BatteryStatus:  0,     // constant
+		TimActiveFlag:  false, // constant
 		BindUinNotify:  push.BindUinNotify,
 		VendorPushInfo: nil, // constant
 		VendorDeviceID: 0,   // constant
 		CustomStatus:   nil, // constant
-	})
+	}, client...)
 }
 
-func (m *Manager) requestRegister(req *RegisterRequest) (*RegisterResponse, error) {
+func (m *Manager) requestRegister(req *RegisterRequest, client ...bool) (*RegisterResponse, error) {
 	p, err := uni.Marshal(&uni.Data{
 		Version:     3,
 		ServantName: "PushService",
@@ -250,7 +250,11 @@ func (m *Manager) requestRegister(req *RegisterRequest) (*RegisterResponse, erro
 		return nil, err
 	}
 	args, reply := rpc.Args{Uin: req.Uin, Payload: p}, rpc.Reply{}
-	if err = m.c.Call(service.MethodServiceRegister, &args, &reply); err != nil {
+	serviceMethod := service.MethodServiceRegister
+	if len(client) != 0 && client[0] {
+		serviceMethod = service.MethodServiceSetStatusFromClient
+	}
+	if err = m.c.Call(serviceMethod, &args, &reply); err != nil {
 		return nil, err
 	}
 	data, resp := uni.Data{}, RegisterResponse{}

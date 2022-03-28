@@ -48,6 +48,7 @@ func New(ctx context.Context, cfg *config.Config) *Daemon {
 		c:   msf.NewClient(ctx),
 	}
 	d.athm = auth.NewManager(d.ctx, d.c)
+	d.msgm = message.NewManager(d.ctx, d.c)
 	d.svcm = service.NewManager(d.ctx, d.c, d)
 	return d
 }
@@ -59,6 +60,9 @@ func (d *Daemon) Run() error {
 	}
 	if _, err := d.svcm.RegisterAppRegister(resp.Data.Uin); err != nil {
 		return fmt.Errorf("register app register, error: %v", err)
+	}
+	if _, err := d.svcm.RegisterSetOnlineStatus(resp.Data.Uin, service.StatusTypeOnline, true); err != nil {
+		return fmt.Errorf("register set online status, error: %v", err)
 	}
 	select {}
 }

@@ -18,12 +18,14 @@ import (
 	"context"
 
 	"github.com/elap5e/penguin/daemon/auth"
+	"github.com/elap5e/penguin/daemon/message/pb"
 	"github.com/elap5e/penguin/pkg/net/msf/rpc"
 	"github.com/elap5e/penguin/pkg/net/msf/service"
 )
 
 type Daemon interface {
 	GetAuthManager() *auth.Manager
+	OnRecvMessage(head *pb.MsgCommon_MsgHead, body *pb.IMMsgBody_MsgBody) error
 }
 
 type Manager struct {

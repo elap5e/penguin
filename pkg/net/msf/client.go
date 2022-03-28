@@ -106,10 +106,10 @@ func (c *Client) GetFakeSource(uin int64) *rpc.FakeSource {
 	osid := fmt.Sprintf("RKQ1.%07d.002", r.Int31n(10000000))
 	return &rpc.FakeSource{
 		App: &rpc.FakeApp{
-			FixID:      537044845,
-			AppID:      537044845,
+			FixID:      537114575,
+			AppID:      537114575,
 			PkgName:    "com.tencent.mobileqq",
-			VerName:    "8.8.83",
+			VerName:    "8.8.83", // 8.8.83.7540
 			Revision:   "8.8.83.7b3989f8",
 			SigHash:    [16]byte{0xa6, 0xb7, 0x45, 0xbf, 0x24, 0xa2, 0xc2, 0x77, 0x52, 0x77, 0x16, 0xf6, 0xf3, 0x6e, 0xb6, 0x8d},
 			BuildAt:    1645432578,
@@ -126,7 +126,7 @@ func (c *Client) GetFakeSource(uin int64) *rpc.FakeSource {
 				BuildBrand:  []byte("Xiaomi"),
 				BuildModel:  "Redmi K20",
 				BuildID:     osid,
-				SDKVersion:  uint32(30),
+				SDKVersion:  30,
 				NetworkType: 2,
 			},
 			APNName:       []byte("wifi"),
