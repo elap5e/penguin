@@ -18,6 +18,7 @@
 //go:generate protoc --go_out=$GOPATH/src daemon/message/pb/body.proto
 //go:generate protoc --go_out=$GOPATH/src daemon/message/pb/head.proto
 //go:generate protoc --go_out=$GOPATH/src daemon/message/pb/common.proto
+//go:generate protoc --go_out=$GOPATH/src daemon/message/pb/hummer_commelem.proto
 
 //go:generate protoc --go_out=$GOPATH/src daemon/service/pb/domain_ip.proto
 //go:generate protoc --go_out=$GOPATH/src daemon/service/pb/oidb_0x769.proto
@@ -25,6 +26,7 @@
 
 //go:generate protoc --go_out=$GOPATH/src pkg/encoding/tlv/pb/device_report.proto
 
+//go:generate go run cmd/message-face-gen/main.go
 //go:generate go run cmd/proto-message-gen/main.go
 
 package penguin

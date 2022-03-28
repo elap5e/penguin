@@ -15,13 +15,10 @@
 package service
 
 import (
-	"encoding/hex"
-
 	"google.golang.org/protobuf/proto"
 
 	"github.com/elap5e/penguin/daemon/service/pb"
 	"github.com/elap5e/penguin/pkg/encoding/uni"
-	"github.com/elap5e/penguin/pkg/log"
 	"github.com/elap5e/penguin/pkg/net/msf/rpc"
 	"github.com/elap5e/penguin/pkg/net/msf/service"
 )
@@ -59,8 +56,6 @@ type DeleteMessage struct {
 }
 
 func (m *Manager) handleOnlinePushMessage(reply *rpc.Reply) (*rpc.Args, error) {
-	log.Debug("handleOnlinePushMessage: \n%s", hex.Dump(reply.Payload))
-	log.Debug("handleOnlinePushMessage: \n%s", hex.EncodeToString(reply.Payload))
 	push := pb.OnlinePush_PbPushMsg{}
 	if err := proto.Unmarshal(reply.Payload, &push); err != nil {
 		return nil, err
