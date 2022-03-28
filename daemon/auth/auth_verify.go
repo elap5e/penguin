@@ -16,7 +16,6 @@ package auth
 
 import (
 	"fmt"
-	"log"
 	"net"
 	"strings"
 
@@ -26,6 +25,7 @@ import (
 	"github.com/elap5e/penguin/daemon/constant"
 	"github.com/elap5e/penguin/pkg/bytes"
 	"github.com/elap5e/penguin/pkg/encoding/tlv"
+	"github.com/elap5e/penguin/pkg/log"
 )
 
 func (m *Manager) VerifyCaptcha(uin int64, code []byte, sign ...[]byte) (*Response, error) {
@@ -58,7 +58,7 @@ func (m *Manager) verifySignInWithCodeCaptach(username string) ([]byte, error) {
 		return nil, err
 	}
 	addr := l.Addr().(*net.TCPAddr).String()
-	log.Println("verify captcha, url: http://" + addr + "/index.html")
+	log.Warn("verify captcha, url: http://%s/index.html", addr)
 	sign, err := serveHTTPVerifySignInWithCodeCaptach(l)
 	if err != nil {
 		return nil, err

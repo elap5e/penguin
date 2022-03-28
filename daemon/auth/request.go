@@ -57,7 +57,7 @@ func (m *Manager) request(req *Request) (*Response, error) {
 			for k, v := range login.BindUinInfo {
 				log.Printf("%d: %s(%s) photo:%s", k, v.Nick, v.MaskUin, v.ImageUrl)
 			}
-			log.Println(login.UnbindWording)
+			log.Warn("auth unbinding notify: %s", login.UnbindWording)
 
 			// select account and input password
 			var code string
@@ -78,7 +78,7 @@ func (m *Manager) request(req *Request) (*Response, error) {
 		key := [16]byte{}
 		switch data.Type {
 		default:
-			log.Printf("unknown type: 0x%02x", data.Type)
+			log.Debug("auth unknown type: 0x%02x", data.Type)
 			copy(key[:], tickets.A1.Key[:])
 		case 0x0007: // VerifySMSCode
 			copy(key[:], tickets.A1.Key[:])
@@ -121,7 +121,7 @@ func (m *Manager) request(req *Request) (*Response, error) {
 				return nil, err
 			}
 			addr := l.Addr().(*net.TCPAddr).String()
-			log.Println("verify captcha, url:", strings.ReplaceAll(
+			log.Warn("auth verify captcha, url: %s", strings.ReplaceAll(
 				resp.ExtraData.CaptchaSign,
 				"https://ssl.captcha.qq.com/template/wireless_mqq_captcha.html",
 				"http://"+addr+"/index.html",
@@ -132,7 +132,7 @@ func (m *Manager) request(req *Request) (*Response, error) {
 			}
 			return m.VerifyCaptcha(data.Uin, []byte(sign.Ticket))
 		} else {
-			log.Println("verify picture")
+			log.Warn("auth verify picture")
 			fmt.Printf(">>> ")
 			fmt.Scanln(&code)
 			return m.VerifyCaptcha(data.Uin, []byte(code), resp.ExtraData.PictureSign)
@@ -142,7 +142,7 @@ func (m *Manager) request(req *Request) (*Response, error) {
 		m.c.SetSessionAuth(data.Uin, resp.ExtraData.SessionAuth)
 
 		extraData.T17B = resp.ExtraData.T17B
-		log.Println("verify sms code")
+		log.Warn("auth verify sms code")
 		var code string
 		fmt.Printf(">>> ")
 		fmt.Scanln(&code)
@@ -154,7 +154,7 @@ func (m *Manager) request(req *Request) (*Response, error) {
 		extraData.SignInCodeSign = resp.ExtraData.SignInCodeSign
 		extraData.T182 = resp.ExtraData.T182
 		extraData.Salt = resp.ExtraData.Salt
-		log.Println("verify signin code")
+		log.Warn("auth verify signin code")
 		var code string
 		fmt.Printf(">>> ")
 		fmt.Scanln(&code)
@@ -171,7 +171,7 @@ func (m *Manager) request(req *Request) (*Response, error) {
 				sess.RandomPass[:]...),
 				extraData.T402...),
 		))
-		log.Println("unlock device")
+		log.Warn("auth unlock device")
 		return m.unlockDevice(data.Uin)
 	case 0xef:
 		// resend sms code
@@ -186,48 +186,48 @@ func (m *Manager) request(req *Request) (*Response, error) {
 				sess.RandomPass[:]...),
 				extraData.T402...),
 		))
-		log.Println("resend sms code, mobile:", resp.ExtraData.SMSMobile)
+		log.Warn("auth resend sms code, mobile:", resp.ExtraData.SMSMobile)
 		return m.resendSMSCode(data.Uin)
 	case 0x01:
-		log.Printf("invalid login, error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
+		log.Debug("invalid login, error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
 		return nil, fmt.Errorf("invalid password")
 	case 0x06:
-		log.Printf("not implement, error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
+		log.Debug("not implement, error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
 	case 0x09:
-		log.Printf("invalid service, error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
+		log.Debug("invalid service, error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
 	case 0x0a:
-		log.Printf("error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
+		log.Debug("error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
 		return nil, fmt.Errorf("service temporarily unavailable")
 	case 0x10:
-		log.Printf("session expired, error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
+		log.Debug("session expired, error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
 	case 0x28:
-		log.Printf("protection mode, error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
+		log.Debug("protection mode, error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
 	case 0x9a:
-		log.Printf("error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
+		log.Debug("error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
 		return nil, fmt.Errorf("service temporarily unavailable")
 	case 0xa1:
-		log.Printf("error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
+		log.Debug("error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
 		return nil, fmt.Errorf("too many sms verify requests")
 	case 0xa2:
-		log.Printf("error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
+		log.Debug("error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
 		return nil, fmt.Errorf("frequent sms verify requests")
 	case 0xa4:
-		log.Printf("error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
+		log.Debug("error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
 		return nil, fmt.Errorf("bad requests")
 	case 0xd5:
-		log.Printf("phone number not valid, error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
+		log.Debug("phone number not valid, error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
 		return nil, fmt.Errorf("phone number not valid")
 	case 0xdb:
-		log.Printf("phone number not registered, error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
+		log.Debug("phone number not registered, error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
 		return nil, fmt.Errorf("phone number not registered")
 	case 0xeb:
-		log.Printf("version too low, error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
+		log.Debug("version too low, error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
 		return nil, fmt.Errorf("too many failures")
 	case 0xed:
-		log.Printf("invalid device, error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
+		log.Debug("invalid device, error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
 		return nil, fmt.Errorf("too many failures")
 	default:
-		log.Printf("unknown code: 0x%02x", data.Code)
+		log.Debug("unknown code: 0x%02x", data.Code)
 	}
 	return resp, nil
 }

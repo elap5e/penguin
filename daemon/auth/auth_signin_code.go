@@ -16,7 +16,6 @@ package auth
 
 import (
 	"crypto/md5"
-	"log"
 
 	"github.com/elap5e/penguin/daemon/constant"
 	"github.com/elap5e/penguin/pkg/bytes"
@@ -58,7 +57,6 @@ func (m *Manager) signInWithCode(username string, token []byte) (*Response, erro
 func (m *Manager) VerifySignInCode(code []byte) (*Response, error) {
 	extraData, session := m.GetExtraData(0), m.c.GetSession(0)
 	password := randomPassword()
-	log.Println(password)
 	tlvs := make(map[uint16]tlv.Codec)
 	tlvs[0x0104] = tlv.NewT104(session.Auth)
 	tlvs[0x0008] = tlv.NewT8(0, constant.LocaleID, 0)

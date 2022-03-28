@@ -26,6 +26,6 @@ func main() {
 	cfg := config.OpenFile("config.json")
 	dmn := daemon.New(context.Background(), cfg)
 	if err := dmn.Run(); err != nil {
-		log.Println(err)
+		log.Error("penguin daemon exit with error: %s", err)
 	}
 }

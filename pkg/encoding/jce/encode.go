@@ -109,7 +109,7 @@ func typeEncoder(t reflect.Type) encoderFunc {
 	case reflect.Pointer:
 		return newPtrEncoder(t)
 	default:
-		log.Println("unsupported type:", t)
+		log.Panicln("unsupported type:", t)
 		return nil
 	}
 }
@@ -399,7 +399,7 @@ func uintEncoder(e *encoder, v reflect.Value, t uint8) {
 		}
 		e.EncodeHead(0x0c, t)
 	default:
-		log.Println("unsupported type:", t)
+		log.Panicln("unsupported type:", t)
 	}
 }
 

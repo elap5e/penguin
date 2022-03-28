@@ -15,11 +15,14 @@
 package tcp
 
 import (
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/elap5e/penguin/pkg/bytes"
 	"github.com/elap5e/penguin/pkg/crypto/tea"
+	"github.com/elap5e/penguin/pkg/log"
 	"github.com/elap5e/penguin/pkg/net/msf/rpc"
 )
 
@@ -29,10 +32,10 @@ func (c *codec) WriteRequest(req *rpc.Request, args *rpc.Args) error {
 	}
 
 	fake, session, tickets := c.cl.GetFakeSource(args.Uin), c.cl.GetSession(args.Uin), c.cl.GetTickets(args.Uin)
-	// p, _ := json.MarshalIndent(session, "", "  ")
-	// log.Println("session:\n" + string(p))
-	// p, _ := json.MarshalIndent(tickets, "", "  ")
-	// log.Println("tickets:\n" + string(p))
+	p, _ := json.MarshalIndent(session, "", "  ")
+	log.Trace("codec.write session:\n%s", string(p))
+	p, _ = json.MarshalIndent(tickets, "", "  ")
+	log.Trace("codec.write tickets:\n%s", string(p))
 	body := bytes.NewBuffer([]byte{})
 	body.WriteUint32(0)
 	if req.Version == rpc.VersionDefault {
@@ -55,7 +58,7 @@ func (c *codec) WriteRequest(req *rpc.Request, args *rpc.Args) error {
 	body.WriteBytesL32(args.ReserveField)
 	body.WriteUint32At(uint32(body.Len()), 0)
 	body.WriteBytesL32(args.Payload)
-	// log.Printf("dump of send body:\n%s", hex.Dump(body.Bytes()))
+	log.Trace("codec.write.body:\n%s", hex.Dump(body.Bytes()))
 
 	method := strings.ToLower(req.ServiceMethod)
 	if method == "heartbeat.ping" || method == "heartbeat.alive" || method == "client.correcttime" {
@@ -104,7 +107,7 @@ func (c *codec) WriteRequest(req *rpc.Request, args *rpc.Args) error {
 	head.WriteStringL32(req.Username)
 	head.WriteUint32At(uint32(head.Len()+body.Len()), 0)
 
-	// log.Printf("dump of send:\n%s", hex.Dump(append(head.Bytes(), body.Bytes()...)))
+	log.Trace("codec.write:\n%s", hex.Dump(append(head.Bytes(), body.Bytes()...)))
 	if _, err := head.WriteTo(c.conn); err != nil {
 		return err
 	}

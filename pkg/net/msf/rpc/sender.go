@@ -182,7 +182,7 @@ func (s *sender) waitLoop(ctx context.Context) {
 }
 
 func (s *sender) loopError(err error) {
-	log.Println("loop error:", err)
+	log.Error("loop error: %s", err)
 	// Terminate pending calls.
 	s.sendMu.Lock()
 	s.mu.Lock()
