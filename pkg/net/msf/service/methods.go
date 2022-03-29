@@ -25,6 +25,22 @@ const (
 )
 
 const (
+	MethodChatGetGroups     = "friendlist.GetTroopListReqV2"
+	MethodChatGetGroupUsers = "friendlist.GetTroopMemberListReq"
+	MethodChatGetGroupUser  = "group_member_card.get_group_member_card_info"
+)
+
+const (
+	MethodChannelPushMessage = "MsgPush.PushGroupProMsg"
+)
+
+const (
+	MethodContactDeleteContact   = "friendlist.delFriend"
+	MethodContactGetContacts     = "friendlist.getFriendGroupList"
+	MethodContactSetContactGroup = "friendlist.SetGroupReq"
+)
+
+const (
 	MethodMessageDeleteMessage = "MessageSvc.PbDeleteMsg"
 	MethodMessageGetMessage    = "MessageSvc.PbGetMsg"
 	MethodMessageSendMessage   = "MessageSvc.PbSendMsg"
@@ -36,18 +52,6 @@ const (
 	MethodMessageUploadUserImage   = "LongConn.OffPicUp"
 	MethodMessageUploadChatImage   = "ImgStore.GroupPicUp"
 	MethodMessageDownloadChatImage = "ImgStore.GroupPicDown"
-)
-
-const (
-	MethodContactDeleteContact   = "friendlist.delFriend"
-	MethodContactGetContacts     = "friendlist.getFriendGroupList"
-	MethodContactSetContactGroup = "friendlist.SetGroupReq"
-)
-
-const (
-	MethodChatGetGroups     = "friendlist.GetTroopListReqV2"
-	MethodChatGetGroupUsers = "friendlist.GetTroopMemberListReq"
-	MethodChatGetGroupUser  = "group_member_card.get_group_member_card_info"
 )
 
 const (

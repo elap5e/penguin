@@ -238,12 +238,12 @@ func parseType(typ string, line string) string {
 		typ = "double"
 	} else if typ == "PBInt32Field" {
 		typ = "int32"
-	} else if typ == "PBInt32Field" {
-		typ = "int32"
+	} else if typ == "PBInt64Field" {
+		typ = "int64"
 	} else if typ == "PBSInt32Field" {
 		typ = "sint32"
-	} else if typ == "PBSInt32Field" {
-		typ = "sint32"
+	} else if typ == "PBSInt64Field" {
+		typ = "sint64"
 	} else if typ == "PBStringField" {
 		typ = "string"
 	} else if typ == "PBUInt32Field" {
