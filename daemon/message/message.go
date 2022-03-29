@@ -15,32 +15,20 @@
 package message
 
 import (
-	"context"
-
-	"github.com/elap5e/penguin/pkg/net/msf/rpc"
-	"github.com/elap5e/penguin/pkg/net/msf/service"
+	"github.com/elap5e/penguin/daemon/message/pb"
+	"github.com/elap5e/penguin/daemon/service"
 )
 
-type Manager struct {
-	ctx context.Context
-
-	c rpc.Client
-}
-
-func NewManager(ctx context.Context, c rpc.Client) *Manager {
-	m := &Manager{
-		ctx: ctx,
-		c:   c,
-	}
-	m.c.Register(service.MethodMessagePushNotify, m.handlePushNotifyRequest)
-	return m
+type Daemon interface {
+	GetServiceManager() *service.Manager
+	OnRecvMessage(head *pb.MsgCommon_MsgHead, body *pb.IMMsgBody_MsgBody) error
 }
 
 type Message struct {
 	FromUin         int64            `jce:"0" json:"from_uin,omitempty"`
-	MessageTime     int64            `jce:"1" json:"message_time,omitempty"`
-	MessageType     int16            `jce:"2" json:"message_type,omitempty"`
-	MessageSeq      int32            `jce:"3" json:"message_seq,omitempty"`
+	Time            int64            `jce:"1" json:"time,omitempty"`
+	Type            int16            `jce:"2" json:"type,omitempty"`
+	Seq             int32            `jce:"3" json:"seq,omitempty"`
 	Message         string           `jce:"4" json:"message,omitempty"`
 	RealMessageTime int64            `jce:"5" json:"real_message_time,omitempty"`
 	MessageBytes    []byte           `jce:"6" json:"message_bytes,omitempty"`

@@ -18,7 +18,12 @@
 //go:generate protoc --go_out=$GOPATH/src daemon/message/pb/body.proto
 //go:generate protoc --go_out=$GOPATH/src daemon/message/pb/head.proto
 //go:generate protoc --go_out=$GOPATH/src daemon/message/pb/common.proto
-//go:generate protoc --go_out=$GOPATH/src daemon/message/pb/hummer_commelem.proto
+//go:generate protoc --go_out=$GOPATH/src daemon/message/pb/common_element.proto
+//go:generate protoc --go_out=$GOPATH/src daemon/message/pb/control.proto
+//go:generate protoc --go_out=$GOPATH/src daemon/message/pb/receipt.proto
+//go:generate protoc --go_out=$GOPATH/src daemon/message/pb/sub_type_0x1a.proto
+//go:generate protoc --go_out=$GOPATH/src daemon/message/pb/sub_type_0xc1.proto
+//go:generate protoc --go_out=$GOPATH/src daemon/message/pb/service.proto
 
 //go:generate protoc --go_out=$GOPATH/src daemon/service/pb/domain_ip.proto
 //go:generate protoc --go_out=$GOPATH/src daemon/service/pb/oidb_0x769.proto

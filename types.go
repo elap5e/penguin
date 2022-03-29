@@ -14,26 +14,48 @@
 
 package penguin
 
+type AccountType string
+
+const (
+	AccountTypeDefault AccountType = "default"
+	AccountTypeChannel AccountType = "channel"
+)
+
 type Account struct {
-	ID       int64  `json:"id"`
-	Username string `json:"username"`
-	Photo    string `json:"photo,omitempty"`
+	ID       int64       `json:"id"`
+	Type     AccountType `json:"type"`
+	Username string      `json:"username"`
+	Photo    string      `json:"photo,omitempty"`
 }
 
+type ChatType string
+
+const (
+	// default
+	ChatTypeDiscuss        ChatType = "discuss"
+	ChatTypeDiscussPrivate ChatType = "discuss_private"
+	ChatTypeGroup          ChatType = "group"
+	ChatTypeGroupPrivate   ChatType = "group_private"
+	ChatTypePrivate        ChatType = "private"
+
+	// channel
+	ChatTypeChannel     ChatType = "channel"
+	ChatTypeRoomPrivate ChatType = "room_private"
+	ChatTypeRoomText    ChatType = "room_text"
+)
+
 type Chat struct {
-	ID            int64      `json:"id"`
-	Type          string     `json:"type"`
-	Title         string     `json:"title"`
-	Photo         *ChatPhoto `json:"photo,omitempty"`
-	Description   string     `json:"description,omitempty"`
-	PinnedMessage *Message   `json:"pinned_message,omitempty"`
+	ID      int64      `json:"id"`
+	Type    ChatType   `json:"type"`
+	User    *User      `json:"user,omitempty"`
+	Title   string     `json:"title"`
+	Photo   *ChatPhoto `json:"photo,omitempty"`
+	Display string     `json:"display,omitempty"`
 }
 
 type ChatPhoto struct {
 	FileID string `json:"file_id"`
 }
-
-type Channel struct{}
 
 type Contact struct{}
 

@@ -137,6 +137,7 @@ message MsgCommon {
     uint32 last_read_time = 1; // last_read_time
     uint64 peer_uin       = 2; // peer_uin
     uint32 msg_completed  = 3; // msg_completed
+    repeated Msg msg      = 4; // f425379msg
     uint32 unread_msg_num = 5; // unread_msg_num
     uint32 c2c_type       = 8; // c2c_type
     uint32 service_type   = 9; // service_type

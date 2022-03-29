@@ -15,11 +15,9 @@
 package message
 
 import (
-	"encoding/hex"
-	"encoding/json"
-
+	"github.com/elap5e/penguin/daemon/message/pb"
+	"github.com/elap5e/penguin/daemon/service"
 	"github.com/elap5e/penguin/pkg/encoding/uni"
-	"github.com/elap5e/penguin/pkg/log"
 	"github.com/elap5e/penguin/pkg/net/msf/rpc"
 )
 
@@ -42,14 +40,63 @@ type PushNotifyRequest struct {
 }
 
 func (m *Manager) handlePushNotifyRequest(reply *rpc.Reply) (*rpc.Args, error) {
-	log.Debug("handlePushNotifyRequest: \n%s", hex.Dump(reply.Payload))
-	data, req := uni.Data{}, PushNotifyRequest{}
-	if err := uni.Unmarshal(reply.Payload, &data, map[string]any{
-		"req_PushNotify": &req,
+	data, push := uni.Data{}, PushNotifyRequest{}
+	if err := uni.Unmarshal(reply.Payload[4:], &data, map[string]any{
+		"req_PushNotify": &push,
 	}); err != nil {
 		return nil, err
 	}
-	p, _ := json.MarshalIndent(req, "", "  ")
-	log.Debug("handlePushNotifyRequest:\n%s", p)
-	return nil, nil
+	items := []*service.DeleteMessage{}
+	m.setSyncFlag(reply.Uin, 0)
+	for force := true; force || m.getSyncFlag(reply.Uin) == 1; force = false {
+		resp, err := m.GetMessage(reply.Uin)
+		if err != nil {
+			return nil, err
+		}
+		for _, uniPairMsgs := range resp.GetUinPairMsgs() {
+			for _, msg := range uniPairMsgs.GetMsg() {
+				head := msg.GetMsgHead()
+				switch head.GetMsgType() {
+				case 9, 10, 31, 79, 97, 120, 132, 133, 141, 166, 167:
+					switch head.GetC2CCmd() {
+					case 11, 175:
+						if err := m.d.OnRecvMessage(head, msg.GetMsgBody()); err != nil {
+							return nil, err
+						}
+						items = append(items, &service.DeleteMessage{
+							FromUin:  int64(head.GetFromUin()),
+							Time:     int64(head.GetMsgTime()),
+							Seq:      int16(head.GetMsgSeq()),
+							Cookie:   []byte{},
+							Cmd:      int16(head.GetC2CCmd()),
+							Type:     int64(head.GetMsgType()),
+							AppID:    int64(head.GetFromAppid()),
+							SendTime: 0,
+							SSOSeq:   0,
+							SSOIP:    0,
+							ClientIP: 0,
+						})
+					}
+				case 78, 81, 103, 107, 110, 111, 114, 118:
+					_, _ = m.DeleteMessage(reply.Uin, &pb.MsgService_PbDeleteMsgReq_MsgItem{
+						FromUin: head.GetFromUin(),
+						ToUin:   head.GetToUin(),
+						MsgType: head.GetMsgType(),
+						MsgSeq:  head.GetMsgSeq(),
+						MsgUid:  head.GetMsgUid(),
+						Sig:     nil,
+					})
+				}
+			}
+		}
+	}
+	resp := service.OnlinePushMessageResponse{
+		Uin:      reply.Uin,
+		Items:    items,
+		ServerIP: push.ServerIP,
+		Token:    nil,
+		Type:     0,
+		Device:   nil,
+	}
+	return m.d.GetServiceManager().ResponseOnlinePushMessage(reply, &resp)
 }

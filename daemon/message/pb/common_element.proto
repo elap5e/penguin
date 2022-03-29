@@ -8,7 +8,7 @@ option go_package = "github.com/elap5e/penguin/daemon/message/pb";
 // source: tencent.p1298im.msg.hummer.servtype.hummer_commelem
 //
 // hummer_commelem is the message type for the hummer_commelem.
-message hummer_commelem {
+message HummerCommonElement {
   // MsgElemInfo_servtype1 is the message type for the MsgElemInfo_servtype1.
   message MsgElemInfo_servtype1 {
     bytes reward_id         = 1; // bytes_reward_id

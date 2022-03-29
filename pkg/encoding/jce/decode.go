@@ -16,9 +16,10 @@ package jce
 
 import (
 	"encoding/hex"
-	"log"
 	"math"
 	"reflect"
+
+	"github.com/elap5e/penguin/pkg/log"
 )
 
 func Unmarshal(data []byte, v any, opts ...bool) error {

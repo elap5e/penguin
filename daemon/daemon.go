@@ -48,7 +48,7 @@ func New(ctx context.Context, cfg *config.Config) *Daemon {
 		c:   msf.NewClient(ctx),
 	}
 	d.athm = auth.NewManager(d.ctx, d.c)
-	d.msgm = message.NewManager(d.ctx, d.c)
+	d.msgm = message.NewManager(d.ctx, d.c, d)
 	d.svcm = service.NewManager(d.ctx, d.c, d)
 	return d
 }
@@ -69,4 +69,8 @@ func (d *Daemon) Run() error {
 
 func (d *Daemon) GetAuthManager() *auth.Manager {
 	return d.athm
+}
+
+func (d *Daemon) GetServiceManager() *service.Manager {
+	return d.svcm
 }

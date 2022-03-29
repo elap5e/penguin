@@ -39,14 +39,15 @@ const (
 )
 
 const (
-	MethodContactDeleteContact = "friendlist.delFriend"
-	MethodContactGetGroups     = "friendlist.getFriendGroupList"
-	MethodContactSetGroup      = "friendlist.SetGroupReq"
+	MethodContactDeleteContact    = "friendlist.delFriend"
+	MethodContactGetContactGroups = "friendlist.getFriendGroupList"
+	MethodContactSetContactGroup  = "friendlist.SetGroupReq"
 )
 
 const (
-	MethodChatGetChats = "friendlist.GetTroopListReqV2"
-	MethodChatGetUsers = "friendlist.GetTroopMemberListReq"
+	MethodChatGetGroups     = "friendlist.GetTroopListReqV2"
+	MethodChatGetGroupUsers = "friendlist.GetTroopMemberListReq"
+	MethodChatGetGroupUser  = "group_member_card.get_group_member_card_info"
 )
 
 const (

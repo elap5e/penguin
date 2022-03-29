@@ -64,7 +64,7 @@ func (m *Manager) handleOnlinePushMessage(reply *rpc.Reply) (*rpc.Args, error) {
 	if err := m.d.OnRecvMessage(head, body); err != nil {
 		return nil, err
 	}
-	return m.responseOnlinePushMessage(reply, &OnlinePushMessageResponse{
+	return m.ResponseOnlinePushMessage(reply, &OnlinePushMessageResponse{
 		Uin: reply.Uin,
 		Items: []*DeleteMessage{{
 			FromUin:  int64(head.GetFromUin()),
@@ -86,7 +86,7 @@ func (m *Manager) handleOnlinePushMessage(reply *rpc.Reply) (*rpc.Args, error) {
 	})
 }
 
-func (m *Manager) responseOnlinePushMessage(reply *rpc.Reply, resp *OnlinePushMessageResponse) (*rpc.Args, error) {
+func (m *Manager) ResponseOnlinePushMessage(reply *rpc.Reply, resp *OnlinePushMessageResponse) (*rpc.Args, error) {
 	p, err := uni.Marshal(&uni.Data{
 		Version:     3,
 		RequestID:   reply.Seq,
