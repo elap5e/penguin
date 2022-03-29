@@ -16,7 +16,9 @@ package account
 
 import (
 	"context"
+	"sync"
 
+	"github.com/elap5e/penguin"
 	"github.com/elap5e/penguin/pkg/net/msf/rpc"
 )
 
@@ -24,11 +26,30 @@ type Manager struct {
 	ctx context.Context
 
 	c rpc.Client
+
+	mu       sync.RWMutex
+	accounts map[int64]*penguin.Account // shared
 }
 
 func NewManager(ctx context.Context, c rpc.Client) *Manager {
 	return &Manager{
-		ctx: ctx,
-		c:   c,
+		ctx:      ctx,
+		c:        c,
+		accounts: make(map[int64]*penguin.Account),
 	}
+}
+
+func (m *Manager) GetAccount(k int64) (*penguin.Account, bool) {
+	m.mu.RLock()
+	v, ok := m.accounts[k]
+	m.mu.RUnlock()
+	return v, ok
+}
+
+func (m *Manager) SetAccount(k int64, v *penguin.Account) (*penguin.Account, bool) {
+	m.mu.Lock()
+	vv, ok := m.accounts[k]
+	m.accounts[k] = v
+	m.mu.Unlock()
+	return vv, ok
 }

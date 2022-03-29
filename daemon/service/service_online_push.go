@@ -61,7 +61,7 @@ func (m *Manager) handleOnlinePushMessage(reply *rpc.Reply) (*rpc.Args, error) {
 		return nil, err
 	}
 	head, body := push.GetMsg().GetMsgHead(), push.GetMsg().GetMsgBody()
-	if err := m.d.OnRecvMessage(head, body); err != nil {
+	if err := m.d.OnRecvMessage(reply.Uin, head, body); err != nil {
 		return nil, err
 	}
 	return m.ResponseOnlinePushMessage(reply, &OnlinePushMessageResponse{
@@ -80,7 +80,7 @@ func (m *Manager) handleOnlinePushMessage(reply *rpc.Reply) (*rpc.Args, error) {
 			ClientIP: 0,
 		}},
 		ServerIP: uint32(push.GetSvrip()),
-		Token:    nil,
+		Token:    []byte{},
 		Type:     0,
 		Device:   nil,
 	})

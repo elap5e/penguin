@@ -23,7 +23,7 @@ import (
 	"github.com/elap5e/penguin/pkg/log"
 )
 
-func (d *Daemon) OnRecvMessage(head *pb.MsgCommon_MsgHead, body *pb.IMMsgBody_MsgBody) error {
+func (d *Daemon) OnRecvMessage(uin int64, head *pb.MsgCommon_MsgHead, body *pb.IMMsgBody_MsgBody) error {
 	msg := penguin.Message{
 		MessageID: int64(head.GetMsgSeq()),
 		Time:      int64(head.GetMsgTime()),
@@ -34,40 +34,42 @@ func (d *Daemon) OnRecvMessage(head *pb.MsgCommon_MsgHead, body *pb.IMMsgBody_Ms
 			Type: penguin.AccountTypeDefault,
 		},
 	}
-	if chat := head.GetDiscussInfo(); chat != nil {
+	if v := head.GetDiscussInfo(); v != nil {
 		// discuss
-		msg.Chat = &penguin.Chat{
-			ID:      int64(chat.GetDiscussUin()),
-			Type:    penguin.ChatTypeDiscuss,
-			Title:   string(chat.GetDiscussName()),
-			Display: string(chat.GetDiscussRemark()),
-		}
-	} else if chat := head.GetDiscussInfo(); chat != nil {
+	} else if v := head.GetDiscussInfo(); v != nil {
 		// discuss private
-		msg.Chat = &penguin.Chat{
-			ID:      int64(chat.GetDiscussUin()),
-			Type:    penguin.ChatTypeDiscussPrivate,
-			Title:   string(chat.GetDiscussName()),
-			Display: string(chat.GetDiscussRemark()),
-		}
-		msg.Chat.User = &penguin.User{
-			Account: &penguin.Account{
-				ID:   int64(head.GetFromUin()),
-				Type: penguin.AccountTypeDefault,
-			},
-		}
-	} else if chat := head.GetGroupInfo(); chat != nil {
+	} else if v := head.GetGroupInfo(); v != nil {
 		// group
-		msg.Chat = &penguin.Chat{
-			ID:    int64(chat.GetGroupCode()),
-			Type:  penguin.ChatTypeGroup,
-			Title: string(chat.GetGroupName()),
+		from, ok := d.chtm.GetUser(int64(v.GetGroupCode()), int64(head.GetFromUin()))
+		if !ok {
+			account, ok := d.accm.GetAccount(int64(head.GetFromUin()))
+			if !ok {
+				account = &penguin.Account{
+					ID:   int64(head.GetFromUin()),
+					Type: penguin.AccountTypeDefault,
+				}
+				_, _ = d.accm.SetAccount(account.ID, account)
+			}
+			from = &penguin.User{
+				Account: account,
+			}
+			_, _ = d.chtm.SetUser(int64(v.GetGroupCode()), account.ID, from)
 		}
-		msg.From.Display = string(chat.GetGroupCard())
-	} else if chat := head.GetC2CTmpMsgHead(); chat != nil {
+		msg.From = from
+		chat, ok := d.chtm.GetChat(int64(v.GetGroupCode()))
+		if !ok {
+			chat = &penguin.Chat{
+				ID:    int64(v.GetGroupCode()),
+				Type:  penguin.ChatTypeGroup,
+				Title: string(v.GetGroupName()),
+			}
+			_, _ = d.chtm.SetChat(int64(v.GetGroupCode()), chat)
+		}
+		msg.Chat = chat
+	} else if v := head.GetC2CTmpMsgHead(); v != nil {
 		// group private
 		msg.Chat = &penguin.Chat{
-			ID:   int64(chat.GetGroupCode()),
+			ID:   int64(v.GetGroupCode()),
 			Type: penguin.ChatTypeGroupPrivate,
 		}
 		msg.Chat.User = &penguin.User{
@@ -76,25 +78,66 @@ func (d *Daemon) OnRecvMessage(head *pb.MsgCommon_MsgHead, body *pb.IMMsgBody_Ms
 				Type: penguin.AccountTypeDefault,
 			},
 		}
-	} else if cmd := head.GetC2CCmd(); cmd != 0 {
+	} else if v := head.GetC2CCmd(); v != 0 {
 		// private
+		fromUin := int64(head.GetFromUin())
+		from, ok := d.cntm.GetContact(uin, fromUin)
+		if !ok {
+			account, ok := d.accm.GetAccount(fromUin)
+			if !ok {
+				account = &penguin.Account{
+					ID:   fromUin,
+					Type: penguin.AccountTypeDefault,
+				}
+				_, _ = d.accm.SetAccount(account.ID, account)
+			}
+			from = &penguin.Contact{
+				Account: account,
+				Display: string(head.GetFromNick()),
+			}
+			_, _ = d.cntm.SetContact(uin, account.ID, from)
+		}
+		msg.From = &penguin.User{
+			Account: from.Account,
+			Display: from.Display,
+		}
+		toUin := int64(head.GetToUin())
+		to, ok := d.cntm.GetContact(uin, toUin)
+		if !ok {
+			account, ok := d.accm.GetAccount(toUin)
+			if !ok {
+				account = &penguin.Account{
+					ID:   toUin,
+					Type: penguin.AccountTypeDefault,
+				}
+				_, _ = d.accm.SetAccount(account.ID, account)
+			}
+			to = &penguin.Contact{
+				Account: account,
+				Display: string(head.GetFromNick()),
+			}
+			_, _ = d.cntm.SetContact(uin, account.ID, to)
+		}
 		msg.Chat = &penguin.Chat{
 			ID:   0,
 			Type: penguin.ChatTypePrivate,
-		}
-		msg.Chat.User = &penguin.User{
-			Account: &penguin.Account{
-				ID:   int64(head.GetFromUin()),
-				Type: penguin.AccountTypeDefault,
+			User: &penguin.User{
+				Account: to.Account,
+				Display: to.Display,
 			},
 		}
-		msg.From.Display = string(head.GetFromNick())
 	}
 	_ = pgn.NewMessageEncoder(body).Encode(&msg)
 	ph, _ := json.Marshal(head)
 	pb, _ := json.Marshal(body)
-	p, _ := json.MarshalIndent(msg, "", "  ")
-	log.Debug("head:%s body:%s\n%s", ph, pb, p)
+	pm, _ := json.Marshal(msg)
+	log.Debug("head:%s body:%s msg:%s", ph, pb, pm)
+	switch msg.Chat.Type {
+	case penguin.ChatTypePrivate:
+		log.Chat("private:%d(%s) user:%d(%s) text:%s", msg.Chat.User.Account.ID, msg.Chat.User.Account.Username, msg.From.Account.ID, msg.From.Account.Username, msg.Text)
+	case penguin.ChatTypeGroup:
+		log.Chat("group:%d(%s) user:%d(%s) text:%s", msg.Chat.ID, msg.Chat.Title, msg.From.Account.ID, msg.From.Account.Username, msg.Text)
+	}
 	return nil
 }
 

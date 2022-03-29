@@ -214,12 +214,12 @@ func (m *Manager) requestRegisterPush(push *RegisterPush, typ RegisterType, clie
 		OSVersion:      fake.Device.OS.Version,
 		OpenPush:       true, // constant
 		LargeSeq:       push.LargeSeq,
-		LastWatchStart: 0,   // constant
-		BindUinList:    nil, // constant
-		OldSSOIP:       0,   // constant
-		NewSSOIP:       -1,  // constant
-		ChannelID:      "",  // constant
-		CPID:           0,   // constant
+		LastWatchStart: 0,                // constant
+		BindUinList:    []*BindUinInfo{}, // constant
+		OldSSOIP:       0,                // constant
+		NewSSOIP:       -1,               // constant
+		ChannelID:      "",               // constant
+		CPID:           0,                // constant
 		VendorName:     "MIUI",
 		VendorOSName:   "V13",
 		IOSIDFA:        "", // constant
@@ -232,9 +232,9 @@ func (m *Manager) requestRegisterPush(push *RegisterPush, typ RegisterType, clie
 		BatteryStatus:  0,     // constant
 		TimActiveFlag:  false, // constant
 		BindUinNotify:  push.BindUinNotify,
-		VendorPushInfo: nil, // constant
-		VendorDeviceID: 0,   // constant
-		CustomStatus:   nil, // constant
+		VendorPushInfo: &VendorPushInfo{}, // constant
+		VendorDeviceID: 0,                 // constant
+		CustomStatus:   nil,               // constant
 	}, client...)
 }
 

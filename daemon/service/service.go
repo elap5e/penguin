@@ -25,7 +25,7 @@ import (
 
 type Daemon interface {
 	GetAuthManager() *auth.Manager
-	OnRecvMessage(head *pb.MsgCommon_MsgHead, body *pb.IMMsgBody_MsgBody) error
+	OnRecvMessage(uin int64, head *pb.MsgCommon_MsgHead, body *pb.IMMsgBody_MsgBody) error
 }
 
 type Manager struct {

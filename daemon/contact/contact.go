@@ -16,11 +16,15 @@ package contact
 
 import (
 	"context"
+	"sync"
 
+	"github.com/elap5e/penguin"
+	"github.com/elap5e/penguin/daemon/account"
 	"github.com/elap5e/penguin/pkg/net/msf/rpc"
 )
 
 type Daemon interface {
+	GetAccountManager() *account.Manager
 }
 
 type Manager struct {
@@ -28,12 +32,42 @@ type Manager struct {
 
 	c rpc.Client
 	d Daemon
+
+	mu       sync.RWMutex
+	contacts map[int64]map[int64]*penguin.Contact
 }
 
 func NewManager(ctx context.Context, c rpc.Client, d Daemon) *Manager {
 	return &Manager{
-		ctx: ctx,
-		c:   c,
-		d:   d,
+		ctx:      ctx,
+		c:        c,
+		d:        d,
+		contacts: make(map[int64]map[int64]*penguin.Contact),
 	}
+}
+
+func (m *Manager) getContacts(uin int64) map[int64]*penguin.Contact {
+	contacts, ok := m.contacts[uin]
+	if !ok {
+		m.contacts[uin] = make(map[int64]*penguin.Contact)
+		contacts = m.contacts[uin]
+	}
+	return contacts
+}
+
+func (m *Manager) GetContact(uin, k int64) (*penguin.Contact, bool) {
+	m.mu.RLock()
+	contacts := m.getContacts(uin)
+	v, ok := contacts[k]
+	m.mu.RUnlock()
+	return v, ok
+}
+
+func (m *Manager) SetContact(uin, k int64, v *penguin.Contact) (*penguin.Contact, bool) {
+	m.mu.Lock()
+	contacts := m.getContacts(uin)
+	vv, ok := contacts[k]
+	contacts[k] = v
+	m.mu.Unlock()
+	return vv, ok
 }

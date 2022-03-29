@@ -47,8 +47,7 @@ func (m *Manager) handlePushNotifyRequest(reply *rpc.Reply) (*rpc.Args, error) {
 		return nil, err
 	}
 	items := []*service.DeleteMessage{}
-	m.setSyncFlag(reply.Uin, 0)
-	for force := true; force || m.getSyncFlag(reply.Uin) == 1; force = false {
+	for {
 		resp, err := m.GetMessage(reply.Uin)
 		if err != nil {
 			return nil, err
@@ -60,7 +59,7 @@ func (m *Manager) handlePushNotifyRequest(reply *rpc.Reply) (*rpc.Args, error) {
 				case 9, 10, 31, 79, 97, 120, 132, 133, 141, 166, 167:
 					switch head.GetC2CCmd() {
 					case 11, 175:
-						if err := m.d.OnRecvMessage(head, msg.GetMsgBody()); err != nil {
+						if err := m.d.OnRecvMessage(reply.Uin, head, msg.GetMsgBody()); err != nil {
 							return nil, err
 						}
 						items = append(items, &service.DeleteMessage{
@@ -84,17 +83,21 @@ func (m *Manager) handlePushNotifyRequest(reply *rpc.Reply) (*rpc.Args, error) {
 						MsgType: head.GetMsgType(),
 						MsgSeq:  head.GetMsgSeq(),
 						MsgUid:  head.GetMsgUid(),
-						Sig:     nil,
+						Sig:     []byte{},
 					})
 				}
 			}
+		}
+		if flag, _ := m.GetFlag(reply.Uin); flag != 1 {
+			_, _ = m.SetFlag(reply.Uin, 0) // clear flag
+			break
 		}
 	}
 	resp := service.OnlinePushMessageResponse{
 		Uin:      reply.Uin,
 		Items:    items,
 		ServerIP: push.ServerIP,
-		Token:    nil,
+		Token:    []byte{},
 		Type:     0,
 		Device:   nil,
 	}

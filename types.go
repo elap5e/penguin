@@ -57,7 +57,10 @@ type ChatPhoto struct {
 	FileID string `json:"file_id"`
 }
 
-type Contact struct{}
+type Contact struct {
+	Account *Account `json:"account"`
+	Display string   `json:"display,omitempty"`
+}
 
 type User struct {
 	Account *Account `json:"account"`

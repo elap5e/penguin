@@ -48,6 +48,10 @@ func Debug(format string, v ...any) {
 	logger.Println("\x1b[37m[DEBUG]\x1b[0m", fmt.Sprintf(format, v...))
 }
 
+func Chat(format string, v ...any) {
+	logger.Println("\x1b[37;1m[CHAT]", fmt.Sprintf(format, v...)+"\x1b[0m")
+}
+
 func Info(format string, v ...any) {
 	logger.Println("\x1b[36m[INFO]", fmt.Sprintf(format, v...)+"\x1b[0m")
 }

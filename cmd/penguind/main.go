@@ -16,6 +16,8 @@ package main
 
 import (
 	"context"
+	"os"
+	"path"
 
 	"github.com/elap5e/penguin/config"
 	"github.com/elap5e/penguin/daemon"
@@ -23,7 +25,12 @@ import (
 )
 
 func main() {
-	cfg := config.OpenFile("config.json")
+	home, _ := os.UserHomeDir()
+	_ = os.MkdirAll(path.Join(home, ".penguin"), 0755)
+	_ = os.MkdirAll(path.Join(home, ".penguin", "service"), 0755)
+	_ = os.MkdirAll(path.Join(home, ".penguin", "session"), 0755)
+	_ = os.MkdirAll(path.Join(home, ".penguin", "tickets"), 0755)
+	cfg := config.OpenFile(path.Join(home, ".penguin/config.json"))
 	dmn := daemon.New(context.Background(), cfg)
 	if err := dmn.Run(); err != nil {
 		log.Error("penguin daemon exit with error: %s", err)

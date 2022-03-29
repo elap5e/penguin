@@ -151,8 +151,8 @@ func (c *codec) ReadResponseHeader(resp *rpc.Response) (err error) {
 			return err
 		}
 		defer reader.Close()
-		var buf bytes.Buffer
-		if _, err := io.Copy(&buf, reader); err != nil {
+		buf := bytes.NewBuffer([]byte{})
+		if _, err := io.Copy(buf, reader); err != nil {
 			return err
 		}
 		c.reply.Payload = buf.Bytes()

@@ -23,7 +23,8 @@ import (
 )
 
 func (m *Manager) GetMessage(uin int64) (*pb.MsgService_PbGetMsgResp, error) {
-	flag, cookie := m.getSyncFlag(uin), m.getSyncCookie(uin)
+	flag, _ := m.GetFlag(uin)
+	cookie, _ := m.GetCookie(uin)
 	req := pb.MsgService_PbGetMsgReq{
 		SyncFlag:           flag,
 		SyncCookie:         cookie,
@@ -54,7 +55,7 @@ func (m *Manager) GetMessage(uin int64) (*pb.MsgService_PbGetMsgResp, error) {
 	if err := proto.Unmarshal(reply.Payload, &resp); err != nil {
 		return nil, err
 	}
-	m.setSyncFlag(uin, resp.GetSyncFlag())
-	m.setSyncCookie(uin, resp.GetSyncCookie())
+	_, _ = m.SetFlag(uin, resp.GetSyncFlag())
+	_, _ = m.SetCookie(uin, resp.GetSyncCookie())
 	return &resp, nil
 }

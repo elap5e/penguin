@@ -29,14 +29,15 @@ type Manager struct {
 
 	c rpc.Client
 
-	mapExtarData map[int64]*ExtraData
+	// session
+	mapExtraData map[int64]*ExtraData
 }
 
 func NewManager(ctx context.Context, c rpc.Client) *Manager {
 	return &Manager{
 		ctx:          ctx,
 		c:            c,
-		mapExtarData: make(map[int64]*ExtraData),
+		mapExtraData: make(map[int64]*ExtraData),
 	}
 }
 

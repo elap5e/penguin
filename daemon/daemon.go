@@ -17,6 +17,7 @@ package daemon
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/elap5e/penguin/config"
 	"github.com/elap5e/penguin/daemon/account"
@@ -66,13 +67,21 @@ func (d *Daemon) Run() error {
 	if _, err := d.svcm.RegisterAppRegister(resp.Data.Uin); err != nil {
 		return fmt.Errorf("service register app register, error: %v", err)
 	}
+	time.Sleep(time.Second * 5)
 	if _, err := d.cntm.GetContacts(resp.Data.Uin, 0, 100, 0, 100); err != nil {
-		return fmt.Errorf("account get account, error: %v", err)
+		return fmt.Errorf("contact get contacts, error: %v", err)
+	}
+	if _, err := d.chtm.GetGroups(resp.Data.Uin); err != nil {
+		return fmt.Errorf("chat get groups and users, error: %v", err)
 	}
 	if _, err := d.svcm.RegisterSetOnlineStatus(resp.Data.Uin, service.StatusTypeOnline, true); err != nil {
 		return fmt.Errorf("service register set online status, error: %v", err)
 	}
 	select {}
+}
+
+func (d *Daemon) GetAccountManager() *account.Manager {
+	return d.accm
 }
 
 func (d *Daemon) GetAuthManager() *auth.Manager {

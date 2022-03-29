@@ -95,10 +95,10 @@ func (resp *Response) SetExtraData(tlvs map[uint16]tlv.Codec) error {
 }
 
 func (m *Manager) GetExtraData(uin int64) *ExtraData {
-	extraData := m.mapExtarData[uin]
+	extraData := m.mapExtraData[uin]
 	if extraData == nil {
-		m.mapExtarData[uin] = &ExtraData{}
-		extraData = m.mapExtarData[uin]
+		m.mapExtraData[uin] = &ExtraData{}
+		extraData = m.mapExtraData[uin]
 	}
 	return extraData
 }

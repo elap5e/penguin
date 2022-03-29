@@ -19,6 +19,7 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
+	"github.com/elap5e/penguin"
 	"github.com/elap5e/penguin/daemon/contact/pb"
 	"github.com/elap5e/penguin/pkg/encoding/uni"
 	"github.com/elap5e/penguin/pkg/log"
@@ -33,7 +34,7 @@ type GetContactsRequest struct {
 	StartIndex      int16   `jce:"3" json:"start_index"`
 	GetFriendCount  int16   `jce:"4" json:"get_friend_count"`
 	GroupID         int8    `jce:"5" json:"group_id"`
-	IsGetGroupInfo  bool    `jce:"6" json:"is_get_group_info"`
+	IsGetGroup      bool    `jce:"6" json:"is_get_group_info"`
 	GroupStartIndex int8    `jce:"7" json:"group_start_index"`
 	GetGroupCount   int8    `jce:"8" json:"get_group_count"`
 	IsGetMSFGroup   bool    `jce:"9" json:"is_get_msf_group"`
@@ -58,18 +59,18 @@ type GetContactsResponse struct {
 	FriendCount             int16                  `jce:"6" json:",omitempty"`
 	FriendInfoList          []*Contact             `jce:"7" json:",omitempty"`
 	GroupID                 int8                   `jce:"8" json:",omitempty"`
-	IsGetGroupInfo          bool                   `jce:"9" json:",omitempty"`
+	IsGetGroup              bool                   `jce:"9" json:",omitempty"`
 	GroupStartIndex         int8                   `jce:"10" json:",omitempty"`
 	GetGroupCount           int8                   `jce:"11" json:",omitempty"`
 	TotoalGroupCount        int16                  `jce:"12" json:",omitempty"`
 	GroupCount              int8                   `jce:"13" json:",omitempty"`
-	GroupInfoList           []*ContactGroupInfo    `jce:"14" json:",omitempty"`
+	Groups                  []*ContactGroup        `jce:"14" json:",omitempty"`
 	Result                  int32                  `jce:"15" json:",omitempty"`
 	ErrorCode               int16                  `jce:"16" json:",omitempty"`
 	OnlineFriendCount       int16                  `jce:"17" json:",omitempty"`
 	ServerTime              int64                  `jce:"18" json:",omitempty"`
 	QQOnlineCount           int16                  `jce:"19" json:",omitempty"`
-	GroupInfoList2          []*ContactGroupInfo    `jce:"20" json:",omitempty"`
+	Groups2                 []*ContactGroup        `jce:"20" json:",omitempty"`
 	RespType                int8                   `jce:"21" json:",omitempty"`
 	HasOtherRespFlag        int8                   `jce:"22" json:",omitempty"`
 	FriendInfo              *Contact               `jce:"23" json:",omitempty"`
@@ -144,10 +145,10 @@ type Contact struct {
 }
 
 type VIPBaseInfo struct {
-	OpenInfoMap       map[uint64]VIPOpenInfo `jce:"0" json:",omitempty"`
-	NameplateVIPType  int32                  `jce:"1" json:",omitempty"`
-	GrayNameplateFlag int32                  `jce:"2" json:",omitempty"`
-	ExtendNameplateId string                 `jce:"3" json:",omitempty"`
+	OpenInfoMap       map[uint64]*VIPOpenInfo `jce:"0" json:",omitempty"`
+	NameplateVIPType  int32                   `jce:"1" json:",omitempty"`
+	GrayNameplateFlag int32                   `jce:"2" json:",omitempty"`
+	ExtendNameplateId string                  `jce:"3" json:",omitempty"`
 }
 
 type VIPOpenInfo struct {
@@ -163,9 +164,9 @@ type SubServerResponseCode struct {
 	GetIntimateInfoCode int16 `jce:"1" json:",omitempty"`
 }
 
-type ContactGroupInfo struct {
-	GroupID   int8   `jce:"0" json:",omitempty"`
-	GroupName string `jce:"1" json:",omitempty"`
+type ContactGroup struct {
+	GroupID    int8   `jce:"0" json:"group_id"`
+	GroupTitle string `jce:"1" json:"group_title"`
 }
 
 func (m *Manager) GetContacts(uin int64, idx, cnt int16, gidx, gcnt int8) (*GetContactsResponse, error) {
@@ -185,7 +186,7 @@ func (m *Manager) GetContacts(uin int64, idx, cnt int16, gidx, gcnt int8) (*GetC
 		StartIndex:      idx,
 		GetFriendCount:  cnt,
 		GroupID:         0,
-		IsGetGroupInfo:  gcnt > 0,
+		IsGetGroup:      gcnt > 0,
 		GroupStartIndex: gidx,
 		GetGroupCount:   gcnt,
 		IsGetMSFGroup:   false,
@@ -204,7 +205,6 @@ func (m *Manager) GetContacts(uin int64, idx, cnt int16, gidx, gcnt int8) (*GetC
 func (m *Manager) requestGetContacts(uin int64, req *GetContactsRequest) (*GetContactsResponse, error) {
 	p, err := uni.Marshal(&uni.Data{
 		Version:     3,
-		RequestID:   87887,
 		ServantName: "mqq.IMService.FriendListServiceServantObj",
 		FuncName:    "GetFriendListReq",
 	}, map[string]interface{}{
@@ -227,7 +227,20 @@ func (m *Manager) requestGetContacts(uin int64, req *GetContactsRequest) (*GetCo
 	}); err != nil {
 		return nil, err
 	}
-	p, _ = json.MarshalIndent(resp, "", "  ")
-	log.Debug("requestGetContacts:\n%s", string(p))
+	for _, v := range resp.FriendInfoList {
+		account := penguin.Account{
+			ID:       v.FriendUin,
+			Type:     penguin.AccountTypeDefault,
+			Username: v.Nick,
+		}
+		_, _ = m.d.GetAccountManager().SetAccount(account.ID, &account)
+		contact := penguin.Contact{
+			Account: &account,
+			Display: v.Remark,
+		}
+		_, _ = m.SetContact(uin, account.ID, &contact)
+		p, _ := json.Marshal(contact)
+		log.Debug("contact:%d:%s", account.ID, p)
+	}
 	return &resp, nil
 }

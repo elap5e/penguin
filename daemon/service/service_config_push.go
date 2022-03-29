@@ -17,6 +17,8 @@ package service
 import (
 	"encoding/json"
 	"io/ioutil"
+	"os"
+	"path"
 	"strconv"
 
 	"google.golang.org/protobuf/proto"
@@ -174,7 +176,8 @@ func (m *Manager) handleConfigPushDomain(reply *rpc.Reply) (*rpc.Args, error) {
 	if err := proto.Unmarshal(reply.Payload, &push); err != nil {
 		return nil, err
 	}
-	file := ".penguin/service/config_push_domain." + strconv.FormatInt(reply.Uin, 10) + ".json"
+	home, _ := os.UserHomeDir()
+	file := path.Join(home, ".penguin/service/"+strconv.FormatInt(reply.Uin, 10)+".config_push_domain.json")
 	data, err := json.MarshalIndent(push.GetSubCmdName_Rsp(), "", "  ")
 	if err == nil {
 		err = ioutil.WriteFile(file, data, 0644)
@@ -195,7 +198,8 @@ func (m *Manager) handleConfigPushRequest(reply *rpc.Reply) (*rpc.Args, error) {
 		if err := jce.Unmarshal(req.Payload, &cfg, true); err != nil {
 			return nil, err
 		}
-		file := ".penguin/service/config_push_sso_server_config." + strconv.FormatInt(reply.Uin, 10) + ".json"
+		home, _ := os.UserHomeDir()
+		file := path.Join(home, ".penguin/service/"+strconv.FormatInt(reply.Uin, 10)+".config_push_sso_server_config.json")
 		data, err := json.MarshalIndent(&cfg, "", "  ")
 		if err == nil {
 			err = ioutil.WriteFile(file, data, 0644)
@@ -206,7 +210,8 @@ func (m *Manager) handleConfigPushRequest(reply *rpc.Reply) (*rpc.Args, error) {
 		if err := jce.Unmarshal(req.Payload, &cfg, true); err != nil {
 			return nil, err
 		}
-		file := ".penguin/service/config_push_file_storage_server." + strconv.FormatInt(reply.Uin, 10) + ".json"
+		home, _ := os.UserHomeDir()
+		file := path.Join(home, ".penguin/service/"+strconv.FormatInt(reply.Uin, 10)+".config_push_file_storage_server.json")
 		data, err := json.MarshalIndent(&cfg, "", "  ")
 		if err == nil {
 			err = ioutil.WriteFile(file, data, 0644)

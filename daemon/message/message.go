@@ -21,7 +21,7 @@ import (
 
 type Daemon interface {
 	GetServiceManager() *service.Manager
-	OnRecvMessage(head *pb.MsgCommon_MsgHead, body *pb.IMMsgBody_MsgBody) error
+	OnRecvMessage(uin int64, head *pb.MsgCommon_MsgHead, body *pb.IMMsgBody_MsgBody) error
 }
 
 type Message struct {

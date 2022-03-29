@@ -20,6 +20,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"os"
+	"path"
 	"strconv"
 	"time"
 
@@ -54,7 +55,8 @@ func newTickets(uin int64) *rpc.Tickets {
 }
 
 func getTickets(uin int64) *rpc.Tickets {
-	file := ".penguin/tickets/" + strconv.FormatInt(uin, 10) + ".json"
+	home, _ := os.UserHomeDir()
+	file := path.Join(home, ".penguin/tickets/"+strconv.FormatInt(uin, 10)+".json")
 	data, err := ioutil.ReadFile(file)
 	if os.IsNotExist(err) {
 		data, err = json.MarshalIndent(newTickets(uin), "", "  ")
@@ -191,7 +193,8 @@ func setTickets(uin int64, tickets *rpc.Tickets, tlvs map[uint16]tlv.Codec) {
 			log.Trace("t%x not parsed:\n%s", k, hex.Dump(v.MustGetValue().Bytes()))
 		}
 	}
-	file := ".penguin/tickets/" + strconv.FormatInt(uin, 10) + ".json"
+	home, _ := os.UserHomeDir()
+	file := path.Join(home, ".penguin/tickets/"+strconv.FormatInt(uin, 10)+".json")
 	data, err := json.MarshalIndent(tickets, "", "  ")
 	if err == nil {
 		err = ioutil.WriteFile(file, data, 0644)
