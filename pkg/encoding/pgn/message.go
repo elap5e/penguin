@@ -118,7 +118,7 @@ func (me *messageEncoder) encodeNotOnlineImage(elem *pb.IMMsgBody_NotOnlineImage
 		Type:   "photo",
 		Offset: me.offset,
 		Length: int64(n),
-		URL:    fmt.Sprintf("?md5=%x", elem.GetPicMd5()),
+		URL:    fmt.Sprintf("?md5=%x&uid=%d", elem.GetPicMd5(), msg.From.Account.ID),
 	})
 	me.offset += int64(n)
 }
@@ -129,7 +129,7 @@ func (me *messageEncoder) encodeCustomFace(elem *pb.IMMsgBody_CustomFace, msg *p
 		Type:   "photo",
 		Offset: me.offset,
 		Length: int64(n),
-		URL:    fmt.Sprintf("?md5=%x", elem.GetMd5()),
+		URL:    fmt.Sprintf("?md5=%x&uid=%d", elem.GetMd5(), msg.From.Account.ID),
 	})
 	me.offset += int64(n)
 }
