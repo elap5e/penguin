@@ -26,8 +26,13 @@ import (
 func (d *Daemon) OnRecvMessage(head *pb.MsgCommon_MsgHead, body *pb.IMMsgBody_MsgBody) error {
 	msg := penguin.Message{
 		MessageID: int64(head.GetMsgSeq()),
-		From:      &penguin.User{Account: &penguin.Account{ID: int64(head.GetFromUin())}},
 		Time:      int64(head.GetMsgTime()),
+	}
+	msg.From = &penguin.User{
+		Account: &penguin.Account{
+			ID:   int64(head.GetFromUin()),
+			Type: penguin.AccountTypeDefault,
+		},
 	}
 	if chat := head.GetDiscussInfo(); chat != nil {
 		// discuss
@@ -42,9 +47,14 @@ func (d *Daemon) OnRecvMessage(head *pb.MsgCommon_MsgHead, body *pb.IMMsgBody_Ms
 		msg.Chat = &penguin.Chat{
 			ID:      int64(chat.GetDiscussUin()),
 			Type:    penguin.ChatTypeDiscussPrivate,
-			User:    &penguin.User{Account: &penguin.Account{ID: int64(head.GetFromUin())}},
 			Title:   string(chat.GetDiscussName()),
 			Display: string(chat.GetDiscussRemark()),
+		}
+		msg.Chat.User = &penguin.User{
+			Account: &penguin.Account{
+				ID:   int64(head.GetFromUin()),
+				Type: penguin.AccountTypeDefault,
+			},
 		}
 	} else if chat := head.GetGroupInfo(); chat != nil {
 		// group
@@ -59,14 +69,24 @@ func (d *Daemon) OnRecvMessage(head *pb.MsgCommon_MsgHead, body *pb.IMMsgBody_Ms
 		msg.Chat = &penguin.Chat{
 			ID:   int64(chat.GetGroupCode()),
 			Type: penguin.ChatTypeGroupPrivate,
-			User: &penguin.User{Account: &penguin.Account{ID: int64(head.GetFromUin())}},
+		}
+		msg.Chat.User = &penguin.User{
+			Account: &penguin.Account{
+				ID:   int64(head.GetFromUin()),
+				Type: penguin.AccountTypeDefault,
+			},
 		}
 	} else if cmd := head.GetC2CCmd(); cmd != 0 {
 		// private
 		msg.Chat = &penguin.Chat{
 			ID:   0,
 			Type: penguin.ChatTypePrivate,
-			User: &penguin.User{Account: &penguin.Account{ID: int64(head.GetFromUin())}},
+		}
+		msg.Chat.User = &penguin.User{
+			Account: &penguin.Account{
+				ID:   int64(head.GetFromUin()),
+				Type: penguin.AccountTypeDefault,
+			},
 		}
 		msg.From.Display = string(head.GetFromNick())
 	}

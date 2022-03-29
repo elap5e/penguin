@@ -14,4 +14,21 @@
 
 package account
 
-type Manager struct{}
+import (
+	"context"
+
+	"github.com/elap5e/penguin/pkg/net/msf/rpc"
+)
+
+type Manager struct {
+	ctx context.Context
+
+	c rpc.Client
+}
+
+func NewManager(ctx context.Context, c rpc.Client) *Manager {
+	return &Manager{
+		ctx: ctx,
+		c:   c,
+	}
+}

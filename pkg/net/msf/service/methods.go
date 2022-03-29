@@ -39,9 +39,9 @@ const (
 )
 
 const (
-	MethodContactDeleteContact    = "friendlist.delFriend"
-	MethodContactGetContactGroups = "friendlist.getFriendGroupList"
-	MethodContactSetContactGroup  = "friendlist.SetGroupReq"
+	MethodContactDeleteContact   = "friendlist.delFriend"
+	MethodContactGetContacts     = "friendlist.getFriendGroupList"
+	MethodContactSetContactGroup = "friendlist.SetGroupReq"
 )
 
 const (

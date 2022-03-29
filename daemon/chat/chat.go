@@ -13,3 +13,27 @@
 // limitations under the License.
 
 package chat
+
+import (
+	"context"
+
+	"github.com/elap5e/penguin/pkg/net/msf/rpc"
+)
+
+type Daemon interface {
+}
+
+type Manager struct {
+	ctx context.Context
+
+	c rpc.Client
+	d Daemon
+}
+
+func NewManager(ctx context.Context, c rpc.Client, d Daemon) *Manager {
+	return &Manager{
+		ctx: ctx,
+		c:   c,
+		d:   d,
+	}
+}

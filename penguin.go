@@ -15,6 +15,10 @@
 //go:generate protoc --go_out=$GOPATH/src daemon/auth/pb/gateway_verify.proto
 //go:generate protoc --go_out=$GOPATH/src daemon/auth/pb/third_part_login.proto
 
+//go:generate protoc --go_out=$GOPATH/src daemon/contact/pb/mutual_mark.proto
+//go:generate protoc --go_out=$GOPATH/src daemon/contact/pb/oidb_0xd50.proto
+//go:generate protoc --go_out=$GOPATH/src daemon/contact/pb/oidb_0xd6b.proto
+
 //go:generate protoc --go_out=$GOPATH/src daemon/message/pb/body.proto
 //go:generate protoc --go_out=$GOPATH/src daemon/message/pb/head.proto
 //go:generate protoc --go_out=$GOPATH/src daemon/message/pb/common.proto

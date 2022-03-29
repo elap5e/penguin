@@ -24,7 +24,7 @@ const (
 type Account struct {
 	ID       int64       `json:"id"`
 	Type     AccountType `json:"type"`
-	Username string      `json:"username"`
+	Username string      `json:"username,omitempty"`
 	Photo    string      `json:"photo,omitempty"`
 }
 
@@ -48,7 +48,7 @@ type Chat struct {
 	ID      int64      `json:"id"`
 	Type    ChatType   `json:"type"`
 	User    *User      `json:"user,omitempty"`
-	Title   string     `json:"title"`
+	Title   string     `json:"title,omitempty"`
 	Photo   *ChatPhoto `json:"photo,omitempty"`
 	Display string     `json:"display,omitempty"`
 }
