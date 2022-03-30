@@ -47,6 +47,7 @@ const (
 type Chat struct {
 	ID      int64      `json:"id"`
 	Type    ChatType   `json:"type"`
+	Chat    *Chat      `json:"chat,omitempty"`
 	User    *User      `json:"user,omitempty"`
 	Title   string     `json:"title,omitempty"`
 	Photo   *ChatPhoto `json:"photo,omitempty"`

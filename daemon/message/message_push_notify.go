@@ -15,38 +15,21 @@
 package message
 
 import (
+	"github.com/elap5e/penguin/daemon/message/dto"
 	"github.com/elap5e/penguin/daemon/message/pb"
 	"github.com/elap5e/penguin/daemon/service"
 	"github.com/elap5e/penguin/pkg/encoding/uni"
 	"github.com/elap5e/penguin/pkg/net/msf/rpc"
 )
 
-type PushNotifyRequest struct {
-	Uin         int64  `jce:"0" json:"uin,omitempty"`
-	Type        uint8  `jce:"1" json:"type,omitempty"`
-	Service     string `jce:"2" json:"service,omitempty"`
-	Cmd         string `jce:"3" json:"cmd,omitempty"`
-	Cookie      []byte `jce:"4" json:"cookie,omitempty"`
-	MessageType uint16 `jce:"5" json:"message_type,omitempty"`
-	UserActive  uint32 `jce:"6" json:"user_active,omitempty"`
-	GeneralFlag uint32 `jce:"7" json:"general_flag,omitempty"`
-	BindedUin   int64  `jce:"8" json:"binded_uin,omitempty"`
-
-	Message       *Message `jce:"9" json:"message,omitempty"`
-	ControlBuffer string   `jce:"10" json:"control_buffer,omitempty"`
-	ServerBuffer  []byte   `jce:"11" json:"server_buffer,omitempty"`
-	PingFlag      uint64   `jce:"12" json:"ping_flag,omitempty"`
-	ServerIP      uint32   `jce:"13" json:"server_ip,omitempty"`
-}
-
 func (m *Manager) handlePushNotifyRequest(reply *rpc.Reply) (*rpc.Args, error) {
-	data, push := uni.Data{}, PushNotifyRequest{}
+	data, push := uni.Data{}, dto.PushNotifyRequest{}
 	if err := uni.Unmarshal(reply.Payload[4:], &data, map[string]any{
 		"req_PushNotify": &push,
 	}); err != nil {
 		return nil, err
 	}
-	items := []*service.DeleteMessage{}
+	items := []*dto.MessageDelete{}
 	for {
 		resp, err := m.GetMessage(reply.Uin)
 		if err != nil {
@@ -62,7 +45,7 @@ func (m *Manager) handlePushNotifyRequest(reply *rpc.Reply) (*rpc.Args, error) {
 						if err := m.d.OnRecvMessage(reply.Uin, head, msg.GetMsgBody()); err != nil {
 							return nil, err
 						}
-						items = append(items, &service.DeleteMessage{
+						items = append(items, &dto.MessageDelete{
 							FromUin:  int64(head.GetFromUin()),
 							Time:     int64(head.GetMsgTime()),
 							Seq:      int16(head.GetMsgSeq()),
@@ -93,7 +76,7 @@ func (m *Manager) handlePushNotifyRequest(reply *rpc.Reply) (*rpc.Args, error) {
 			break
 		}
 	}
-	resp := service.OnlinePushMessageResponse{
+	resp := service.OnlinePushResponse{
 		Uin:      reply.Uin,
 		Items:    items,
 		ServerIP: push.ServerIP,
@@ -101,5 +84,5 @@ func (m *Manager) handlePushNotifyRequest(reply *rpc.Reply) (*rpc.Args, error) {
 		Type:     0,
 		Device:   nil,
 	}
-	return m.d.GetServiceManager().ResponseOnlinePushMessage(reply, &resp)
+	return m.d.GetServiceManager().OnlinePushResponse(reply, &resp)
 }

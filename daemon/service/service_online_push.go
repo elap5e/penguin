@@ -15,21 +15,37 @@
 package service
 
 import (
+	"encoding/json"
+
 	"google.golang.org/protobuf/proto"
 
+	"github.com/elap5e/penguin/daemon/message/dto"
 	"github.com/elap5e/penguin/daemon/service/pb"
 	"github.com/elap5e/penguin/pkg/encoding/uni"
+	"github.com/elap5e/penguin/pkg/log"
 	"github.com/elap5e/penguin/pkg/net/msf/rpc"
 	"github.com/elap5e/penguin/pkg/net/msf/service"
 )
 
-type OnlinePushMessageResponse struct {
-	Uin      int64            `jce:"0" json:"uin"`
-	Items    []*DeleteMessage `jce:"1" json:"items"`
-	ServerIP uint32           `jce:"2" json:"server_ip"`
-	Token    []byte           `jce:"3" json:"token"`
-	Type     uint32           `jce:"4" json:"type"`
-	Device   *Device          `jce:"5" json:"device,omitempty"`
+type OnlinePushRequest struct {
+	Uin             int64                 `jce:",0" json:"uin,omitempty"`
+	Time            int64                 `jce:",1" json:"time,omitempty"`
+	Messages        []*dto.Message        `jce:",2" json:"messages,omitempty"`
+	ServerIP        uint32                `jce:",3" json:"server_ip,omitempty"`
+	SyncCookie      []byte                `jce:",4" json:"sync_cookie,omitempty"`
+	UinPairMessages []*dto.UinPairMessage `jce:",5" json:"uin_pair_messages,omitempty"`
+	Previews        map[string][]byte     `jce:",6" json:"previews,omitempty"`
+	UserActive      int32                 `jce:",7" json:"user_active,omitempty"`
+	GeneralFlag     int32                 `jce:",12" json:"general_flag,omitempty"`
+}
+
+type OnlinePushResponse struct {
+	Uin      int64                `jce:"0" json:"uin"`
+	Items    []*dto.MessageDelete `jce:"1" json:"items"`
+	ServerIP uint32               `jce:"2" json:"server_ip"`
+	Token    []byte               `jce:"3" json:"token"`
+	Type     uint32               `jce:"4" json:"type"`
+	Device   *Device              `jce:"5" json:"device,omitempty"`
 }
 
 type Device struct {
@@ -41,20 +57,6 @@ type Device struct {
 	IOSIDFA      string `jce:"5" json:"ios_idfa"`
 }
 
-type DeleteMessage struct {
-	FromUin  int64  `jce:"0" json:"from_uin,omitempty"`
-	Time     int64  `jce:"1" json:"time,omitempty"`
-	Seq      int16  `jce:"2" json:"seq,omitempty"`
-	Cookie   []byte `jce:"3" json:"cookie,omitempty"`
-	Cmd      int16  `jce:"4" json:"method,omitempty"`
-	Type     int64  `jce:"5" json:"type,omitempty"`
-	AppID    int64  `jce:"6" json:"app_id,omitempty"`
-	SendTime int64  `jce:"7" json:"send_time,omitempty"`
-	SSOSeq   int32  `jce:"8" json:"sso_seq,omitempty"`
-	SSOIP    int32  `jce:"9" json:"sso_ip,omitempty"`
-	ClientIP int32  `jce:"10" json:"client_ip,omitempty"`
-}
-
 func (m *Manager) handleOnlinePushMessage(reply *rpc.Reply) (*rpc.Args, error) {
 	push := pb.OnlinePush_PbPushMsg{}
 	if err := proto.Unmarshal(reply.Payload, &push); err != nil {
@@ -64,9 +66,9 @@ func (m *Manager) handleOnlinePushMessage(reply *rpc.Reply) (*rpc.Args, error) {
 	if err := m.d.OnRecvMessage(reply.Uin, head, body); err != nil {
 		return nil, err
 	}
-	return m.ResponseOnlinePushMessage(reply, &OnlinePushMessageResponse{
+	return m.OnlinePushResponse(reply, &OnlinePushResponse{
 		Uin: reply.Uin,
-		Items: []*DeleteMessage{{
+		Items: []*dto.MessageDelete{{
 			FromUin:  int64(head.GetFromUin()),
 			Time:     int64(head.GetMsgTime()),
 			Seq:      int16(head.GetMsgSeq()),
@@ -86,7 +88,7 @@ func (m *Manager) handleOnlinePushMessage(reply *rpc.Reply) (*rpc.Args, error) {
 	})
 }
 
-func (m *Manager) ResponseOnlinePushMessage(reply *rpc.Reply, resp *OnlinePushMessageResponse) (*rpc.Args, error) {
+func (m *Manager) OnlinePushResponse(reply *rpc.Reply, resp *OnlinePushResponse) (*rpc.Args, error) {
 	p, err := uni.Marshal(&uni.Data{
 		Version:     3,
 		RequestID:   reply.Seq,
@@ -105,6 +107,44 @@ func (m *Manager) ResponseOnlinePushMessage(reply *rpc.Reply, resp *OnlinePushMe
 		ServiceMethod: service.MethodServiceOnlinePushResponse,
 		Payload:       p,
 	}, nil
+}
+
+func (m *Manager) handleOnlinePushRequest(reply *rpc.Reply) (*rpc.Args, error) {
+	data, push := uni.Data{}, OnlinePushRequest{}
+	if err := uni.Unmarshal(reply.Payload, &data, map[string]interface{}{
+		"req": &push,
+	}); err != nil {
+		return nil, err
+	}
+	items := []*dto.MessageDelete{}
+	for _, msg := range push.Messages {
+		switch msg.Type {
+		case 0x0210:
+			// _, _ = m.decode0x0210Jce(reply.Uin, msg.MessageBytes)
+			fallthrough
+		case 0x02dc:
+			// _, _ = m.decode0x02dc(reply.Uin, msg.MessageBytes)
+			fallthrough
+		default:
+			p, _ := json.Marshal(msg)
+			log.Warn("msg:%s", p)
+		}
+		items = append(items, &dto.MessageDelete{
+			FromUin: msg.FromUin,
+			Time:    msg.Time,
+			Seq:     int16(msg.Seq),
+			Cookie:  msg.MessageCookie,
+		})
+	}
+	resp := OnlinePushResponse{
+		Uin:      reply.Uin,
+		Items:    items,
+		ServerIP: push.ServerIP,
+		Token:    []byte{},
+		Type:     0,
+		Device:   nil,
+	}
+	return m.OnlinePushResponse(reply, &resp)
 }
 
 func (m *Manager) handleOnlinePushTicketExpired(reply *rpc.Reply) (*rpc.Args, error) {

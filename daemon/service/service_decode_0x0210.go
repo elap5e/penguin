@@ -12,14 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package message
+package service
 
 import (
-	"github.com/elap5e/penguin/daemon/message/pb"
-	"github.com/elap5e/penguin/daemon/service"
+	"github.com/elap5e/penguin/pkg/encoding/jce"
 )
 
-type Daemon interface {
-	GetServiceManager() *service.Manager
-	OnRecvMessage(uin int64, head *pb.MsgCommon_MsgHead, body *pb.IMMsgBody_MsgBody) error
+type Message0x0210 struct {
+	SubType int64  `jce:"0" json:"sub_type"`
+	Payload []byte `jce:"10" json:"payload"`
+}
+
+func (m *Manager) decode0x0210Jce(uin int64, p []byte) (any, error) {
+	msg := Message0x0210{}
+	if err := jce.Unmarshal(p, &msg, true); err != nil {
+		return nil, err
+	}
+	return m.decode0x0210(uin, msg.SubType, msg.Payload)
+}
+
+func (m *Manager) decode0x0210Pb(uin int64, p []byte) (any, error) {
+	return nil, nil
+}
+
+func (m *Manager) decode0x0210(uin, typ int64, p []byte) (any, error) {
+	return nil, nil
 }

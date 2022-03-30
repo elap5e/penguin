@@ -15,6 +15,7 @@
 package service
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"io/ioutil"
 	"os"
@@ -26,6 +27,7 @@ import (
 	"github.com/elap5e/penguin/daemon/service/pb"
 	"github.com/elap5e/penguin/pkg/encoding/jce"
 	"github.com/elap5e/penguin/pkg/encoding/uni"
+	"github.com/elap5e/penguin/pkg/log"
 	"github.com/elap5e/penguin/pkg/net/msf/rpc"
 	"github.com/elap5e/penguin/pkg/net/msf/service"
 )
@@ -222,6 +224,8 @@ func (m *Manager) handleConfigPushRequest(reply *rpc.Reply) (*rpc.Args, error) {
 	case ConfigPushTypeProxyIPChannel:
 		fallthrough
 	default:
+		p, _ := json.Marshal(reply)
+		log.Warn("push:%s data:\n%s", p, hex.Dump(reply.Payload))
 	}
 	resp := &ConfigPushResponse{
 		Type:    req.Type,

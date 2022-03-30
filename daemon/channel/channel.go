@@ -16,13 +16,16 @@ package channel
 
 import (
 	"context"
-	"net/rpc"
 	"sync"
 
 	"github.com/elap5e/penguin"
+	"github.com/elap5e/penguin/daemon/channel/pb"
+	"github.com/elap5e/penguin/pkg/net/msf/rpc"
+	"github.com/elap5e/penguin/pkg/net/msf/service"
 )
 
 type Daemon interface {
+	OnRecvChannelMessage(id int64, recv *pb.Common_Msg) error
 }
 
 type Manager struct {
@@ -38,7 +41,7 @@ type Manager struct {
 }
 
 func NewManager(ctx context.Context, c rpc.Client, d Daemon) *Manager {
-	return &Manager{
+	m := &Manager{
 		ctx:      ctx,
 		c:        c,
 		d:        d,
@@ -46,6 +49,8 @@ func NewManager(ctx context.Context, c rpc.Client, d Daemon) *Manager {
 		rooms:    make(map[int64]*penguin.Chat),
 		users:    make(map[int64]map[int64]*penguin.User),
 	}
+	m.c.Register(service.MethodChannelPushMessage, m.handlePushMessage)
+	return m
 }
 
 func (m *Manager) GetChannel(k int64) (*penguin.Chat, bool) {

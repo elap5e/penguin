@@ -12,14 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package message
+package channel
 
 import (
-	"github.com/elap5e/penguin/daemon/message/pb"
-	"github.com/elap5e/penguin/daemon/service"
+	"google.golang.org/protobuf/proto"
+
+	"github.com/elap5e/penguin/daemon/channel/pb"
+	"github.com/elap5e/penguin/pkg/net/msf/rpc"
 )
 
-type Daemon interface {
-	GetServiceManager() *service.Manager
-	OnRecvMessage(uin int64, head *pb.MsgCommon_MsgHead, body *pb.IMMsgBody_MsgBody) error
+func (m *Manager) handlePushMessage(reply *rpc.Reply) (*rpc.Args, error) {
+	push := pb.MsgPush_MsgOnlinePush{}
+	if err := proto.Unmarshal(reply.Payload, &push); err != nil {
+		return nil, err
+	}
+	for _, v := range push.GetMsgs() {
+		_ = m.d.OnRecvChannelMessage(reply.Uin, v)
+	}
+	return nil, nil
 }

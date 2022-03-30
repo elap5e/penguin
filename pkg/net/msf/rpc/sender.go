@@ -59,9 +59,8 @@ type sender struct {
 	wait   *list.List
 	waitMu sync.Mutex
 
-	beatAt    time.Time
-	beating   bool
-	beatRetry int32
+	heartbeating bool
+	lastRecvTime time.Time
 
 	mu       sync.Mutex
 	pending  map[int32]*Call
@@ -77,6 +76,7 @@ func (s *sender) recvLoop(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		default:
+			s.lastRecvTime = time.Now()
 		}
 
 		resp = Response{}
@@ -181,6 +181,26 @@ func (s *sender) waitLoop(ctx context.Context) {
 	// wait for more calls to arrive
 }
 
+func (s *sender) watchDog(ctx context.Context) {
+	var err error
+	timer := time.NewTimer(0)
+	for err == nil {
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return
+		case <-timer.C:
+		}
+		if s.lastRecvTime.Add(time.Second * 60).After(time.Now()) {
+			timer.Reset(s.lastRecvTime.Sub(time.Now()))
+			continue
+		} else if !s.heartbeating {
+			s.heartbeat()
+		}
+		timer.Reset(time.Second * 60)
+	}
+}
+
 func (s *sender) loopError(err error) {
 	log.Error("loop error: %s", err)
 	// Terminate pending calls.
@@ -209,6 +229,7 @@ func (s *sender) Run(ctx context.Context) {
 	go s.recvLoop(ctx)
 	go s.sendLoop(ctx)
 	go s.waitLoop(ctx)
+	go s.watchDog(ctx)
 	select {
 	case <-ctx.Done():
 		return
@@ -278,16 +299,12 @@ func (s *sender) goSend(serviceMethod string, args *Args, reply *Reply, done cha
 	return call
 }
 
-func (s *sender) heartbeat() {
-	s.beatAt = time.Now()
-	s.beating = true
-	s.beatRetry++
+func (s *sender) heartbeat() error {
+	s.heartbeating = true
 	args := &Args{Payload: []byte{0x00, 0x00, 0x00, 0x04}}
 	call := <-s.goSend(service.MethodHeartbeatAlive, args, new(Reply), make(chan *Call, 1), true).Done
-	s.beating = false
-	if call.Error != nil {
-		return
-	}
+	s.heartbeating = false
+	return call.Error
 }
 
 var _ Sender = (*sender)(nil)

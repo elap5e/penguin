@@ -12,14 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package message
+package service
 
-import (
-	"github.com/elap5e/penguin/daemon/message/pb"
-	"github.com/elap5e/penguin/daemon/service"
-)
-
-type Daemon interface {
-	GetServiceManager() *service.Manager
-	OnRecvMessage(uin int64, head *pb.MsgCommon_MsgHead, body *pb.IMMsgBody_MsgBody) error
+func (m *Manager) decode0x02dc(uin int64, p []byte) (any, error) {
+	return nil, nil
 }

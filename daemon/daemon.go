@@ -22,6 +22,7 @@ import (
 	"github.com/elap5e/penguin/config"
 	"github.com/elap5e/penguin/daemon/account"
 	"github.com/elap5e/penguin/daemon/auth"
+	"github.com/elap5e/penguin/daemon/channel"
 	"github.com/elap5e/penguin/daemon/chat"
 	"github.com/elap5e/penguin/daemon/contact"
 	"github.com/elap5e/penguin/daemon/message"
@@ -39,6 +40,7 @@ type Daemon struct {
 	accm *account.Manager
 	athm *auth.Manager
 	chtm *chat.Manager
+	chnm *channel.Manager
 	cntm *contact.Manager
 	msgm *message.Manager
 	svcm *service.Manager
@@ -53,6 +55,7 @@ func New(ctx context.Context, cfg *config.Config) *Daemon {
 	d.accm = account.NewManager(d.ctx, d.c)
 	d.athm = auth.NewManager(d.ctx, d.c)
 	d.chtm = chat.NewManager(d.ctx, d.c, d)
+	d.chnm = channel.NewManager(d.ctx, d.c, d)
 	d.cntm = contact.NewManager(d.ctx, d.c, d)
 	d.msgm = message.NewManager(d.ctx, d.c, d)
 	d.svcm = service.NewManager(d.ctx, d.c, d)
