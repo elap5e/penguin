@@ -35,8 +35,8 @@ type Manager struct {
 	d Daemon
 
 	mu       sync.RWMutex
-	channels map[int64]*penguin.Chat // shared
-	rooms    map[int64]*penguin.Chat // shared
+	channels map[int64]*penguin.Chat           // shared
+	rooms    map[int64]map[int64]*penguin.Chat // shared
 	users    map[int64]map[int64]*penguin.User
 }
 
@@ -46,10 +46,11 @@ func NewManager(ctx context.Context, c rpc.Client, d Daemon) *Manager {
 		c:        c,
 		d:        d,
 		channels: make(map[int64]*penguin.Chat),
-		rooms:    make(map[int64]*penguin.Chat),
+		rooms:    make(map[int64]map[int64]*penguin.Chat),
 		users:    make(map[int64]map[int64]*penguin.User),
 	}
 	m.c.Register(service.MethodChannelPushMessage, m.handlePushMessage)
+	m.c.Register(service.MethodChannelPushFirstView, m.handlePushFirstView)
 	return m
 }
 
@@ -68,17 +69,28 @@ func (m *Manager) SetChannel(k int64, v *penguin.Chat) (*penguin.Chat, bool) {
 	return vv, ok
 }
 
-func (m *Manager) GetRoom(k int64) (*penguin.Chat, bool) {
+func (m *Manager) getRooms(cid int64) map[int64]*penguin.Chat {
+	rooms, ok := m.rooms[cid]
+	if !ok {
+		m.rooms[cid] = make(map[int64]*penguin.Chat)
+		rooms = m.rooms[cid]
+	}
+	return rooms
+}
+
+func (m *Manager) GetRoom(cid, rid int64) (*penguin.Chat, bool) {
 	m.mu.RLock()
-	v, ok := m.rooms[k]
+	rooms := m.getRooms(rid)
+	v, ok := rooms[rid]
 	m.mu.RUnlock()
 	return v, ok
 }
 
-func (m *Manager) SetRoom(k int64, v *penguin.Chat) (*penguin.Chat, bool) {
+func (m *Manager) SetRoom(cid, rid int64, v *penguin.Chat) (*penguin.Chat, bool) {
 	m.mu.Lock()
-	vv, ok := m.rooms[k]
-	m.rooms[k] = v
+	rooms := m.getRooms(cid)
+	vv, ok := rooms[rid]
+	rooms[rid] = v
 	m.mu.Unlock()
 	return vv, ok
 }

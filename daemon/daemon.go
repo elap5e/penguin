@@ -77,6 +77,9 @@ func (d *Daemon) Run() error {
 	if _, err := d.chtm.GetGroups(resp.Data.Uin); err != nil {
 		return fmt.Errorf("chat get groups and users, error: %v", err)
 	}
+	if _, err := d.chnm.SyncFirstView(resp.Data.Uin, 0); err != nil {
+		return fmt.Errorf("channel sync first view, error: %v", err)
+	}
 	if _, err := d.svcm.RegisterSetOnlineStatus(resp.Data.Uin, service.StatusTypeOnline, true); err != nil {
 		return fmt.Errorf("service register set online status, error: %v", err)
 	}

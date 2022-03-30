@@ -42,5 +42,6 @@
 //go:generate protoc --go_out=$GOPATH/src daemon/channel/pb/channel_common.proto
 //go:generate protoc --go_out=$GOPATH/src daemon/channel/pb/message_common.proto
 //go:generate protoc --go_out=$GOPATH/src daemon/channel/pb/message_push.proto
+//go:generate protoc --go_out=$GOPATH/src daemon/channel/pb/sync_logic.proto
 
 package penguin

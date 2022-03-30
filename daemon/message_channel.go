@@ -87,6 +87,7 @@ func (d *Daemon) OnRecvChannelMessage(id int64, recv *pb.Common_Msg) error {
 		channel := d.mustGetChannel(int64(rhead.GetGuildId()), string(extra.GetGuildName()))
 		msg.Chat = d.mustGetChannelRoom(channel.ID, int64(rhead.GetChannelId()), extra)
 		msg.From = d.mustGetChannelUser(channel.ID, int64(rhead.GetFromTinyid()), extra)
+		log.Chat(id, &msg)
 	} else {
 		// room private
 	}
@@ -94,6 +95,5 @@ func (d *Daemon) OnRecvChannelMessage(id int64, recv *pb.Common_Msg) error {
 	pi, _ := json.Marshal(recv)
 	pm, _ := json.Marshal(msg)
 	log.Debug("recv:%s msg:%s", pi, pm)
-	log.Chat(id, &msg)
 	return nil
 }

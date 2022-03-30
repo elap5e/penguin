@@ -26,12 +26,16 @@ const (
 
 const (
 	MethodChatGetGroups     = "friendlist.GetTroopListReqV2"
-	MethodChatGetGroupUsers = "friendlist.GetTroopMemberListReq"
+	MethodChatGetGroupUsers = "friendlist.getTroopMemberList"
 	MethodChatGetGroupUser  = "group_member_card.get_group_member_card_info"
 )
 
 const (
-	MethodChannelPushMessage = "MsgPush.PushGroupProMsg"
+	MethodChannelGetMessage    = "trpc.group_pro.synclogic.SyncLogic.GetChannelMsg"
+	MethodChannelSendMessage   = "MsgProxy.SendMsg"
+	MethodChannelSyncFirstView = "trpc.group_pro.synclogic.SyncLogic.SyncFirstView"
+	MethodChannelPushFirstView = "trpc.group_pro.synclogic.SyncLogic.PushFirstView"
+	MethodChannelPushMessage   = "MsgPush.PushGroupProMsg"
 )
 
 const (
