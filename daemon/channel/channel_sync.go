@@ -53,8 +53,6 @@ func (m *Manager) syncFirstView(uin int64, req *pb.SyncLogic_FirstViewReq) (*pb.
 	if err := proto.Unmarshal(reply.Payload, &resp); err != nil {
 		return nil, err
 	}
-	p, _ = json.MarshalIndent(&resp, "", "  ")
-	log.Debug("syncFirstView:\n%s", string(p))
 	return &resp, nil
 }
 
@@ -63,8 +61,6 @@ func (m *Manager) handlePushFirstView(reply *rpc.Reply) (*rpc.Args, error) {
 	if err := proto.Unmarshal(reply.Payload, &resp); err != nil {
 		return nil, err
 	}
-	p, _ := json.MarshalIndent(&resp, "", "  ")
-	log.Debug("handlePushFirstView:\n%s", string(p))
 	if nodes := resp.GetDirectMessageGuildNodes(); nodes != nil {
 		for _, node := range nodes {
 			channel := penguin.Chat{

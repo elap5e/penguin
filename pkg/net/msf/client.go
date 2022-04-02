@@ -106,17 +106,16 @@ func (c *Client) GetFakeSource(uin int64) *rpc.FakeSource {
 	osid := fmt.Sprintf("RKQ1.%07d.002", r.Int31n(10000000))
 	return &rpc.FakeSource{
 		App: &rpc.FakeApp{
-			FixID:      537114575,
-			AppID:      537114575,
+			FixID:      537116314,
+			AppID:      537116314,
 			PkgName:    "com.tencent.mobileqq",
-			VerName:    "8.8.83", // 8.8.83.7540
-			Revision:   "8.8.83.7b3989f8",
+			VerName:    "8.8.85", // 8.8.85.7685
+			Revision:   "8.8.85.6dd84073",
 			SigHash:    [16]byte{0xa6, 0xb7, 0x45, 0xbf, 0x24, 0xa2, 0xc2, 0x77, 0x52, 0x77, 0x16, 0xf6, 0xf3, 0x6e, 0xb6, 0x8d},
 			BuildAt:    1645432578,
 			SDKVer:     "6.0.0.2497",
 			SSOVer:     18,
 			ImageType:  1,
-			MiscBitMap: 0b00001000111101111111111101111100, // 150470524
 			CanCaptcha: true,
 		},
 		Device: &rpc.FakeDevice{

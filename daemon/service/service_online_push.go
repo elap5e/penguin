@@ -28,15 +28,15 @@ import (
 )
 
 type OnlinePushRequest struct {
-	Uin             int64                 `jce:",0" json:"uin,omitempty"`
-	Time            int64                 `jce:",1" json:"time,omitempty"`
-	Messages        []*dto.Message        `jce:",2" json:"messages,omitempty"`
-	ServerIP        uint32                `jce:",3" json:"server_ip,omitempty"`
-	SyncCookie      []byte                `jce:",4" json:"sync_cookie,omitempty"`
-	UinPairMessages []*dto.UinPairMessage `jce:",5" json:"uin_pair_messages,omitempty"`
-	Previews        map[string][]byte     `jce:",6" json:"previews,omitempty"`
-	UserActive      int32                 `jce:",7" json:"user_active,omitempty"`
-	GeneralFlag     int32                 `jce:",12" json:"general_flag,omitempty"`
+	Uin             int64                 `jce:"0" json:"uin,omitempty"`
+	Time            int64                 `jce:"1" json:"time,omitempty"`
+	Messages        []*dto.Message        `jce:"2" json:"messages,omitempty"`
+	ServerIP        uint32                `jce:"3" json:"server_ip,omitempty"`
+	SyncCookie      []byte                `jce:"4" json:"sync_cookie,omitempty"`
+	UinPairMessages []*dto.UinPairMessage `jce:"5" json:"uin_pair_messages,omitempty"`
+	Previews        map[string][]byte     `jce:"6" json:"previews,omitempty"`
+	UserActive      int32                 `jce:"7" json:"user_active,omitempty"`
+	GeneralFlag     int32                 `jce:"12" json:"general_flag,omitempty"`
 }
 
 type OnlinePushResponse struct {
