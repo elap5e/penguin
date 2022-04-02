@@ -269,6 +269,11 @@ const (
 	FaceTypeU5BF9U53F7           FaceType = 329 // "/对号"
 	FaceTypeU5B8CU6210           FaceType = 330 // "/完成"
 	FaceTypeU660EU767D           FaceType = 331 // "/明白"
+	FaceTypeU4E3EU724CU724C      FaceType = 332 // "/举牌牌"
+	FaceTypeU70DFU82B1           FaceType = 333 // "/烟花"
+	FaceTypeU864EU864EU751FU5A01 FaceType = 334 // "/虎虎生威"
+	FaceTypeU7EFFU9A6CU62A4U4F53 FaceType = 335 // "/绿马护体"
+	FaceTypeU8C79U5BCC           FaceType = 336 // "/豹富"
 )
 
 func (t FaceType) String() string {
@@ -793,6 +798,16 @@ func (t FaceType) String() string {
 		return "/完成"
 	case FaceTypeU660EU767D:
 		return "/明白"
+	case FaceTypeU4E3EU724CU724C:
+		return "/举牌牌"
+	case FaceTypeU70DFU82B1:
+		return "/烟花"
+	case FaceTypeU864EU864EU751FU5A01:
+		return "/虎虎生威"
+	case FaceTypeU7EFFU9A6CU62A4U4F53:
+		return "/绿马护体"
+	case FaceTypeU8C79U5BCC:
+		return "/豹富"
 	}
 	return "/未知表情"
 }
@@ -1319,6 +1334,16 @@ func ParseFaceType(s string) (FaceType, error) {
 		return FaceTypeU5B8CU6210, nil
 	case "/明白":
 		return FaceTypeU660EU767D, nil
+	case "/举牌牌":
+		return FaceTypeU4E3EU724CU724C, nil
+	case "/烟花":
+		return FaceTypeU70DFU82B1, nil
+	case "/虎虎生威":
+		return FaceTypeU864EU864EU751FU5A01, nil
+	case "/绿马护体":
+		return FaceTypeU7EFFU9A6CU62A4U4F53, nil
+	case "/豹富":
+		return FaceTypeU8C79U5BCC, nil
 	}
 	return FaceTypeUNKNOWN, fmt.Errorf("Unknown Face String: '%s', defaulting to FaceTypeUNKNOWN", s)
 }
