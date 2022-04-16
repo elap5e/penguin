@@ -16,6 +16,7 @@
 //go:generate go run cmd/proto-message-gen/main.go
 
 //go:generate protoc --go_out=$GOPATH/src pkg/encoding/tlv/pb/device_report.proto
+//go:generate protoc --go_out=$GOPATH/src pkg/net/highway/pb/highway.proto
 
 //go:generate protoc --go_out=$GOPATH/src daemon/auth/pb/gateway_verify.proto
 //go:generate protoc --go_out=$GOPATH/src daemon/auth/pb/third_part_login.proto

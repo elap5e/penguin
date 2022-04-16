@@ -170,6 +170,6 @@ func (c *codec) ReadResponseBody(reply *rpc.Reply) (err error) {
 	reply.Cookie = c.reply.Cookie
 	reply.Flag = c.reply.Flag
 	reply.ReserveField = c.reply.ReserveField
-	reply.Payload = c.reply.Payload
+	reply.Payload = append([]byte{}, c.reply.Payload...)
 	return nil
 }
