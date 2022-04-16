@@ -40,8 +40,9 @@ const (
 
 	// channel
 	ChatTypeChannel     ChatType = "channel"
-	ChatTypeRoomPrivate ChatType = "room_private"
 	ChatTypeRoomText    ChatType = "room_text"
+	ChatTypeRoomVoice   ChatType = "room_voice"
+	ChatTypeRoomPrivate ChatType = "room_private"
 )
 
 type Chat struct {
@@ -52,6 +53,7 @@ type Chat struct {
 	Title   string     `json:"title,omitempty"`
 	Photo   *ChatPhoto `json:"photo,omitempty"`
 	Display string     `json:"display,omitempty"`
+	Channel *Chat      `json:"channel,omitempty"`
 }
 
 type ChatPhoto struct {

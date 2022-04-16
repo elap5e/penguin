@@ -16,14 +16,16 @@ package daemon
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/elap5e/penguin"
 	"github.com/elap5e/penguin/daemon/channel/pb"
+	pbmsg "github.com/elap5e/penguin/daemon/message/pb"
 	"github.com/elap5e/penguin/pkg/encoding/pgn"
 	"github.com/elap5e/penguin/pkg/log"
 )
 
-// 0x02000007ffffffff
+// mask 0x02000007ffffffff
 func (d *Daemon) prefetchChannelAccount(id int64) error {
 	account, ok := d.accm.GetAccount(id)
 	if !ok {
@@ -83,17 +85,70 @@ func (d *Daemon) OnRecvChannelMessage(id int64, recv *pb.Common_Msg) error {
 	// pre-fetch accounts
 	_ = d.prefetchChannelAccount(int64(rhead.GetFromTinyid()))
 	if rhead.GetDirectMessageFlag() == 0 {
-		// room
-		channel := d.getOrLoadChannel(int64(rhead.GetGuildId()), string(extra.GetGuildName()))
-		msg.Chat = d.getOrLoadChannelRoom(channel.ID, int64(rhead.GetChannelId()), extra)
-		msg.From = d.getOrLoadChannelUser(channel.ID, int64(rhead.GetFromTinyid()), extra)
-		log.Chat(id, &msg)
+		// room any
+		cid, rid, fid := int64(rhead.GetGuildId()), int64(rhead.GetChannelId()), int64(rhead.GetFromUin())
+		channel := d.getOrLoadChannel(cid, string(extra.GetGuildName()))
+		msg.Chat = d.getOrLoadChannelRoom(channel.ID, rid, extra)
+		msg.From = d.getOrLoadChannelUser(channel.ID, fid, extra)
 	} else {
 		// room private
 	}
-	_ = pgn.NewMessageEncoder(recv.GetBody()).Encode(&msg)
-	pi, _ := json.Marshal(recv)
+	if err := pgn.NewMessageEncoder(recv.GetBody()).Encode(&msg); err != nil {
+		return err
+	}
+	return d.onRecvChannelMessage(id, recv, &msg)
+}
+
+func (d *Daemon) SendChannelMessage(id int64, msg *penguin.Message) error {
+	var req pb.Oidb0Xf62_ReqBody
+	req.Msg = &pb.Common_Msg{}
+	req.Msg.Head = &pb.Common_MsgHead{}
+	// identify message type
+	if msg.Chat.Type == penguin.ChatTypeChannel {
+		// channel
+		return fmt.Errorf("a channel message can not be sent to a channel")
+	} else if msg.Chat.Type == penguin.ChatTypeRoomText ||
+		msg.Chat.Type == penguin.ChatTypeRoomVoice {
+		// room any
+		req.Msg.Head.RoutingHead = &pb.Common_RoutingHead{
+			GuildId:   uint64(msg.Chat.Channel.ID),
+			ChannelId: uint64(msg.Chat.ID),
+			FromUin:   uint64(id),
+		}
+	} else if msg.Chat.Type == penguin.ChatTypeRoomPrivate {
+		// room private
+	} else {
+		return fmt.Errorf("unknown chat type: %s", msg.Chat.Type)
+	}
+	// encode message
+	req.Msg.CtrlHead = &pb.Common_MsgCtrlHead{}
+	req.Msg.Body = &pbmsg.IMMsgBody_MsgBody{}
+	if err := pgn.NewMessageDecoder(req.Msg.Body).Decode(msg); err != nil {
+		return err
+	}
+	resp, err := d.chnm.SendMessage(id, &req)
+	if err != nil {
+		return err
+	}
+	return d.onSendChannelMessage(id, &req, resp, msg)
+}
+
+func (d *Daemon) onRecvChannelMessage(id int64, recv *pb.Common_Msg, msg *penguin.Message) error {
+	go d.pushMessage(msg)
+	go d.fetchBlobs(msg)
+	pr, _ := json.Marshal(recv)
 	pm, _ := json.Marshal(msg)
-	log.Debug("recv:%s msg:%s", pi, pm)
+	log.Debug("id:%d recv:%s msg:%s", id, pr, pm)
+	log.Chat(id, msg)
+	return nil
+}
+
+func (d *Daemon) onSendChannelMessage(id int64, req *pb.Oidb0Xf62_ReqBody, resp *pb.Oidb0Xf62_RspBody, msg *penguin.Message) error {
+	go d.pushMessage(msg)
+	preq, _ := json.Marshal(req)
+	prsp, _ := json.Marshal(resp)
+	pmsg, _ := json.Marshal(msg)
+	log.Debug("id:%d req:%s resp:%s msg:%s", id, preq, prsp, pmsg)
+	log.Chat(id, msg)
 	return nil
 }

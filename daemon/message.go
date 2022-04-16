@@ -32,7 +32,7 @@ import (
 	"github.com/elap5e/penguin/pkg/log"
 )
 
-// 0x00000000ffffffff
+// mask 0x00000000ffffffff
 func (d *Daemon) prefetchAccount(id int64) error {
 	account, ok := d.accm.GetAccount(id)
 	if !ok {
@@ -152,30 +152,15 @@ func (d *Daemon) OnRecvMessage(id int64, head *pb.MsgCommon_MsgHead, body *pb.IM
 		}
 		// _, _ = d.chtm.SetChatSeq(id, 0, tid, head.GetMsgSeq())
 	}
-	_ = pgn.NewMessageEncoder(body).Encode(&msg)
-	go d.fetchBlobs(&msg)
-	ph, _ := json.Marshal(head)
-	pb, _ := json.Marshal(body)
-	pm, _ := json.Marshal(msg)
-	log.Debug("head:%s body:%s msg:%s", ph, pb, pm)
-	log.Chat(id, &msg)
-	go d.pushMessage(&msg)
-	return nil
-}
-
-func (d *Daemon) pushMessage(msg *penguin.Message) {
-	d.msgChan <- msg
-}
-
-func (d *Daemon) OnSendMessage(id int64, req *pb.MsgService_PbSendMsgReq) error {
-	return nil
+	if err := pgn.NewMessageEncoder(body).Encode(&msg); err != nil {
+		return err
+	}
+	return d.onRecvMessage(id, head, body, &msg)
 }
 
 func (d *Daemon) SendMessage(id int64, msg *penguin.Message) error {
 	var req pb.MsgService_PbSendMsgReq
 	req.RoutingHead = &pb.MsgService_RoutingHead{}
-	req.ContentHead = &pb.MsgCommon_ContentHead{}
-	req.MsgBody = &pb.IMMsgBody_MsgBody{}
 	// identify message type
 	if msg.Chat.Type == penguin.ChatTypeDiscuss {
 		// discuss
@@ -200,20 +185,45 @@ func (d *Daemon) SendMessage(id int64, msg *penguin.Message) error {
 			ToUin: uint64(msg.Chat.User.Account.ID),
 		}
 		req.MsgSeq, _ = d.chtm.GetNextChatSeq(id, 0, msg.Chat.User.Account.ID)
+	} else {
+		return d.SendChannelMessage(id, msg)
 	}
-	_ = pgn.NewMessageDecoder(req.MsgBody).Decode(msg)
-	if err := d.OnSendMessage(id, &req); err != nil {
+	// encode message
+	req.ContentHead = &pb.MsgCommon_ContentHead{}
+	req.MsgBody = &pb.IMMsgBody_MsgBody{}
+	if err := pgn.NewMessageDecoder(req.MsgBody).Decode(msg); err != nil {
 		return err
 	}
 	resp, err := d.msgm.SendMessage(id, &req)
 	if err != nil {
 		return err
 	}
+	return d.onSendMessage(id, &req, resp, msg)
+}
+
+func (d *Daemon) onRecvMessage(id int64, head *pb.MsgCommon_MsgHead, body *pb.IMMsgBody_MsgBody, msg *penguin.Message) error {
+	go d.pushMessage(msg)
+	go d.fetchBlobs(msg)
+	ph, _ := json.Marshal(head)
+	pb, _ := json.Marshal(body)
 	pm, _ := json.Marshal(msg)
-	preq, _ := json.Marshal(&req)
-	presp, _ := json.Marshal(resp)
-	log.Debug("msg:%s req:%s resp:%s", pm, preq, presp)
+	log.Debug("id:%d head:%s body:%s msg:%s", id, ph, pb, pm)
+	log.Chat(id, msg)
 	return nil
+}
+
+func (d *Daemon) onSendMessage(id int64, req *pb.MsgService_PbSendMsgReq, resp *pb.MsgService_PbSendMsgResp, msg *penguin.Message) error {
+	go d.pushMessage(msg)
+	preq, _ := json.Marshal(req)
+	prsp, _ := json.Marshal(resp)
+	pmsg, _ := json.Marshal(msg)
+	log.Debug("id:%d req:%s resp:%s msg:%s", id, preq, prsp, pmsg)
+	log.Chat(id, msg)
+	return nil
+}
+
+func (d *Daemon) pushMessage(msg *penguin.Message) {
+	d.msgChan <- msg
 }
 
 func (d *Daemon) fetchBlobs(msg *penguin.Message) error {
