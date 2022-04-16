@@ -14,6 +14,8 @@
 
 package service
 
+import "fmt"
+
 const (
 	MethodHeartbeatAlive = "Heartbeat.Alive"
 )
@@ -31,8 +33,9 @@ const (
 )
 
 const (
-	MethodChannelGetMessage    = "trpc.group_pro.synclogic.SyncLogic.GetChannelMsg"
-	MethodChannelSendMessage   = "MsgProxy.SendMsg"
+	MethodChannelGetMessage  = "trpc.group_pro.synclogic.SyncLogic.GetChannelMsg"
+	MethodChannelSendMessage = "MsgProxy.SendMsg"
+
 	MethodChannelSyncFirstView = "trpc.group_pro.synclogic.SyncLogic.SyncFirstView"
 	MethodChannelPushFirstView = "trpc.group_pro.synclogic.SyncLogic.PushFirstView"
 	MethodChannelPushMessage   = "MsgPush.PushGroupProMsg"
@@ -53,9 +56,10 @@ const (
 	MethodMessagePushNotify = "MessageSvc.PushNotify"
 	MethodMessagePushReaded = "MessageSvc.PushReaded"
 
-	MethodMessageUploadUserImage   = "LongConn.OffPicUp"
-	MethodMessageUploadChatImage   = "ImgStore.GroupPicUp"
-	MethodMessageDownloadChatImage = "ImgStore.GroupPicDown"
+	MethodMessageChatDownloadImage = "ImgStore.GroupPicDown"
+	MethodMessageChatUploadImage   = "ImgStore.GroupPicUp"
+	MethodMessageUserDownloadImage = "LongConn.OffPicDown"
+	MethodMessageUserUploadImage   = "LongConn.OffPicUp"
 )
 
 const (
@@ -73,3 +77,7 @@ const (
 	MethodServiceOnlinePushResponse      = "OnlinePush.RespPush"
 	MethodServiceOnlinePushTicketExpired = "OnlinePush.SidTicketExpired"
 )
+
+func MethodOidbSvcTrpcTcp(cmd, typ uint32) string {
+	return fmt.Sprintf("OidbSvcTrpcTcp.0x%x_%d", cmd, typ)
+}

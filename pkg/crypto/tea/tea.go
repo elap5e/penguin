@@ -43,7 +43,7 @@ func (c *Cipher) encrypt(src []byte, off, n int) (dst []byte) {
 	fill := 10 - (n-off+1)%8
 	dst = make([]byte, fill+n-off+7)
 	_, _ = rand.Read(dst[0:fill])
-	dst[0] = (dst[0] & 0xF8) | byte(fill-3)
+	dst[0] = (dst[0] & 0xf8) | byte(fill-3)
 	copy(dst[fill:], src[off:off+n])
 	for i := 0; i < len(dst); i += 8 {
 		c.encrypt64bit(dst[i:i+8], dst[i:i+8])
@@ -66,7 +66,7 @@ func (c *Cipher) encryptBlock(dst, src []byte) {
 	s1 := binary.BigEndian.Uint32(src[4:8])
 	var sum uint32 = 0x00000000
 	for i := 0; i < 0x10; i++ {
-		sum += 0x9e3779B9 // -1640531527
+		sum += 0x9e3779b9 // -1640531527
 		s0 += ((s1 << 4) + c.key[0]) ^ (s1 + sum) ^ ((s1 >> 5) + c.key[1])
 		s1 += ((s0 << 4) + c.key[2]) ^ (s0 + sum) ^ ((s0 >> 5) + c.key[3])
 	}
@@ -103,11 +103,11 @@ func (c *Cipher) decryptBlock(dst, src []byte) {
 	_ = src[7] // early bounds check
 	s0 := binary.BigEndian.Uint32(src[0:4])
 	s1 := binary.BigEndian.Uint32(src[4:8])
-	var sum uint32 = 0xE3779B90 // -478700656
+	var sum uint32 = 0xe3779b90 // -478700656
 	for i := 0; i < 0x10; i++ {
 		s1 -= ((s0 << 4) + c.key[2]) ^ (s0 + sum) ^ ((s0 >> 5) + c.key[3])
 		s0 -= ((s1 << 4) + c.key[0]) ^ (s1 + sum) ^ ((s1 >> 5) + c.key[1])
-		sum -= 0x9e3779B9 // -1640531527
+		sum -= 0x9e3779b9 // -1640531527
 	}
 	binary.BigEndian.PutUint32(dst[0:4], s0)
 	binary.BigEndian.PutUint32(dst[4:8], s1)

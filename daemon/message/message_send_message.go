@@ -18,10 +18,11 @@ import (
 	"fmt"
 	"math/rand"
 
+	"google.golang.org/protobuf/proto"
+
 	"github.com/elap5e/penguin/daemon/message/pb"
 	"github.com/elap5e/penguin/pkg/net/msf/rpc"
 	"github.com/elap5e/penguin/pkg/net/msf/service"
-	"google.golang.org/protobuf/proto"
 )
 
 func (m *Manager) SendMessage(uin int64, req *pb.MsgService_PbSendMsgReq) (*pb.MsgService_PbSendMsgResp, error) {
