@@ -14,12 +14,27 @@
 
 package fake
 
-import (
-	"github.com/elap5e/penguin/pkg/net/msf/rpc"
-)
+type App struct {
+	FixID int32
+	AppID int32
+
+	PkgName  string
+	VerName  string
+	Revision string
+	SigHash  [16]byte
+
+	BuildAt int64
+	SDKVer  string
+	SSOVer  uint32
+
+	ImageType  uint8
+	MiscBitMap uint32
+
+	CanCaptcha bool
+}
 
 var (
-	AndroidMobileQQApp = &rpc.FakeApp{
+	AndroidMobileQQApp = &App{
 		FixID:      537116314,
 		AppID:      537116314,
 		PkgName:    "com.tencent.mobileqq",
@@ -32,7 +47,7 @@ var (
 		ImageType:  1,
 		CanCaptcha: true,
 	}
-	AndroidMobileQQAppNext = &rpc.FakeApp{
+	AndroidMobileQQAppNext = &App{
 		FixID:      537117844,
 		AppID:      537117844,
 		PkgName:    "com.tencent.mobileqq",

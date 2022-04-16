@@ -23,8 +23,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/elap5e/penguin/fake"
 	"github.com/elap5e/penguin/pkg/encoding/tlv"
-	"github.com/elap5e/penguin/pkg/net/msf/fake"
 	"github.com/elap5e/penguin/pkg/net/msf/rpc"
 	"github.com/elap5e/penguin/pkg/net/msf/rpc/tcp"
 )
@@ -89,8 +89,8 @@ func (c *Client) GetNextSeq() int32 {
 	return seq
 }
 
-func (c *Client) GetFakeSource(uin int64) *rpc.FakeSource {
-	return &rpc.FakeSource{
+func (c *Client) GetFakeSource(uin int64) *fake.Source {
+	return &fake.Source{
 		App:    fake.AndroidMobileQQApp,
 		Device: fake.NewAndroidDevice(uin),
 	}

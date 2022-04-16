@@ -195,16 +195,16 @@ func (c *Client) Call(serviceMethod string, args *Args, reply *Reply) error {
 	return call.Error
 }
 
-func (c *Client) UploadFile(uin int64, name string, ticket []byte) error {
+func (c *Client) UploadFile(uin int64, cmd int32, name string, ticket []byte) error {
 	f, err := os.OpenFile(name, os.O_RDONLY, 0644)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-	return c.UploadReadSeeker(uin, f, ticket)
+	return c.UploadReadSeeker(uin, cmd, f, ticket)
 }
 
-func (c *Client) UploadReadSeeker(uin int64, r io.ReadSeeker, ticket []byte) error {
+func (c *Client) UploadReadSeeker(uin int64, cmd int32, r io.ReadSeeker, ticket []byte) error {
 	hash := md5.New()
 	size, err := io.Copy(hash, r)
 	if err != nil {
@@ -213,10 +213,10 @@ func (c *Client) UploadReadSeeker(uin int64, r io.ReadSeeker, ticket []byte) err
 	if _, err := r.Seek(0, io.SeekStart); err != nil {
 		return err
 	}
-	return c.UploadReader(uin, size, r, hash.Sum(nil), ticket)
+	return c.UploadReader(uin, cmd, size, r, hash.Sum(nil), ticket)
 }
 
-func (c *Client) UploadReader(uin, size int64, r io.Reader, digest, ticket []byte) error {
+func (c *Client) UploadReader(uin int64, cmd int32, size int64, r io.Reader, digest, ticket []byte) error {
 	if err := c.echo(uin); err != nil {
 		return err
 	}
@@ -229,7 +229,7 @@ func (c *Client) UploadReader(uin, size int64, r io.Reader, digest, ticket []byt
 		if err != nil {
 			return err
 		}
-		if err := c.uploadChunk(uin, size, offset, chunk[:n], digest, ticket); err != nil {
+		if err := c.uploadChunk(uin, cmd, size, offset, chunk[:n], digest, ticket); err != nil {
 			return err
 		}
 		offset += int64(n)
@@ -241,7 +241,7 @@ func (c *Client) echo(uin int64) error {
 	return c.Call(ServiceMethodEcho, &Args{Uin: uin}, new(Reply))
 }
 
-func (c *Client) uploadChunk(uin, size, offset int64, chunk, digest, ticket []byte) error {
+func (c *Client) uploadChunk(uin int64, cmd int32, size, offset int64, chunk, digest, ticket []byte) error {
 	hash := md5.New()
 	hash.Write(chunk)
 	segHead := pb.CSDataHighwayHead_SegHead{
@@ -259,5 +259,5 @@ func (c *Client) uploadChunk(uin, size, offset int64, chunk, digest, ticket []by
 		UpdateCacheip: 0, // nil
 		CachePort:     0, // nil
 	}
-	return c.Call(ServiceMethodUpload, &Args{Uin: uin, SegHead: &segHead, Payload: chunk}, new(Reply))
+	return c.Call(ServiceMethodUpload, &Args{Uin: uin, CommandID: cmd, SegHead: &segHead, Payload: chunk}, new(Reply))
 }

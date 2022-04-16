@@ -20,11 +20,52 @@ import (
 	"log"
 	"math/rand"
 	"net"
-
-	"github.com/elap5e/penguin/pkg/net/msf/rpc"
 )
 
-func NewAndroidDevice(uin int64) *rpc.FakeDevice {
+type Device struct {
+	OS DeviceOS
+
+	APNName   []byte
+	SIMOPName []byte
+
+	Bootloader   string
+	ProcVersion  string
+	Codename     string
+	Incremental  string
+	Fingerprint  string
+	BootID       string
+	Baseband     string
+	InnerVersion string
+
+	NetworkType  uint8 // 0x00: Others; 0x01: Wi-Fi
+	NetIPFamily  uint8 // 0x00: Others; 0x01: IPv4; 0x02: IPv6; 0x03: Dual
+	IPv4Address  net.IP
+	IPv6Address  net.IP
+	MACAddress   string
+	BSSIDAddress string
+	SSIDAddress  string
+
+	IMEI string
+	IMSI string
+	GUID [16]byte // []byte("%4;7t>;28<fclient.5*6")
+
+	GUIDFlag      uint32
+	IsGUIDFileNil bool
+	IsGUIDGenSucc bool
+	IsGUIDChanged bool
+}
+
+type DeviceOS struct {
+	Type        string
+	Version     string
+	BuildBrand  []byte
+	BuildID     string
+	BuildModel  string
+	SDKVersion  uint32
+	NetworkType uint16 // 0x0002: Wi-Fi
+}
+
+func NewAndroidDevice(uin int64) *Device {
 	r := rand.New(rand.NewSource(uin))
 	buf := make([]byte, 20)
 	_, err := r.Read(buf)
@@ -38,8 +79,8 @@ func NewAndroidDevice(uin int64) *rpc.FakeDevice {
 	imei := fmt.Sprintf("86030802%07d", r.Int31n(10000000))
 	imsi := fmt.Sprintf("460001%09d", r.Int31n(1000000000))
 	osid := fmt.Sprintf("RKQ1.%07d.002", r.Int31n(10000000))
-	return &rpc.FakeDevice{
-		OS: rpc.FakeDeviceOS{
+	return &Device{
+		OS: DeviceOS{
 			Type:        "android",
 			Version:     "11",
 			BuildBrand:  []byte("Xiaomi"),

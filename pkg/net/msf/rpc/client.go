@@ -16,10 +16,10 @@ package rpc
 
 import (
 	"encoding/hex"
-	"net"
 	"strconv"
 	"time"
 
+	"github.com/elap5e/penguin/fake"
 	"github.com/elap5e/penguin/pkg/crypto/ecdh"
 	"github.com/elap5e/penguin/pkg/encoding/tlv"
 )
@@ -32,7 +32,7 @@ type Client interface {
 	Register(serviceMethod string, handler Handler) error
 
 	GetNextSeq() int32
-	GetFakeSource(uin int64) *FakeSource
+	GetFakeSource(uin int64) *fake.Source
 	GetServerTime() int64
 	GetSession(uin int64) *Session
 	GetTickets(uin int64) *Tickets
@@ -119,71 +119,4 @@ func (v *Key16Bytes) Set(b [16]byte) {
 		v = new(Key16Bytes)
 	}
 	copy(v[:], b[:])
-}
-
-type FakeSource struct {
-	App    *FakeApp
-	Device *FakeDevice
-}
-
-type FakeApp struct {
-	FixID int32
-	AppID int32
-
-	PkgName  string
-	VerName  string
-	Revision string
-	SigHash  [16]byte
-
-	BuildAt int64
-	SDKVer  string
-	SSOVer  uint32
-
-	ImageType  uint8
-	MiscBitMap uint32
-
-	CanCaptcha bool
-}
-
-type FakeDevice struct {
-	OS FakeDeviceOS
-
-	APNName   []byte
-	SIMOPName []byte
-
-	Bootloader   string
-	ProcVersion  string
-	Codename     string
-	Incremental  string
-	Fingerprint  string
-	BootID       string
-	Baseband     string
-	InnerVersion string
-
-	NetworkType  uint8 // 0x00: Others; 0x01: Wi-Fi
-	NetIPFamily  uint8 // 0x00: Others; 0x01: IPv4; 0x02: IPv6; 0x03: Dual
-	IPv4Address  net.IP
-	IPv6Address  net.IP
-	MACAddress   string
-	BSSIDAddress string
-	SSIDAddress  string
-
-	IMEI string
-	IMSI string
-	GUID [16]byte // []byte("%4;7t>;28<fclient.5*6")
-
-	GUIDFlag      uint32
-	IsGUIDFileNil bool
-	IsGUIDGenSucc bool
-	IsGUIDChanged bool
-}
-
-type FakeDeviceOS struct {
-	Type        string
-	Version     string
-	BuildBrand  []byte
-	BuildID     string
-	BuildModel  string
-	SDKVersion  uint32
-	NetworkType uint16 // 0x0002: Wi-Fi
 }
