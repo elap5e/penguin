@@ -45,7 +45,7 @@ func (d *Daemon) prefetchAccount(id int64) error {
 	return nil
 }
 
-func (d *Daemon) mustGetContact(id, cid int64) *penguin.Contact {
+func (d *Daemon) getOrLoadContact(id, cid int64) *penguin.Contact {
 	contact, ok := d.cntm.GetContact(id, cid)
 	if !ok {
 		account, _ := d.accm.GetAccount(cid)
@@ -57,7 +57,7 @@ func (d *Daemon) mustGetContact(id, cid int64) *penguin.Contact {
 	return contact
 }
 
-func (d *Daemon) mustGetChatUser(cid, uid int64) *penguin.User {
+func (d *Daemon) getOrLoadChatUser(cid, uid int64) *penguin.User {
 	from, ok := d.chtm.GetUser(cid, uid)
 	if !ok {
 		account, _ := d.accm.GetAccount(uid)
@@ -69,7 +69,7 @@ func (d *Daemon) mustGetChatUser(cid, uid int64) *penguin.User {
 	return from
 }
 
-func (d *Daemon) mustGetChatGroup(id int64, name string) *penguin.Chat {
+func (d *Daemon) getOrLoadChatGroup(id int64, name string) *penguin.Chat {
 	chat, ok := d.chtm.GetChat(id)
 	if !ok {
 		chat = &penguin.Chat{
@@ -82,7 +82,7 @@ func (d *Daemon) mustGetChatGroup(id int64, name string) *penguin.Chat {
 	return chat
 }
 
-func (d *Daemon) mustGetChatGroupPrivate(id int64, name string) *penguin.Chat {
+func (d *Daemon) getOrLoadChatGroupPrivate(id int64, name string) *penguin.Chat {
 	chat, ok := d.chtm.GetChat(id)
 	if !ok {
 		chat = &penguin.Chat{
@@ -113,50 +113,106 @@ func (d *Daemon) OnRecvMessage(id int64, head *pb.MsgCommon_MsgHead, body *pb.IM
 		// discuss private
 	} else if v := head.GetGroupInfo(); v != nil {
 		// group
-		msg.Chat = d.mustGetChatGroup(int64(v.GetGroupCode()), string(v.GetGroupName()))
-		msg.From = d.mustGetChatUser(int64(v.GetGroupCode()), int64(head.GetFromUin()))
+		gid, fid := int64(v.GetGroupCode()), int64(head.GetFromUin())
+		msg.Chat = d.getOrLoadChatGroup(gid, string(v.GetGroupName()))
+		msg.From = d.getOrLoadChatUser(gid, fid)
+		_, _ = d.chtm.SetChatSeq(0, gid, 0, head.GetMsgSeq())
 	} else if v := head.GetC2CTmpMsgHead(); v != nil {
 		// group private
-		msg.Chat = d.mustGetChatGroupPrivate(int64(v.GetGroupCode()), "")
 		gid, fid, tid := int64(v.GetGroupCode()), int64(head.GetFromUin()), int64(head.GetToUin())
-		msg.From = d.mustGetChatUser(gid, fid)
+		msg.Chat = d.getOrLoadChatGroupPrivate(gid, "")
+		msg.From = d.getOrLoadChatUser(gid, fid)
 		// check if the sender is self
 		if id == fid && id != tid {
-			msg.Chat.User = d.mustGetChatUser(gid, tid)
+			msg.Chat.User = d.getOrLoadChatUser(gid, tid)
 		} else {
 			msg.Chat.User = msg.From
+			// tid = fid
 		}
+		// _, _ = d.chtm.SetChatSeq(id, gid, tid, head.GetMsgSeq())
 	} else if v := head.GetC2CCmd(); v != 0 {
 		// private
 		msg.Chat = &penguin.Chat{Type: penguin.ChatTypePrivate}
 		fid, tid := int64(head.GetFromUin()), int64(head.GetToUin())
-		from := d.mustGetContact(id, fid)
+		from := d.getOrLoadContact(id, fid)
 		msg.From = &penguin.User{
 			Account: from.Account,
 			Display: from.Display,
 		}
 		// check if the sender is self
 		if id == fid && id != tid {
-			to := d.mustGetContact(id, tid)
+			to := d.getOrLoadContact(id, tid)
 			msg.Chat.User = &penguin.User{
 				Account: to.Account,
 				Display: to.Display,
 			}
 		} else {
 			msg.Chat.User = msg.From
+			// tid = fid
 		}
+		// _, _ = d.chtm.SetChatSeq(id, 0, tid, head.GetMsgSeq())
 	}
 	_ = pgn.NewMessageEncoder(body).Encode(&msg)
-	_ = d.fetchBlobs(&msg)
+	go d.fetchBlobs(&msg)
 	ph, _ := json.Marshal(head)
 	pb, _ := json.Marshal(body)
 	pm, _ := json.Marshal(msg)
 	log.Debug("head:%s body:%s msg:%s", ph, pb, pm)
 	log.Chat(id, &msg)
+	go d.pushMessage(&msg)
 	return nil
 }
 
-func (d *Daemon) OnSendMessage(msg *penguin.Message) error {
+func (d *Daemon) pushMessage(msg *penguin.Message) {
+	d.msgChan <- msg
+}
+
+func (d *Daemon) OnSendMessage(id int64, req *pb.MsgService_PbSendMsgReq) error {
+	return nil
+}
+
+func (d *Daemon) SendMessage(id int64, msg *penguin.Message) error {
+	var req pb.MsgService_PbSendMsgReq
+	req.RoutingHead = &pb.MsgService_RoutingHead{}
+	req.ContentHead = &pb.MsgCommon_ContentHead{}
+	req.MsgBody = &pb.IMMsgBody_MsgBody{}
+	// identify message type
+	if msg.Chat.Type == penguin.ChatTypeDiscuss {
+		// discuss
+	} else if msg.Chat.Type == penguin.ChatTypeDiscussPrivate {
+		// discuss private
+	} else if msg.Chat.Type == penguin.ChatTypeGroup {
+		// group
+		req.RoutingHead.Grp = &pb.MsgService_Grp{
+			GroupCode: uint64(msg.Chat.ID),
+		}
+		req.MsgSeq, _ = d.chtm.GetNextChatSeq(0, msg.Chat.ID, 0)
+	} else if msg.Chat.Type == penguin.ChatTypeGroupPrivate {
+		// group private
+		req.RoutingHead.GrpTmp = &pb.MsgService_GrpTmp{
+			GroupUin: uint64(msg.Chat.ID),
+			ToUin:    uint64(msg.Chat.User.Account.ID),
+		}
+		req.MsgSeq, _ = d.chtm.GetNextChatSeq(id, msg.Chat.ID, msg.Chat.User.Account.ID)
+	} else if msg.Chat.Type == penguin.ChatTypePrivate {
+		// private
+		req.RoutingHead.C2C = &pb.MsgService_C2C{
+			ToUin: uint64(msg.Chat.User.Account.ID),
+		}
+		req.MsgSeq, _ = d.chtm.GetNextChatSeq(id, 0, msg.Chat.User.Account.ID)
+	}
+	_ = pgn.NewMessageDecoder(req.MsgBody).Decode(msg)
+	if err := d.OnSendMessage(id, &req); err != nil {
+		return err
+	}
+	resp, err := d.msgm.SendMessage(id, &req)
+	if err != nil {
+		return err
+	}
+	pm, _ := json.Marshal(msg)
+	preq, _ := json.Marshal(&req)
+	presp, _ := json.Marshal(resp)
+	log.Debug("msg:%s req:%s resp:%s", pm, preq, presp)
 	return nil
 }
 
@@ -174,20 +230,21 @@ func (d *Daemon) fetchBlobs(msg *penguin.Message) error {
 
 func (d *Daemon) fetchBlob(typ, str string) error {
 	u, _ := url.Parse(str)
+	query := u.Query()
 	homepath, _ := os.UserHomeDir()
 	basepath := path.Join(homepath, ".penguin", "cache")
-	filepath := path.Join(basepath, "blobs", "md5", u.Query().Get("md5"))
+	filepath := path.Join(basepath, "blobs", "md5", query.Get("md5"))
 	if _, err := os.Stat(filepath); err == nil {
 		return nil
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return err
 	}
-	resource := ""
+	url := ""
 	switch typ {
 	case "photo":
-		resource = fmt.Sprintf("https://gchat.qpic.cn/gchatpic_new/0/0-0-%s/0?term=2", strings.ToUpper(u.Query().Get("md5")))
+		url = fmt.Sprintf("https://gchat.qpic.cn/gchatpic_new/0/0-0-%s/0?term=2", strings.ToUpper(query.Get("md5")))
 	}
-	resp, err := http.Get(resource)
+	resp, err := http.Get(url)
 	if err != nil {
 		return err
 	}
@@ -217,13 +274,13 @@ func (d *Daemon) fetchBlob(typ, str string) error {
 	_, _ = file.ReadAt(head, 0)
 	switch typ {
 	case "audio":
-		filepath = path.Join(basepath, "audio", u.Query().Get("md5"))
+		filepath = path.Join(basepath, "audio", query.Get("md5"))
 	case "photo":
-		filepath = path.Join(basepath, "photo", u.Query().Get("md5"))
+		filepath = path.Join(basepath, "photo", query.Get("md5"))
 	case "video":
-		filepath = path.Join(basepath, "video", u.Query().Get("md5"))
+		filepath = path.Join(basepath, "video", query.Get("md5"))
 	case "voice":
-		filepath = path.Join(basepath, "voice", u.Query().Get("md5"))
+		filepath = path.Join(basepath, "voice", query.Get("md5"))
 	}
 	switch http.DetectContentType(head) {
 	default:

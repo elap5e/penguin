@@ -36,7 +36,7 @@ func (d *Daemon) prefetchChannelAccount(id int64) error {
 	return nil
 }
 
-func (d *Daemon) mustGetChannel(id int64, name string) *penguin.Chat {
+func (d *Daemon) getOrLoadChannel(id int64, name string) *penguin.Chat {
 	return &penguin.Chat{
 		ID:    id,
 		Type:  penguin.ChatTypeChannel,
@@ -44,7 +44,7 @@ func (d *Daemon) mustGetChannel(id int64, name string) *penguin.Chat {
 	}
 }
 
-func (d *Daemon) mustGetChannelRoom(cid, rid int64, extra *pb.Common_ExtInfo) *penguin.Chat {
+func (d *Daemon) getOrLoadChannelRoom(cid, rid int64, extra *pb.Common_ExtInfo) *penguin.Chat {
 	return &penguin.Chat{
 		ID:   rid,
 		Type: penguin.ChatTypeRoomText,
@@ -57,11 +57,11 @@ func (d *Daemon) mustGetChannelRoom(cid, rid int64, extra *pb.Common_ExtInfo) *p
 	}
 }
 
-func (d *Daemon) mustGetChannelRoomPrivate(cid, rid int64, name string) *penguin.Chat {
+func (d *Daemon) getOrLoadChannelRoomPrivate(cid, rid int64, name string) *penguin.Chat {
 	return nil
 }
 
-func (d *Daemon) mustGetChannelUser(cid, uid int64, extra *pb.Common_ExtInfo) *penguin.User {
+func (d *Daemon) getOrLoadChannelUser(cid, uid int64, extra *pb.Common_ExtInfo) *penguin.User {
 	return &penguin.User{
 		Account: &penguin.Account{
 			ID:       uid,
@@ -84,9 +84,9 @@ func (d *Daemon) OnRecvChannelMessage(id int64, recv *pb.Common_Msg) error {
 	_ = d.prefetchChannelAccount(int64(rhead.GetFromTinyid()))
 	if rhead.GetDirectMessageFlag() == 0 {
 		// room
-		channel := d.mustGetChannel(int64(rhead.GetGuildId()), string(extra.GetGuildName()))
-		msg.Chat = d.mustGetChannelRoom(channel.ID, int64(rhead.GetChannelId()), extra)
-		msg.From = d.mustGetChannelUser(channel.ID, int64(rhead.GetFromTinyid()), extra)
+		channel := d.getOrLoadChannel(int64(rhead.GetGuildId()), string(extra.GetGuildName()))
+		msg.Chat = d.getOrLoadChannelRoom(channel.ID, int64(rhead.GetChannelId()), extra)
+		msg.From = d.getOrLoadChannelUser(channel.ID, int64(rhead.GetFromTinyid()), extra)
 		log.Chat(id, &msg)
 	} else {
 		// room private

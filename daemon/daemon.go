@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/elap5e/penguin"
 	"github.com/elap5e/penguin/config"
 	"github.com/elap5e/penguin/daemon/account"
 	"github.com/elap5e/penguin/daemon/auth"
@@ -44,6 +45,8 @@ type Daemon struct {
 	cntm *contact.Manager
 	msgm *message.Manager
 	svcm *service.Manager
+
+	msgChan chan *penguin.Message
 }
 
 func New(ctx context.Context, cfg *config.Config) *Daemon {
@@ -59,6 +62,7 @@ func New(ctx context.Context, cfg *config.Config) *Daemon {
 	d.cntm = contact.NewManager(d.ctx, d.c, d)
 	d.msgm = message.NewManager(d.ctx, d.c, d)
 	d.svcm = service.NewManager(d.ctx, d.c, d)
+	d.msgChan = make(chan *penguin.Message, 100)
 	return d
 }
 
@@ -96,4 +100,8 @@ func (d *Daemon) GetAuthManager() *auth.Manager {
 
 func (d *Daemon) GetServiceManager() *service.Manager {
 	return d.svcm
+}
+
+func (d *Daemon) GetMessageChannel() chan *penguin.Message {
+	return d.msgChan
 }

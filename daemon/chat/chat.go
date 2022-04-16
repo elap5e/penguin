@@ -16,6 +16,7 @@ package chat
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/elap5e/penguin"
@@ -38,6 +39,7 @@ type Manager struct {
 	users map[int64]map[int64]*penguin.User // shared
 
 	// session
+	chatSeq map[string]uint32
 	cookies map[int64][]byte
 }
 
@@ -48,6 +50,7 @@ func NewManager(ctx context.Context, c rpc.Client, d Daemon) *Manager {
 		d:       d,
 		chats:   make(map[int64]*penguin.Chat),
 		users:   make(map[int64]map[int64]*penguin.User),
+		chatSeq: make(map[string]uint32),
 		cookies: make(map[int64][]byte),
 	}
 }
@@ -63,6 +66,32 @@ func (m *Manager) SetChat(k int64, v *penguin.Chat) (*penguin.Chat, bool) {
 	m.mu.Lock()
 	vv, ok := m.chats[k]
 	m.chats[k] = v
+	m.mu.Unlock()
+	return vv, ok
+}
+
+func (m *Manager) GetChatSeq(id, gid, tid int64) (uint32, bool) {
+	m.mu.RLock()
+	k := fmt.Sprintf("%d|%d|%d", id, gid, tid)
+	v, ok := m.chatSeq[k]
+	m.mu.RUnlock()
+	return v, ok
+}
+
+func (m *Manager) GetNextChatSeq(id, gid, tid int64) (uint32, bool) {
+	m.mu.RLock()
+	k := fmt.Sprintf("%d|%d|%d", id, gid, tid)
+	v, ok := m.chatSeq[k]
+	m.chatSeq[k] = v + 1
+	m.mu.RUnlock()
+	return v + 1, ok
+}
+
+func (m *Manager) SetChatSeq(id, gid, tid int64, v uint32) (uint32, bool) {
+	m.mu.Lock()
+	k := fmt.Sprintf("%d|%d|%d", id, gid, tid)
+	vv, ok := m.chatSeq[k]
+	m.chatSeq[k] = v
 	m.mu.Unlock()
 	return vv, ok
 }

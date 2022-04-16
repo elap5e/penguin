@@ -301,8 +301,7 @@ func (s *sender) goSend(serviceMethod string, args *Args, reply *Reply, done cha
 
 func (s *sender) heartbeat() error {
 	s.heartbeating = true
-	args := &Args{Payload: []byte{0x00, 0x00, 0x00, 0x04}}
-	call := <-s.goSend(service.MethodHeartbeatAlive, args, new(Reply), make(chan *Call, 1), true).Done
+	call := <-s.goSend(service.MethodHeartbeatAlive, new(Args), new(Reply), make(chan *Call, 1), true).Done
 	s.heartbeating = false
 	return call.Error
 }
