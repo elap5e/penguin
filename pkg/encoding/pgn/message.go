@@ -17,8 +17,11 @@ package pgn
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"net/url"
+	"path"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -59,6 +62,8 @@ func (md *messageDecoder) Decode(msg *penguin.Message) error {
 		}
 		if entity.Type == "face" {
 			md.decodeFace(entity, &elems)
+		} else if entity.Type == "photo" {
+			md.decodePhoto(entity, &elems, msg)
 		}
 	}
 	if md.offset < md.length {
@@ -90,7 +95,7 @@ func (md *messageDecoder) decodeFace(entity *penguin.MessageEntity, elems *[]*pb
 	pid, _ := base64.RawStdEncoding.DecodeString(query.Get("pid"))
 	sid, _ := base64.RawStdEncoding.DecodeString(query.Get("sid"))
 	text := face.FaceType(id).String()
-	if len(pid) > 0 && len(sid) > 0 {
+	if len(pid)+len(sid) > 0 {
 		buf, _ := proto.Marshal(&pb.HummerCommonElement_MsgElemInfoServtype37{
 			Packid:      pid,
 			Stickerid:   sid,
@@ -108,7 +113,7 @@ func (md *messageDecoder) decodeFace(entity *penguin.MessageEntity, elems *[]*pb
 		})
 		*elems = append(*elems, &pb.IMMsgBody_Elem{
 			Text: &pb.IMMsgBody_Text{
-				Str: []byte(text),
+				Str: []byte("[" + strings.TrimLeft(text, "/") + "]请使用最新版手机QQ体验新功能"),
 			},
 		})
 	} else if id < 260 {
@@ -128,6 +133,46 @@ func (md *messageDecoder) decodeFace(entity *penguin.MessageEntity, elems *[]*pb
 				ServiceType:  33,
 				PbElem:       buf,
 				BusinessType: 1,
+			},
+		})
+	}
+	md.offset += entity.Length
+	return nil
+}
+
+func (md *messageDecoder) decodePhoto(entity *penguin.MessageEntity, elems *[]*pb.IMMsgBody_Elem, msg *penguin.Message) error {
+	_, _ = md.buffer.Read(make([]byte, entity.Length))
+	url, _ := url.Parse(entity.URL)
+	query := url.Query()
+	photo := msg.Photo
+	md5, _ := hex.DecodeString(query.Get("md5"))
+	if photo != nil && reflect.DeepEqual(md5, photo.Digest.MD5) {
+		if msg.Chat.Type == penguin.ChatTypeGroup {
+			*elems = append(*elems, &pb.IMMsgBody_Elem{
+				CustomFace: &pb.IMMsgBody_CustomFace{
+					FilePath: photo.Name,
+					FileId:   uint32(photo.ID),
+					FileType: ParsePhotoType(path.Ext(photo.Name)),
+					Useful:   1,
+					Md5:      photo.Digest.MD5,
+					BizType:  0,
+					Width:    uint32(photo.Width),
+					Height:   uint32(photo.Height),
+					Size:     uint32(photo.Size),
+					Origin:   1,
+				},
+			})
+		} else {
+			*elems = append(*elems, &pb.IMMsgBody_Elem{
+				Text: &pb.IMMsgBody_Text{
+					Str: []byte(msg.Photo.Name),
+				},
+			})
+		}
+	} else {
+		*elems = append(*elems, &pb.IMMsgBody_Elem{
+			Text: &pb.IMMsgBody_Text{
+				Str: []byte("not match: " + msg.Photo.Name),
 			},
 		})
 	}

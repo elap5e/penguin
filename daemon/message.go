@@ -30,6 +30,7 @@ import (
 	"github.com/elap5e/penguin/daemon/message/pb"
 	"github.com/elap5e/penguin/pkg/encoding/pgn"
 	"github.com/elap5e/penguin/pkg/log"
+	"github.com/elap5e/penguin/pkg/net/highway"
 )
 
 // mask 0x00000000ffffffff
@@ -159,6 +160,9 @@ func (d *Daemon) OnRecvMessage(id int64, head *pb.MsgCommon_MsgHead, body *pb.IM
 }
 
 func (d *Daemon) SendMessage(id int64, msg *penguin.Message) error {
+	if msg.From.Account.ID != 0 && msg.From.Account.ID != id {
+		return fmt.Errorf("invalid sender")
+	}
 	var req pb.MsgService_PbSendMsgReq
 	req.RoutingHead = &pb.MsgService_RoutingHead{}
 	// identify message type
@@ -168,12 +172,14 @@ func (d *Daemon) SendMessage(id int64, msg *penguin.Message) error {
 		// discuss private
 	} else if msg.Chat.Type == penguin.ChatTypeGroup {
 		// group
+		msg.From = d.getOrLoadChatUser(msg.Chat.ID, id)
 		req.RoutingHead.Grp = &pb.MsgService_Grp{
 			GroupCode: uint64(msg.Chat.ID),
 		}
 		req.MsgSeq, _ = d.chtm.GetNextChatSeq(0, msg.Chat.ID, 0)
 	} else if msg.Chat.Type == penguin.ChatTypeGroupPrivate {
 		// group private
+		msg.From = d.getOrLoadChatUser(msg.Chat.ID, id)
 		req.RoutingHead.GrpTmp = &pb.MsgService_GrpTmp{
 			GroupUin: uint64(msg.Chat.ID),
 			ToUin:    uint64(msg.Chat.User.Account.ID),
@@ -201,6 +207,61 @@ func (d *Daemon) SendMessage(id int64, msg *penguin.Message) error {
 	return d.onSendMessage(id, &req, resp, msg)
 }
 
+func (d *Daemon) UploadPhotos(id int64, chat *penguin.Chat, photos ...*penguin.Photo) error {
+	var req pb.Cmd0X388_ReqBody
+	req.NetType = 3
+	req.Subcmd = 1
+	req.MsgTryupImgReq = make([]*pb.Cmd0X388_TryUpImgReq, 0)
+	for _, photo := range photos {
+		req.MsgTryupImgReq = append(req.MsgTryupImgReq, &pb.Cmd0X388_TryUpImgReq{
+			GroupCode:       uint64(chat.ID),
+			SrcUin:          uint64(id),
+			FileCode:        0, // nil
+			FileMd5:         photo.Digest.MD5,
+			FileSize:        uint64(photo.Size),
+			FileName:        []byte(photo.Name),
+			SrcTerm:         5,
+			PlatformType:    9,
+			BuType:          1,
+			PicWidth:        uint32(photo.Width),
+			PicHeight:       uint32(photo.Height),
+			PicType:         pgn.ParsePhotoType(path.Ext(photo.Name)),
+			BuildVer:        []byte(""),
+			InnerIp:         0, // nil
+			AppPicType:      1006,
+			OriginalPic:     1,
+			FileIndex:       nil, // nil
+			DstUin:          0,   // nil
+			SrvUpload:       0,   // nil
+			TransferUrl:     nil, // nil
+			QqmeetGuildId:   0,
+			QqmeetChannelId: 0,
+		})
+	}
+	resp, err := d.msgm.ChatUploadPhoto(id, &req)
+	if err != nil {
+		return err
+	}
+	homePath, _ := os.UserHomeDir()
+	basePath := path.Join(homePath, ".penguin", "cache")
+	for i, photo := range resp.GetMsgTryupImgRsp() {
+		if photo.GetFileExit() == false {
+			h, err := highway.Dial("tcp", "42.81.184.140:80")
+			if err != nil {
+				log.Error("highway dial error: %v", err)
+				continue
+			}
+			filePath := path.Join(basePath, "photo", photos[i].Name)
+			if err := h.UploadFile(id, 2, filePath, photo.UpUkey); err != nil {
+				log.Error("upload file error: %v", err)
+				continue
+			}
+		}
+		photos[i].ID = int64(photo.GetFileid())
+	}
+	return d.onUploadPhoto(id, &req, resp)
+}
+
 func (d *Daemon) onRecvMessage(id int64, head *pb.MsgCommon_MsgHead, body *pb.IMMsgBody_MsgBody, msg *penguin.Message) error {
 	go d.pushMessage(msg)
 	go d.fetchBlobs(msg)
@@ -219,6 +280,13 @@ func (d *Daemon) onSendMessage(id int64, req *pb.MsgService_PbSendMsgReq, resp *
 	pmsg, _ := json.Marshal(msg)
 	log.Debug("id:%d req:%s resp:%s msg:%s", id, preq, prsp, pmsg)
 	log.Chat(id, msg)
+	return nil
+}
+
+func (d *Daemon) onUploadPhoto(id int64, req *pb.Cmd0X388_ReqBody, resp *pb.Cmd0X388_RspBody) error {
+	preq, _ := json.Marshal(req)
+	prsp, _ := json.Marshal(resp)
+	log.Debug("id:%d req:%s resp:%s", id, preq, prsp)
 	return nil
 }
 
@@ -300,7 +368,7 @@ func (d *Daemon) fetchBlob(typ, str string) error {
 	case "image/gif":
 		filepath += ".gif"
 	case "image/jpeg":
-		filepath += ".jpeg"
+		filepath += ".jpg"
 	case "image/png":
 		filepath += ".png"
 	case "image/webp":

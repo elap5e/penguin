@@ -109,6 +109,13 @@ type Document struct {
 }
 
 type Photo struct {
+	ID     int64   `json:"id"`
+	Path   string  `json:"path"`
+	Name   string  `json:"name"`
+	Size   int64   `json:"size"`
+	Width  int     `json:"width"`
+	Height int     `json:"height"`
+	Digest *Digest `json:"digest,omitempty"`
 }
 
 type Sticker struct {
@@ -124,4 +131,11 @@ type Dice struct {
 }
 
 type Poll struct {
+}
+
+type Digest struct {
+	MD5    []byte `json:"md5,omitempty"`
+	SHA1   []byte `json:"sha1,omitempty"`
+	SHA256 []byte `json:"sha256,omitempty"`
+	SHA512 []byte `json:"sha512,omitempty"`
 }

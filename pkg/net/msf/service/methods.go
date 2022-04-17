@@ -56,10 +56,10 @@ const (
 	MethodMessagePushNotify = "MessageSvc.PushNotify"
 	MethodMessagePushReaded = "MessageSvc.PushReaded"
 
-	MethodMessageChatDownloadImage = "ImgStore.GroupPicDown"
-	MethodMessageChatUploadImage   = "ImgStore.GroupPicUp"
-	MethodMessageUserDownloadImage = "LongConn.OffPicDown"
-	MethodMessageUserUploadImage   = "LongConn.OffPicUp"
+	MethodMessageChatDownloadPhoto = "ImgStore.GroupPicDown"
+	MethodMessageChatUploadPhoto   = "ImgStore.GroupPicUp"
+	MethodMessageUserDownloadPhoto = "LongConn.OffPicDown"
+	MethodMessageUserUploadPhoto   = "LongConn.OffPicUp"
 )
 
 const (
@@ -69,6 +69,8 @@ const (
 	MethodServiceConfigPushDomain   = "ConfigPushSvc.PushDomain"
 	MethodServiceConfigPushRequest  = "ConfigPushSvc.PushReq"
 	MethodServiceConfigPushResponse = "ConfigPushSvc.PushResp"
+
+	_ = "MessageSvc.PushForceOffline"
 
 	MethodServiceOnlinePushUserMessage   = "OnlinePush.PbC2CMsgSync"
 	MethodServiceOnlinePushChatMessage   = "OnlinePush.PbPushGroupMsg"

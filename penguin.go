@@ -34,6 +34,7 @@
 //go:generate protoc --go_out=$GOPATH/src daemon/message/pb/sub_type_0x1a.proto
 //go:generate protoc --go_out=$GOPATH/src daemon/message/pb/sub_type_0xc1.proto
 //go:generate protoc --go_out=$GOPATH/src daemon/message/pb/service.proto
+//go:generate protoc --go_out=$GOPATH/src daemon/message/pb/cmd_0x388.proto
 
 //go:generate protoc --go_out=$GOPATH/src daemon/service/pb/domain_ip.proto
 //go:generate protoc --go_out=$GOPATH/src daemon/service/pb/oidb_0x769.proto

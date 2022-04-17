@@ -34,7 +34,7 @@ type App struct {
 }
 
 var (
-	AndroidMobileQQApp = &App{
+	MobileQQAndroidApp = &App{
 		FixID:      537116314,
 		AppID:      537116314,
 		PkgName:    "com.tencent.mobileqq",
@@ -47,7 +47,7 @@ var (
 		ImageType:  1,
 		CanCaptcha: true,
 	}
-	AndroidMobileQQAppNext = &App{
+	MobileQQNextAndroidApp = &App{
 		FixID:      537117844,
 		AppID:      537117844,
 		PkgName:    "com.tencent.mobileqq",

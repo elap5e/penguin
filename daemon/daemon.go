@@ -98,6 +98,10 @@ func (d *Daemon) GetAuthManager() *auth.Manager {
 	return d.athm
 }
 
+func (d *Daemon) GetMessageManager() *message.Manager {
+	return d.msgm
+}
+
 func (d *Daemon) GetServiceManager() *service.Manager {
 	return d.svcm
 }

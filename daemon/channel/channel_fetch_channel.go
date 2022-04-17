@@ -12,24 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pgn
+package channel
 
-func ParsePhotoType(ext string) uint32 {
-	switch ext {
-	case ".jpeg", ".jpg":
-		return 1000
-	case ".png":
-		return 1001
-	case ".webp":
-		return 1002
-	case ".sharpp":
-		return 1004
-	case ".bmp":
-		return 1005
-	case ".gif":
-		return 2000
-	case ".apng":
-		return 2001
-	}
-	return 0
+func (m *Manager) FetchChannels() {
+
+}
+
+func (m *Manager) CallOidbSvcTrpcTcp() {
+
 }
