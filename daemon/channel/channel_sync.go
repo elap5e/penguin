@@ -46,7 +46,7 @@ func (m *Manager) syncFirstView(uin int64, req *pb.SyncLogic_FirstViewReq) (*pb.
 		Uin:     uin,
 		Payload: p,
 	}, rpc.Reply{}
-	if err := m.c.Call(service.MethodChannelSyncFirstView, &args, &reply); err != nil {
+	if err := m.Call(service.MethodChannelSyncFirstView, &args, &reply); err != nil {
 		return nil, err
 	}
 	resp := pb.SyncLogic_FirstViewRsp{}
@@ -91,9 +91,21 @@ func (m *Manager) handlePushFirstView(reply *rpc.Reply) (*rpc.Args, error) {
 			p, _ := json.Marshal(channel)
 			log.Debug("channel:%d:%s", channel.ID, p)
 			for _, node := range node.GetChannelNodes() {
+				typ, ctyp := penguin.ChatTypeRoomText, node.GetChannelType()
+				if ctyp == 2 {
+					typ = penguin.ChatTypeRoomVoice
+				} else if ctyp == 4 {
+					typ = penguin.ChatTypeRoomGroup
+				} else if ctyp == 5 {
+					typ = penguin.ChatTypeRoomLive
+				} else if ctyp == 6 {
+					typ = penguin.ChatTypeRoomApp
+				} else if ctyp == 7 {
+					typ = penguin.ChatTypeRoomForum
+				}
 				room := penguin.Chat{
 					ID:    int64(node.GetChannelId()),
-					Type:  penguin.ChatTypeRoomText,
+					Type:  typ,
 					Title: string(node.GetChannelName()),
 				}
 				_, _ = m.SetRoom(channel.ID, room.ID, &room)

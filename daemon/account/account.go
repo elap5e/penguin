@@ -22,19 +22,22 @@ import (
 	"github.com/elap5e/penguin/pkg/net/msf/rpc"
 )
 
-type Manager struct {
-	ctx context.Context
+type Daemon interface {
+	Call(serviceMethod string, args *rpc.Args, reply *rpc.Reply) error
+}
 
-	c rpc.Client
+type Manager struct {
+	Daemon
+	ctx context.Context
 
 	mu       sync.RWMutex
 	accounts map[int64]*penguin.Account // shared
 }
 
-func NewManager(ctx context.Context, c rpc.Client) *Manager {
+func NewManager(ctx context.Context, d Daemon) *Manager {
 	return &Manager{
+		Daemon:   d,
 		ctx:      ctx,
-		c:        c,
 		accounts: make(map[int64]*penguin.Account),
 	}
 }

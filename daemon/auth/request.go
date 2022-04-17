@@ -240,7 +240,7 @@ func (m *Manager) call(req *Request) (*Response, error) {
 		return nil, err
 	}
 	args, reply := rpc.Args{Uin: req.Data.Uin, Seq: req.Seq, Payload: p}, rpc.Reply{}
-	if err = m.c.Call(req.ServiceMethod, &args, &reply); err != nil {
+	if err = m.d.Call(req.ServiceMethod, &args, &reply); err != nil {
 		return nil, err
 	}
 	resp := &Response{ServiceMethod: reply.ServiceMethod, Seq: reply.Seq, Data: req.Data}

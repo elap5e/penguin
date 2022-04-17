@@ -25,14 +25,15 @@ import (
 )
 
 type Daemon interface {
+	Call(serviceMethod string, args *rpc.Args, reply *rpc.Reply) error
+	Register(serviceMethod string, handler rpc.Handler) error
+
 	OnRecvChannelMessage(id int64, recv *pb.Common_Msg) error
 }
 
 type Manager struct {
+	Daemon
 	ctx context.Context
-
-	c rpc.Client
-	d Daemon
 
 	mu       sync.RWMutex
 	channels map[int64]*penguin.Chat           // shared
@@ -40,17 +41,16 @@ type Manager struct {
 	users    map[int64]map[int64]*penguin.User
 }
 
-func NewManager(ctx context.Context, c rpc.Client, d Daemon) *Manager {
+func NewManager(ctx context.Context, d Daemon) *Manager {
 	m := &Manager{
+		Daemon:   d,
 		ctx:      ctx,
-		c:        c,
-		d:        d,
 		channels: make(map[int64]*penguin.Chat),
 		rooms:    make(map[int64]map[int64]*penguin.Chat),
 		users:    make(map[int64]map[int64]*penguin.User),
 	}
-	m.c.Register(service.MethodChannelPushMessage, m.handlePushMessage)
-	m.c.Register(service.MethodChannelPushFirstView, m.handlePushFirstView)
+	m.Register(service.MethodChannelPushMessage, m.handlePushMessage)
+	m.Register(service.MethodChannelPushFirstView, m.handlePushFirstView)
 	return m
 }
 

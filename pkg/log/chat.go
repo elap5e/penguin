@@ -59,12 +59,12 @@ func Chat(id int64, msg *penguin.Message) {
 			fromDisplay,
 			msg.Text,
 		)
-	case penguin.ChatTypeRoomText:
+	case penguin.ChatTypeRoomText, penguin.ChatTypeRoomLive:
 		str = fmt.Sprintf(
-			"[%d] channel:0x%x(%s) room:0x%x(%s) user:0x%x(%s) text:%q",
+			"[%d] channel:%d(%s) room:%d(%s) user:%d(%s) text:%q",
 			id,
-			msg.Chat.Chat.ID,
-			msg.Chat.Chat.Title,
+			msg.Chat.Channel.ID,
+			msg.Chat.Channel.Title,
 			msg.Chat.ID,
 			msg.Chat.Title,
 			msg.From.Account.ID,

@@ -218,7 +218,7 @@ func (m *Manager) requestGetContacts(uin int64, req *GetContactsRequest) (*GetCo
 		Uin:     uin,
 		Payload: p,
 	}, rpc.Reply{}
-	if err = m.c.Call(service.MethodContactGetContacts, &args, &reply); err != nil {
+	if err = m.Call(service.MethodContactGetContacts, &args, &reply); err != nil {
 		return nil, err
 	}
 	data, resp := uni.Data{}, GetContactsResponse{}
@@ -233,7 +233,7 @@ func (m *Manager) requestGetContacts(uin int64, req *GetContactsRequest) (*GetCo
 			Type:     penguin.AccountTypeDefault,
 			Username: v.Nick,
 		}
-		_, _ = m.d.GetAccountManager().SetAccount(account.ID, &account)
+		_, _ = m.GetAccountManager().SetAccount(account.ID, &account)
 		contact := penguin.Contact{
 			Account: &account,
 			Display: v.Remark,

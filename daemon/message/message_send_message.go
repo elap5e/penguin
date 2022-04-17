@@ -44,7 +44,7 @@ func (m *Manager) SendMessage(uin int64, req *pb.MsgService_PbSendMsgReq) (*pb.M
 		Uin:     uin,
 		Payload: p,
 	}, rpc.Reply{}
-	if err = m.c.Call(service.MethodMessageSendMessage, &args, &reply); err != nil {
+	if err = m.Call(service.MethodMessageSendMessage, &args, &reply); err != nil {
 		return nil, err
 	}
 	resp := pb.MsgService_PbSendMsgResp{}

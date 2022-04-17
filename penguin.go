@@ -12,39 +12,134 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:generate go run cmd/message-face-gen/main.go
-//go:generate go run cmd/proto-message-gen/main.go
-
-//go:generate protoc --go_out=$GOPATH/src pkg/encoding/tlv/pb/device_report.proto
-//go:generate protoc --go_out=$GOPATH/src pkg/net/highway/pb/highway.proto
-
-//go:generate protoc --go_out=$GOPATH/src daemon/auth/pb/gateway_verify.proto
-//go:generate protoc --go_out=$GOPATH/src daemon/auth/pb/third_part_login.proto
-
-//go:generate protoc --go_out=$GOPATH/src daemon/contact/pb/mutual_mark.proto
-//go:generate protoc --go_out=$GOPATH/src daemon/contact/pb/oidb_0xd50.proto
-//go:generate protoc --go_out=$GOPATH/src daemon/contact/pb/oidb_0xd6b.proto
-
-//go:generate protoc --go_out=$GOPATH/src daemon/message/pb/body.proto
-//go:generate protoc --go_out=$GOPATH/src daemon/message/pb/head.proto
-//go:generate protoc --go_out=$GOPATH/src daemon/message/pb/common.proto
-//go:generate protoc --go_out=$GOPATH/src daemon/message/pb/common_element.proto
-//go:generate protoc --go_out=$GOPATH/src daemon/message/pb/control.proto
-//go:generate protoc --go_out=$GOPATH/src daemon/message/pb/receipt.proto
-//go:generate protoc --go_out=$GOPATH/src daemon/message/pb/sub_type_0x1a.proto
-//go:generate protoc --go_out=$GOPATH/src daemon/message/pb/sub_type_0xc1.proto
-//go:generate protoc --go_out=$GOPATH/src daemon/message/pb/service.proto
-//go:generate protoc --go_out=$GOPATH/src daemon/message/pb/cmd_0x388.proto
-
-//go:generate protoc --go_out=$GOPATH/src daemon/service/pb/domain_ip.proto
-//go:generate protoc --go_out=$GOPATH/src daemon/service/pb/oidb_0x769.proto
-//go:generate protoc --go_out=$GOPATH/src daemon/service/pb/online_push.proto
-
-//go:generate protoc --go_out=$GOPATH/src daemon/channel/pb/channel_base.proto
-//go:generate protoc --go_out=$GOPATH/src daemon/channel/pb/channel_common.proto
-//go:generate protoc --go_out=$GOPATH/src daemon/channel/pb/message_common.proto
-//go:generate protoc --go_out=$GOPATH/src daemon/channel/pb/message_push.proto
-//go:generate protoc --go_out=$GOPATH/src daemon/channel/pb/oidb_0xf62.proto
-//go:generate protoc --go_out=$GOPATH/src daemon/channel/pb/sync_logic.proto
-
 package penguin
+
+type AccountType string
+
+const (
+	AccountTypeDefault AccountType = "default"
+	AccountTypeChannel AccountType = "channel"
+)
+
+type Account struct {
+	ID       int64       `json:"id"`
+	Type     AccountType `json:"type"`
+	Username string      `json:"username,omitempty"`
+	Photo    string      `json:"photo,omitempty"`
+}
+
+type ChatType string
+
+const (
+	// default
+	ChatTypeDiscuss        ChatType = "discuss"
+	ChatTypeDiscussPrivate ChatType = "discuss_private"
+	ChatTypeGroup          ChatType = "group"
+	ChatTypeGroupPrivate   ChatType = "group_private"
+	ChatTypePrivate        ChatType = "private"
+
+	// channel
+	ChatTypeChannel     ChatType = "channel"
+	ChatTypeRoomText    ChatType = "room_text"
+	ChatTypeRoomVoice   ChatType = "room_voice"
+	ChatTypeRoomGroup   ChatType = "room_group"
+	ChatTypeRoomLive    ChatType = "room_live"
+	ChatTypeRoomApp     ChatType = "room_app"
+	ChatTypeRoomForum   ChatType = "room_forum"
+	ChatTypeRoomPrivate ChatType = "room_private"
+)
+
+type Chat struct {
+	ID      int64      `json:"id"`
+	Type    ChatType   `json:"type"`
+	Chat    *Chat      `json:"chat,omitempty"`
+	User    *User      `json:"user,omitempty"`
+	Title   string     `json:"title,omitempty"`
+	Photo   *ChatPhoto `json:"photo,omitempty"`
+	Display string     `json:"display,omitempty"`
+	Channel *Chat      `json:"channel,omitempty"`
+}
+
+type ChatPhoto struct {
+	FileID string `json:"file_id"`
+}
+
+type Contact struct {
+	Account *Account `json:"account"`
+	Display string   `json:"display,omitempty"`
+}
+
+type User struct {
+	Account *Account `json:"account"`
+	Display string   `json:"display,omitempty"`
+}
+
+type Message struct {
+	MessageID     int64            `json:"message_id"`
+	Chat          *Chat            `json:"chat"`
+	From          *User            `json:"from,omitempty"`
+	Forward       *Message         `json:"forward,omitempty"`
+	ReplyTo       *Message         `json:"reply_to,omitempty"`
+	PinnedMessage *Message         `json:"pinned_message,omitempty"`
+	Time          int64            `json:"time"`
+	EditTime      int64            `json:"edit_time,omitempty"`
+	Text          string           `json:"text,omitempty"`
+	Entities      []*MessageEntity `json:"entities,omitempty"`
+	Audio         *Audio           `json:"audio,omitempty"`
+	Document      *Document        `json:"document,omitempty"`
+	Photo         *Photo           `json:"photo,omitempty"`
+	Sticker       *Sticker         `json:"sticker,omitempty"`
+	Video         *Video           `json:"video,omitempty"`
+	Voice         *Voice           `json:"voice,omitempty"`
+	Contact       *Contact         `json:"contact,omitempty"`
+	Dice          *Dice            `json:"dice,omitempty"`
+	Poll          *Poll            `json:"poll,omitempty"`
+	NewChatUsers  []*User          `json:"new_chat_users,omitempty"`
+	LeftChatUser  *User            `json:"left_chat_user,omitempty"`
+}
+
+type MessageEntity struct {
+	Type   string `json:"type"`
+	Offset int64  `json:"offset"`
+	Length int64  `json:"length"`
+	URL    string `json:"url,omitempty"`
+	User   *User  `json:"user,omitempty"`
+}
+
+type Audio struct {
+}
+
+type Document struct {
+}
+
+type Photo struct {
+	ID     int64   `json:"id"`
+	Path   string  `json:"path"`
+	Name   string  `json:"name"`
+	Size   int64   `json:"size"`
+	Width  int     `json:"width"`
+	Height int     `json:"height"`
+	Digest *Digest `json:"digest,omitempty"`
+}
+
+type Sticker struct {
+}
+
+type Video struct {
+}
+
+type Voice struct {
+}
+
+type Dice struct {
+}
+
+type Poll struct {
+}
+
+type Digest struct {
+	MD5    []byte `json:"md5,omitempty"`
+	SHA1   []byte `json:"sha1,omitempty"`
+	SHA256 []byte `json:"sha256,omitempty"`
+	SHA512 []byte `json:"sha512,omitempty"`
+}

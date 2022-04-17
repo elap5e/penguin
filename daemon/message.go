@@ -242,24 +242,7 @@ func (d *Daemon) UploadPhotos(id int64, chat *penguin.Chat, photos ...*penguin.P
 	if err != nil {
 		return err
 	}
-	homePath, _ := os.UserHomeDir()
-	basePath := path.Join(homePath, ".penguin", "cache")
-	for i, photo := range resp.GetMsgTryupImgRsp() {
-		if photo.GetFileExit() == false {
-			h, err := highway.Dial("tcp", "42.81.184.140:80")
-			if err != nil {
-				log.Error("highway dial error: %v", err)
-				continue
-			}
-			filePath := path.Join(basePath, "photo", photos[i].Name)
-			if err := h.UploadFile(id, 2, filePath, photo.UpUkey); err != nil {
-				log.Error("upload file error: %v", err)
-				continue
-			}
-		}
-		photos[i].ID = int64(photo.GetFileid())
-	}
-	return d.onUploadPhoto(id, &req, resp)
+	return d.onUploadPhoto(id, &req, resp, photos)
 }
 
 func (d *Daemon) onRecvMessage(id int64, head *pb.MsgCommon_MsgHead, body *pb.IMMsgBody_MsgBody, msg *penguin.Message) error {
@@ -283,10 +266,28 @@ func (d *Daemon) onSendMessage(id int64, req *pb.MsgService_PbSendMsgReq, resp *
 	return nil
 }
 
-func (d *Daemon) onUploadPhoto(id int64, req *pb.Cmd0X388_ReqBody, resp *pb.Cmd0X388_RspBody) error {
+func (d *Daemon) onUploadPhoto(id int64, req *pb.Cmd0X388_ReqBody, resp *pb.Cmd0X388_RspBody, photos []*penguin.Photo) error {
 	preq, _ := json.Marshal(req)
 	prsp, _ := json.Marshal(resp)
 	log.Debug("id:%d req:%s resp:%s", id, preq, prsp)
+
+	homePath, _ := os.UserHomeDir()
+	basePath := path.Join(homePath, ".penguin", "cache")
+	for i, photo := range resp.GetMsgTryupImgRsp() {
+		if photo.GetFileExit() == false {
+			h, err := highway.Dial("tcp", "42.81.184.140:80")
+			if err != nil {
+				log.Error("highway dial error: %v", err)
+				continue
+			}
+			filePath := path.Join(basePath, "photo", photos[i].Name)
+			if err := h.UploadFile(id, 2, filePath, photo.UpUkey); err != nil {
+				log.Error("upload file error: %v", err)
+				continue
+			}
+		}
+		photos[i].ID = int64(photo.GetFileid())
+	}
 	return nil
 }
 

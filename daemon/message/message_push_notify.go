@@ -42,7 +42,7 @@ func (m *Manager) handlePushNotifyRequest(reply *rpc.Reply) (*rpc.Args, error) {
 				case 9, 10, 31, 79, 97, 120, 132, 133, 141, 166, 167:
 					switch head.GetC2CCmd() {
 					case 11, 175:
-						if err := m.d.OnRecvMessage(reply.Uin, head, msg.GetMsgBody()); err != nil {
+						if err := m.OnRecvMessage(reply.Uin, head, msg.GetMsgBody()); err != nil {
 							return nil, err
 						}
 						items = append(items, &dto.MessageDelete{
@@ -84,5 +84,5 @@ func (m *Manager) handlePushNotifyRequest(reply *rpc.Reply) (*rpc.Args, error) {
 		Type:     0,
 		Device:   nil,
 	}
-	return m.d.GetServiceManager().OnlinePushResponse(reply, &resp)
+	return m.GetServiceManager().OnlinePushResponse(reply, &resp)
 }

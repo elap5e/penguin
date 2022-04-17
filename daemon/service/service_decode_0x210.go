@@ -12,22 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package channel
+package service
 
 import (
-	"google.golang.org/protobuf/proto"
-
-	"github.com/elap5e/penguin/daemon/channel/pb"
-	"github.com/elap5e/penguin/pkg/net/msf/rpc"
+	"github.com/elap5e/penguin/pkg/encoding/jce"
 )
 
-func (m *Manager) handlePushMessage(reply *rpc.Reply) (*rpc.Args, error) {
-	push := pb.MsgPush_MsgOnlinePush{}
-	if err := proto.Unmarshal(reply.Payload, &push); err != nil {
+type Message0x210 struct {
+	SubType int64  `jce:"0" json:"sub_type"`
+	Payload []byte `jce:"10" json:"payload"`
+}
+
+func (m *Manager) decode0x210Jce(uin int64, p []byte) (any, error) {
+	msg := Message0x210{}
+	if err := jce.Unmarshal(p, &msg, true); err != nil {
 		return nil, err
 	}
-	for _, v := range push.GetMsgs() {
-		_ = m.OnRecvChannelMessage(reply.Uin, v)
-	}
+	return m.decode0x210(uin, msg.SubType, msg.Payload)
+}
+
+func (m *Manager) decode0x210Pb(uin int64, p []byte) (any, error) {
+	return nil, nil
+}
+
+func (m *Manager) decode0x210(uin, typ int64, p []byte) (any, error) {
 	return nil, nil
 }

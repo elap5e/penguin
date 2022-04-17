@@ -19,33 +19,35 @@ import (
 
 	"github.com/elap5e/penguin/daemon/auth"
 	"github.com/elap5e/penguin/daemon/message/pb"
+	"github.com/elap5e/penguin/fake"
 	"github.com/elap5e/penguin/pkg/net/msf/rpc"
 	"github.com/elap5e/penguin/pkg/net/msf/service"
 )
 
 type Daemon interface {
+	Call(serviceMethod string, args *rpc.Args, reply *rpc.Reply) error
+	Register(serviceMethod string, handler rpc.Handler) error
+
 	GetAuthManager() *auth.Manager
+	GetFakeSource(uin int64) *fake.Source
 	OnRecvMessage(uin int64, head *pb.MsgCommon_MsgHead, body *pb.IMMsgBody_MsgBody) error
 }
 
 type Manager struct {
+	Daemon
 	ctx context.Context
-
-	c rpc.Client
-	d Daemon
 }
 
-func NewManager(ctx context.Context, c rpc.Client, d Daemon) *Manager {
+func NewManager(ctx context.Context, d Daemon) *Manager {
 	m := &Manager{
-		ctx: ctx,
-		c:   c,
-		d:   d,
+		Daemon: d,
+		ctx:    ctx,
 	}
-	m.c.Register(service.MethodServiceConfigPushDomain, m.handleConfigPushDomain)
-	m.c.Register(service.MethodServiceConfigPushRequest, m.handleConfigPushRequest)
-	m.c.Register(service.MethodServiceOnlinePushRequest, m.handleOnlinePushRequest)
-	m.c.Register(service.MethodServiceOnlinePushChatMessage, m.handleOnlinePushMessage)
-	m.c.Register(service.MethodServiceOnlinePushUserMessage, m.handleOnlinePushMessage)
-	m.c.Register(service.MethodServiceOnlinePushTicketExpired, m.handleOnlinePushTicketExpired)
+	m.Daemon.Register(service.MethodServiceConfigPushDomain, m.handleConfigPushDomain)
+	m.Daemon.Register(service.MethodServiceConfigPushRequest, m.handleConfigPushRequest)
+	m.Daemon.Register(service.MethodServiceOnlinePushRequest, m.handleOnlinePushRequest)
+	m.Daemon.Register(service.MethodServiceOnlinePushChatMessage, m.handleOnlinePushMessage)
+	m.Daemon.Register(service.MethodServiceOnlinePushUserMessage, m.handleOnlinePushMessage)
+	m.Daemon.Register(service.MethodServiceOnlinePushTicketExpired, m.handleOnlinePushTicketExpired)
 	return m
 }

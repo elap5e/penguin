@@ -175,7 +175,7 @@ func (m *Manager) Register(uin int64, status StatusType, kick bool, typ Register
 }
 
 func (m *Manager) requestRegisterPush(push *RegisterPush, typ RegisterType, client ...bool) (*RegisterResponse, error) {
-	fake := m.c.GetFakeSource(push.Uin)
+	fake := m.GetFakeSource(push.Uin)
 	bid := int64(0)
 	for _, id := range push.PushIDs {
 		bid |= id
@@ -254,7 +254,7 @@ func (m *Manager) requestRegister(req *RegisterRequest, client ...bool) (*Regist
 	if len(client) != 0 && client[0] {
 		serviceMethod = service.MethodServiceSetStatusFromClient
 	}
-	if err = m.c.Call(serviceMethod, &args, &reply); err != nil {
+	if err = m.Call(serviceMethod, &args, &reply); err != nil {
 		return nil, err
 	}
 	data, resp := uni.Data{}, RegisterResponse{}

@@ -17,9 +17,13 @@ package message
 import (
 	"github.com/elap5e/penguin/daemon/message/pb"
 	"github.com/elap5e/penguin/daemon/service"
+	"github.com/elap5e/penguin/pkg/net/msf/rpc"
 )
 
 type Daemon interface {
+	Call(serviceMethod string, args *rpc.Args, reply *rpc.Reply) error
+	Register(serviceMethod string, handler rpc.Handler) error
+
 	GetServiceManager() *service.Manager
 	OnRecvMessage(uin int64, head *pb.MsgCommon_MsgHead, body *pb.IMMsgBody_MsgBody) error
 }

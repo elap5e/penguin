@@ -14,6 +14,6 @@
 
 package service
 
-func (m *Manager) decode0x02dc(uin int64, p []byte) (any, error) {
+func (m *Manager) decode0x2dc(uin int64, p []byte) (any, error) {
 	return nil, nil
 }

@@ -32,7 +32,7 @@ func (m *Manager) SendMessage(uin int64, req *pb.Oidb0Xf62_ReqBody) (*pb.Oidb0Xf
 		Uin:     uin,
 		Payload: p,
 	}, rpc.Reply{}
-	if err = m.c.Call(service.MethodChannelSendMessage, &args, &reply); err != nil {
+	if err = m.Call(service.MethodChannelSendMessage, &args, &reply); err != nil {
 		return nil, err
 	}
 	resp := pb.Oidb0Xf62_RspBody{}

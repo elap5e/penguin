@@ -129,7 +129,7 @@ func (m *Manager) requestGetGroupUsers(uin int64, req *GetGroupUsersRequest) (*G
 		Uin:     uin,
 		Payload: p,
 	}, rpc.Reply{}
-	if err = m.c.Call(service.MethodChatGetGroupUsers, &args, &reply); err != nil {
+	if err = m.Call(service.MethodChatGetGroupUsers, &args, &reply); err != nil {
 		return nil, err
 	}
 	data, resp := uni.Data{}, GetGroupUsersResponse{}
@@ -144,7 +144,7 @@ func (m *Manager) requestGetGroupUsers(uin int64, req *GetGroupUsersRequest) (*G
 			Type:     penguin.AccountTypeDefault,
 			Username: v.Nick,
 		}
-		_, _ = m.d.GetAccountManager().SetAccount(account.ID, &account)
+		_, _ = m.GetAccountManager().SetAccount(account.ID, &account)
 		user := penguin.User{
 			Account: &account,
 			Display: string(v.Remark),

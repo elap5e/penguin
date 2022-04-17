@@ -156,7 +156,7 @@ func (m *Manager) requestGetGroups(uin int64, req *GetGroupsRequest) (*GetGroups
 		Uin:     uin,
 		Payload: p,
 	}, rpc.Reply{}
-	if err = m.c.Call(service.MethodChatGetGroups, &args, &reply); err != nil {
+	if err = m.Call(service.MethodChatGetGroups, &args, &reply); err != nil {
 		return nil, err
 	}
 	data, resp := uni.Data{}, GetGroupsResponse{}

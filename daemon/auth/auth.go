@@ -24,19 +24,25 @@ import (
 	"github.com/elap5e/penguin/pkg/net/msf/rpc"
 )
 
+type Daemon interface {
+	Call(serviceMethod string, args *rpc.Args, reply *rpc.Reply) error
+}
+
 type Manager struct {
 	ctx context.Context
 
 	c rpc.Client
+	d Daemon
 
 	// session
 	mapExtraData map[int64]*ExtraData
 }
 
-func NewManager(ctx context.Context, c rpc.Client) *Manager {
+func NewManager(ctx context.Context, c rpc.Client, d Daemon) *Manager {
 	return &Manager{
 		ctx:          ctx,
 		c:            c,
+		d:            d,
 		mapExtraData: make(map[int64]*ExtraData),
 	}
 }

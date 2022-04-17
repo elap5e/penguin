@@ -25,14 +25,14 @@ import (
 )
 
 type Daemon interface {
+	Call(serviceMethod string, args *rpc.Args, reply *rpc.Reply) error
+
 	GetAccountManager() *account.Manager
 }
 
 type Manager struct {
+	Daemon
 	ctx context.Context
-
-	c rpc.Client
-	d Daemon
 
 	mu    sync.RWMutex
 	chats map[int64]*penguin.Chat           // shared
@@ -43,11 +43,10 @@ type Manager struct {
 	cookies map[int64][]byte
 }
 
-func NewManager(ctx context.Context, c rpc.Client, d Daemon) *Manager {
+func NewManager(ctx context.Context, d Daemon) *Manager {
 	return &Manager{
+		Daemon:  d,
 		ctx:     ctx,
-		c:       c,
-		d:       d,
 		chats:   make(map[int64]*penguin.Chat),
 		users:   make(map[int64]map[int64]*penguin.User),
 		chatSeq: make(map[string]uint32),

@@ -36,7 +36,7 @@ func (m *Manager) DeleteMessage(uin int64, items ...*pb.MsgService_PbDeleteMsgRe
 		Uin:     uin,
 		Payload: p,
 	}, rpc.Reply{}
-	if err = m.c.Call(service.MethodMessageDeleteMessage, &args, &reply); err != nil {
+	if err = m.Call(service.MethodMessageDeleteMessage, &args, &reply); err != nil {
 		return nil, err
 	}
 	resp := pb.MsgService_PbDeleteMsgResp{}

@@ -48,7 +48,7 @@ func (m *Manager) GetMessage(uin int64) (*pb.MsgService_PbGetMsgResp, error) {
 		Uin:     uin,
 		Payload: p,
 	}, rpc.Reply{}
-	if err = m.c.Call(service.MethodMessageGetMessage, &args, &reply); err != nil {
+	if err = m.Call(service.MethodMessageGetMessage, &args, &reply); err != nil {
 		return nil, err
 	}
 	resp := pb.MsgService_PbGetMsgResp{}

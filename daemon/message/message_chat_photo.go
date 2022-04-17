@@ -32,7 +32,7 @@ func (m *Manager) ChatUploadPhoto(uin int64, req *pb.Cmd0X388_ReqBody) (*pb.Cmd0
 		Uin:     uin,
 		Payload: p,
 	}, rpc.Reply{}
-	if err = m.c.Call(service.MethodMessageChatUploadPhoto, &args, &reply); err != nil {
+	if err = m.Call(service.MethodMessageChatUploadPhoto, &args, &reply); err != nil {
 		return nil, err
 	}
 	resp := pb.Cmd0X388_RspBody{}

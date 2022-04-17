@@ -23,15 +23,12 @@ import (
 	"path"
 	"sync"
 
-	"github.com/elap5e/penguin/pkg/net/msf/rpc"
 	"github.com/elap5e/penguin/pkg/net/msf/service"
 )
 
 type Manager struct {
+	Daemon
 	ctx context.Context
-
-	c rpc.Client
-	d Daemon
 
 	mu sync.RWMutex
 	// session
@@ -39,14 +36,13 @@ type Manager struct {
 	cookies map[int64][]byte
 }
 
-func NewManager(ctx context.Context, c rpc.Client, d Daemon) *Manager {
+func NewManager(ctx context.Context, d Daemon) *Manager {
 	m := &Manager{
-		ctx:   ctx,
-		c:     c,
-		d:     d,
-		flags: make(map[int64]int32),
+		Daemon: d,
+		ctx:    ctx,
+		flags:  make(map[int64]int32),
 	}
-	m.c.Register(service.MethodMessagePushNotify, m.handlePushNotifyRequest)
+	m.Register(service.MethodMessagePushNotify, m.handlePushNotifyRequest)
 	return m
 }
 

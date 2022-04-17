@@ -63,7 +63,7 @@ func (m *Manager) handleOnlinePushMessage(reply *rpc.Reply) (*rpc.Args, error) {
 		return nil, err
 	}
 	head, body := push.GetMsg().GetMsgHead(), push.GetMsg().GetMsgBody()
-	if err := m.d.OnRecvMessage(reply.Uin, head, body); err != nil {
+	if err := m.OnRecvMessage(reply.Uin, head, body); err != nil {
 		return nil, err
 	}
 	return m.OnlinePushResponse(reply, &OnlinePushResponse{
@@ -119,11 +119,42 @@ func (m *Manager) handleOnlinePushRequest(reply *rpc.Reply) (*rpc.Args, error) {
 	items := []*dto.MessageDelete{}
 	for _, msg := range push.Messages {
 		switch msg.Type {
-		case 0x0210:
-			// _, _ = m.decode0x0210Jce(reply.Uin, msg.MessageBytes)
+		case -1010, -1009, -1008, -1007, -1006:
+			// service message
 			fallthrough
-		case 0x02dc:
-			// _, _ = m.decode0x02dc(reply.Uin, msg.MessageBytes)
+		case -1023, -1022, -1021, -1020:
+			// chat service message
+			fallthrough
+		case 0x8: // 8
+			fallthrough
+		case 9, 10, 31, 79, 97, 120, 0x84, 133, 166, 167: // 132
+			fallthrough
+		case 35, 36, 37, 45, 46, 84, 85, 86, 87:
+			// chat service message
+			fallthrough
+		case 42, 83:
+			fallthrough
+		case 43, 82:
+			fallthrough
+		case 0xa9: // 169
+			fallthrough
+		case 187, 188, 189, 190, 191:
+			// service message
+			fallthrough
+		case 208: // 208
+			fallthrough
+		case 0xe6: // 230
+			fallthrough
+		case 0x210: // 528
+			// _, _ = m.decode0x210Jce(reply.Uin, msg.MessageBytes)
+			fallthrough
+		case 0x211: // 529
+			fallthrough
+		case 0x2dc: // 732
+			// _, _ = m.decode0x2dc(reply.Uin, msg.MessageBytes)
+			fallthrough
+		case 0x2e0: // 736
+			// _, _ = m.decode0x2e0(reply.Uin, msg.MessageBytes)
 			fallthrough
 		default:
 			p, _ := json.Marshal(msg)
@@ -148,7 +179,7 @@ func (m *Manager) handleOnlinePushRequest(reply *rpc.Reply) (*rpc.Args, error) {
 }
 
 func (m *Manager) handleOnlinePushTicketExpired(reply *rpc.Reply) (*rpc.Args, error) {
-	if _, err := m.d.GetAuthManager().SignInChangeToken(reply.Uin); err != nil {
+	if _, err := m.GetAuthManager().SignInChangeToken(reply.Uin); err != nil {
 		return nil, err
 	}
 	if _, err := m.RegisterAppRegister(reply.Uin); err != nil {

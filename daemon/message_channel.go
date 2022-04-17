@@ -17,6 +17,8 @@ package daemon
 import (
 	"encoding/json"
 	"fmt"
+	"math/rand"
+	"time"
 
 	"github.com/elap5e/penguin"
 	"github.com/elap5e/penguin/daemon/channel/pb"
@@ -46,16 +48,28 @@ func (d *Daemon) getOrLoadChannel(id int64, name string) *penguin.Chat {
 	}
 }
 
-func (d *Daemon) getOrLoadChannelRoom(cid, rid int64, extra *pb.Common_ExtInfo) *penguin.Chat {
+func (d *Daemon) getOrLoadChannelRoom(cid, rid int64, ctrl *pb.Common_MsgCtrlHead, extra *pb.Common_ExtInfo) *penguin.Chat {
+	typ, ctyp := penguin.ChatTypeRoomText, ctrl.GetChannelType()
+	if ctyp == 2 {
+		typ = penguin.ChatTypeRoomVoice
+	} else if ctyp == 4 {
+		typ = penguin.ChatTypeRoomGroup
+	} else if ctyp == 5 {
+		typ = penguin.ChatTypeRoomLive
+	} else if ctyp == 6 {
+		typ = penguin.ChatTypeRoomApp
+	} else if ctyp == 7 {
+		typ = penguin.ChatTypeRoomForum
+	}
 	return &penguin.Chat{
-		ID:   rid,
-		Type: penguin.ChatTypeRoomText,
-		Chat: &penguin.Chat{
+		ID:    rid,
+		Type:  penguin.ChatTypeRoomText,
+		Title: string(extra.GetChannelName()),
+		Channel: &penguin.Chat{
 			ID:    cid,
-			Type:  penguin.ChatTypeChannel,
+			Type:  typ,
 			Title: string(extra.GetGuildName()),
 		},
-		Title: string(extra.GetChannelName()),
 	}
 }
 
@@ -68,10 +82,10 @@ func (d *Daemon) getOrLoadChannelUser(cid, uid int64, extra *pb.Common_ExtInfo) 
 		Account: &penguin.Account{
 			ID:       uid,
 			Type:     penguin.AccountTypeChannel,
-			Username: string(extra.GetMemberName()),
+			Username: string(extra.GetFromNick()),
 			Photo:    string(extra.GetFromAvatar()),
 		},
-		Display: string(extra.GetFromNick()),
+		Display: string(extra.GetMemberName()),
 	}
 }
 
@@ -86,9 +100,9 @@ func (d *Daemon) OnRecvChannelMessage(id int64, recv *pb.Common_Msg) error {
 	_ = d.prefetchChannelAccount(int64(rhead.GetFromTinyid()))
 	if rhead.GetDirectMessageFlag() == 0 {
 		// room any
-		cid, rid, fid := int64(rhead.GetGuildId()), int64(rhead.GetChannelId()), int64(rhead.GetFromUin())
+		cid, rid, fid := int64(rhead.GetGuildId()), int64(rhead.GetChannelId()), int64(rhead.GetFromTinyid())
 		channel := d.getOrLoadChannel(cid, string(extra.GetGuildName()))
-		msg.Chat = d.getOrLoadChannelRoom(channel.ID, rid, extra)
+		msg.Chat = d.getOrLoadChannelRoom(channel.ID, rid, recv.GetCtrlHead(), extra)
 		msg.From = d.getOrLoadChannelUser(channel.ID, fid, extra)
 	} else {
 		// room private
@@ -103,6 +117,7 @@ func (d *Daemon) SendChannelMessage(id int64, msg *penguin.Message) error {
 	var req pb.Oidb0Xf62_ReqBody
 	req.Msg = &pb.Common_Msg{}
 	req.Msg.Head = &pb.Common_MsgHead{}
+	random := rand.New(rand.NewSource(time.Now().Unix()))
 	// identify message type
 	if msg.Chat.Type == penguin.ChatTypeChannel {
 		// channel
@@ -114,6 +129,10 @@ func (d *Daemon) SendChannelMessage(id int64, msg *penguin.Message) error {
 			GuildId:   uint64(msg.Chat.Channel.ID),
 			ChannelId: uint64(msg.Chat.ID),
 			FromUin:   uint64(id),
+		}
+		req.Msg.Head.ContentHead = &pb.Common_ContentHead{
+			MsgType: 3840,
+			Random:  random.Uint64(),
 		}
 	} else if msg.Chat.Type == penguin.ChatTypeRoomPrivate {
 		// room private

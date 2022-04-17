@@ -28,6 +28,8 @@ import (
 	"github.com/elap5e/penguin/daemon/contact"
 	"github.com/elap5e/penguin/daemon/message"
 	"github.com/elap5e/penguin/daemon/service"
+	"github.com/elap5e/penguin/fake"
+	"github.com/elap5e/penguin/pkg/log"
 	"github.com/elap5e/penguin/pkg/net/msf"
 	"github.com/elap5e/penguin/pkg/net/msf/rpc"
 )
@@ -46,6 +48,9 @@ type Daemon struct {
 	msgm *message.Manager
 	svcm *service.Manager
 
+	heartbeating bool
+	lastRecvTime time.Time
+
 	msgChan chan *penguin.Message
 }
 
@@ -55,15 +60,34 @@ func New(ctx context.Context, cfg *config.Config) *Daemon {
 		cfg: cfg,
 		c:   msf.NewClient(ctx),
 	}
-	d.accm = account.NewManager(d.ctx, d.c)
-	d.athm = auth.NewManager(d.ctx, d.c)
-	d.chtm = chat.NewManager(d.ctx, d.c, d)
-	d.chnm = channel.NewManager(d.ctx, d.c, d)
-	d.cntm = contact.NewManager(d.ctx, d.c, d)
-	d.msgm = message.NewManager(d.ctx, d.c, d)
-	d.svcm = service.NewManager(d.ctx, d.c, d)
+	d.accm = account.NewManager(d.ctx, d)
+	d.athm = auth.NewManager(d.ctx, d.c, d)
+	d.chtm = chat.NewManager(d.ctx, d)
+	d.chnm = channel.NewManager(d.ctx, d)
+	d.cntm = contact.NewManager(d.ctx, d)
+	d.msgm = message.NewManager(d.ctx, d)
+	d.svcm = service.NewManager(d.ctx, d)
 	d.msgChan = make(chan *penguin.Message, 100)
 	return d
+}
+
+func (d *Daemon) watchDog(uin int64) {
+	var err error
+	timer := time.NewTimer(0)
+	for err == nil {
+		select {
+		case <-timer.C:
+		}
+		if d.lastRecvTime.Add(time.Second * 270).After(time.Now()) {
+			timer.Reset(d.lastRecvTime.Sub(time.Now()))
+			continue
+		} else if !d.heartbeating {
+			if _, err = d.svcm.RegisterAppRegister(uin); err != nil {
+				log.Error("watchDog register app register, error: %v", err)
+			}
+		}
+		timer.Reset(time.Second * 270)
+	}
 }
 
 func (d *Daemon) Run() error {
@@ -74,7 +98,7 @@ func (d *Daemon) Run() error {
 	if _, err := d.svcm.RegisterAppRegister(resp.Data.Uin); err != nil {
 		return fmt.Errorf("service register app register, error: %v", err)
 	}
-	time.Sleep(time.Second * 5)
+	// time.Sleep(time.Second * 5)
 	if _, err := d.cntm.GetContacts(resp.Data.Uin, 0, 100, 0, 100); err != nil {
 		return fmt.Errorf("contact get contacts, error: %v", err)
 	}
@@ -87,7 +111,33 @@ func (d *Daemon) Run() error {
 	if _, err := d.svcm.RegisterSetOnlineStatus(resp.Data.Uin, service.StatusTypeOnline, true); err != nil {
 		return fmt.Errorf("service register set online status, error: %v", err)
 	}
+	go d.watchDog(resp.Data.Uin)
 	select {}
+}
+
+func (d *Daemon) Call(serviceMethod string, args *rpc.Args, reply *rpc.Reply) error {
+	err := d.c.Call(serviceMethod, args, reply)
+	if err != nil {
+		d.lastRecvTime = time.Now()
+	}
+	return err
+}
+
+func (d *Daemon) Register(serviceMethod string, handler rpc.Handler) error {
+	return d.c.Register(serviceMethod, func(reply *rpc.Reply) (*rpc.Args, error) {
+		args, err := handler(reply)
+		if err != nil {
+			return nil, err
+		}
+		if args != nil {
+			d.lastRecvTime = time.Now()
+		}
+		return args, nil
+	})
+}
+
+func (d *Daemon) GetFakeSource(uin int64) *fake.Source {
+	return d.c.GetFakeSource(uin)
 }
 
 func (d *Daemon) GetAccountManager() *account.Manager {
