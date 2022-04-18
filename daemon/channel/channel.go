@@ -87,11 +87,14 @@ func (m *Manager) request(uin int64, cmd, svc uint32, req proto.Message, resp pr
 		return nil, err
 	}
 	if data.Result != 0 {
-		return nil, fmt.Errorf("error(%d): %s ", data.Result, data.Message)
+		return nil, fmt.Errorf("error(%d): %s", data.Result, data.Message)
 	}
+	// log.Debug("dump base64: %s", base64.RawStdEncoding.EncodeToString(p))
 	if err := proto.Unmarshal(data.Payload, resp); err != nil {
 		return nil, err
 	}
+	// p, _ = json.Marshal(&resp)
+	// log.Debug("dump: %s", string(p))
 	return data.Payload, nil
 }
 

@@ -15,7 +15,7 @@ option go_package = "github.com/elap5e/penguin/daemon/channel/pb";
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-// 
+//
 // Channel is the message type for the Channel.
 message Channel {
   message GetChannelUsersRequest {

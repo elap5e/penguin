@@ -20,6 +20,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"math/rand"
 	"net/url"
 	"path"
 	"reflect"
@@ -173,7 +174,35 @@ func (md *messageDecoder) decodePhoto(entity *penguin.MessageEntity, elems *[]*p
 	query := url.Query()
 	photo := msg.Photo
 	md5, _ := hex.DecodeString(query.Get("md5"))
-	if photo != nil && reflect.DeepEqual(md5, photo.Digest.MD5) {
+	if photo != nil && !reflect.DeepEqual(md5, photo.Digest.MD5) {
+		*elems = append(*elems, &pb.IMMsgBody_Elem{
+			Text: &pb.IMMsgBody_Text{
+				Str: []byte("not match: " + msg.Photo.Name),
+			},
+		})
+	} else {
+		if photo == nil {
+			w, _ := strconv.Atoi(query.Get("w"))
+			h, _ := strconv.Atoi(query.Get("h"))
+			size, _ := strconv.ParseInt(query.Get("size"), 10, 64)
+			if w == 0 {
+				w = 640
+			}
+			if h == 0 {
+				h = 480
+			}
+			if size == 0 {
+				size = int64(w * h)
+			}
+			photo = &penguin.Photo{
+				ID:     rand.Int63n(0xffffffff),
+				Name:   hex.EncodeToString(md5) + ".jpg",
+				Size:   size,
+				Width:  w,
+				Height: h,
+				Digest: &penguin.Digest{MD5: md5},
+			}
+		}
 		if msg.Chat.Type == penguin.ChatTypeGroup {
 			*elems = append(*elems, &pb.IMMsgBody_Elem{
 				CustomFace: &pb.IMMsgBody_CustomFace{
@@ -192,16 +221,10 @@ func (md *messageDecoder) decodePhoto(entity *penguin.MessageEntity, elems *[]*p
 		} else {
 			*elems = append(*elems, &pb.IMMsgBody_Elem{
 				Text: &pb.IMMsgBody_Text{
-					Str: []byte(msg.Photo.Name),
+					Str: []byte(hex.EncodeToString(md5)),
 				},
 			})
 		}
-	} else {
-		*elems = append(*elems, &pb.IMMsgBody_Elem{
-			Text: &pb.IMMsgBody_Text{
-				Str: []byte("not match: " + msg.Photo.Name),
-			},
-		})
 	}
 	md.offset += entity.Length
 	return nil
@@ -266,6 +289,8 @@ func (me *messageEncoder) Encode(msg *penguin.Message) error {
 			me.encodeCustomFace(v, msg)
 		} else if v := elem.GetCommonElem(); v != nil {
 			me.encodeCommonElem(v, msg)
+		} else if v := elem.GetAnonGroupMsg(); v != nil {
+			me.encodeAnonGroupMsg(v, msg)
 		}
 	}
 	msg.Text = me.buffer.String()
@@ -309,7 +334,14 @@ func (me *messageEncoder) encodeNotOnlineImage(elem *pb.IMMsgBody_NotOnlineImage
 		Type:   "photo",
 		Offset: me.offset,
 		Length: int64(n),
-		URL:    fmt.Sprintf("?md5=%x&uid=%d", elem.GetPicMd5(), msg.From.Account.ID),
+		URL: fmt.Sprintf(
+			"?md5=%x&size=%d&w=%d&h=%d&uid=%d",
+			elem.GetPicMd5(),
+			elem.GetFileLen(),
+			elem.GetPicWidth(),
+			elem.GetPicHeight(),
+			msg.From.Account.ID,
+		),
 	}
 	if len(flash) > 0 && flash[0] {
 		entity.URL += "&flash=true"
@@ -324,7 +356,14 @@ func (me *messageEncoder) encodeCustomFace(elem *pb.IMMsgBody_CustomFace, msg *p
 		Type:   "photo",
 		Offset: me.offset,
 		Length: int64(n),
-		URL:    fmt.Sprintf("?md5=%x&uid=%d", elem.GetMd5(), msg.From.Account.ID),
+		URL: fmt.Sprintf(
+			"?md5=%x&size=%d&w=%d&h=%d&uid=%d",
+			elem.GetMd5(),
+			elem.GetSize(),
+			elem.GetWidth(),
+			elem.GetHeight(),
+			msg.From.Account.ID,
+		),
 	}
 	if len(flash) > 0 && flash[0] {
 		entity.URL += "&flash=true"
@@ -417,7 +456,7 @@ func (me *messageEncoder) encodeMarketFace(elem *pb.IMMsgBody_MarketFace, msg *p
 		Offset: me.offset,
 		Length: int64(n),
 		URL: fmt.Sprintf(
-			"?id=%s&tid=%d&key=%s&h=%d&w+%d",
+			"?id=%s&tid=%d&key=%s&h=%d&w=%d",
 			base64.RawURLEncoding.EncodeToString(elem.GetFaceId()),
 			elem.GetTabId(),
 			base64.RawURLEncoding.EncodeToString(elem.GetKey()),
@@ -426,4 +465,15 @@ func (me *messageEncoder) encodeMarketFace(elem *pb.IMMsgBody_MarketFace, msg *p
 		),
 	})
 	me.offset += int64(n)
+}
+
+func (me *messageEncoder) encodeAnonGroupMsg(elem *pb.IMMsgBody_AnonymousGroupMsg, msg *penguin.Message) {
+	msg.From.Account.Type = penguin.AccountTypeAnonymous
+	msg.From.Display = string(elem.GetAnonNick())
+	msg.Entities = append([]*penguin.MessageEntity{{
+		Type:   "anonymous",
+		Offset: me.offset,
+		Length: 0,
+		URL:    fmt.Sprintf("?id=%s", base64.RawURLEncoding.EncodeToString(elem.GetAnonId())),
+	}}, msg.Entities...)
 }

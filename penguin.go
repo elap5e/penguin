@@ -18,6 +18,7 @@ type AccountType string
 
 const (
 	AccountTypeDefault    AccountType = "DEFAULT"
+	AccountTypeAnonymous  AccountType = "ANONYMOUS"
 	AccountTypeChannel    AccountType = "CHANNEL"
 	AccountTypeChannelBot AccountType = "CHANNEL_BOT"
 )

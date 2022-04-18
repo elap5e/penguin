@@ -15,7 +15,6 @@
 package channel
 
 import (
-	"encoding/base64"
 	"encoding/json"
 
 	"github.com/elap5e/penguin/daemon/channel/pb"
@@ -31,13 +30,13 @@ func (m *Manager) GetChannelRoles(uin, channelID int64) (*pb.Channel_GetChannelR
 		},
 	}
 	resp := pb.Channel_GetChannelRolesResponse{}
-	p, err := m.request(uin, 4121, 1, &req, &resp)
-	if err != nil {
+	if _, err := m.request(uin, 4121, 1, &req, &resp); err != nil {
 		log.Println(err)
 		return nil, err
 	}
-	log.Debug("dump base64: %s", base64.RawStdEncoding.EncodeToString(p))
-	p, _ = json.Marshal(&resp)
-	log.Debug("dump: %s", string(p))
+	for _, role := range resp.Roles {
+		p, _ := json.Marshal(&role)
+		log.Debug("channel:%d:role:%d:%s", channelID, role.GetId(), p)
+	}
 	return &resp, nil
 }

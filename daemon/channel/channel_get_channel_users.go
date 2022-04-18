@@ -15,7 +15,6 @@
 package channel
 
 import (
-	"encoding/base64"
 	"encoding/json"
 
 	"github.com/elap5e/penguin"
@@ -52,11 +51,9 @@ func (m *Manager) GetChannelUsers(uin, channelID, start int64, limit int32, cook
 		req.Cookie = cookie[0]
 	}
 	resp := pb.Channel_GetChannelUsersResponse{}
-	p, err := m.request(uin, 3931, 1, &req, &resp)
-	if err != nil {
+	if _, err := m.request(uin, 3931, 1, &req, &resp); err != nil {
 		return nil, err
 	}
-	log.Debug("dump base64: %s", base64.RawStdEncoding.EncodeToString(p))
 	if err := m.onGetChannelUsers(&resp); err != nil {
 		log.Printf("error: %v", err)
 	}
@@ -77,13 +74,9 @@ func (m *Manager) GetChannelUsersByIDs(uin, channelID int64, tinyIDs []int64, st
 		req.Cookie = cookie[0]
 	}
 	resp := pb.Channel_GetChannelUsersResponse{}
-	p, err := m.request(uin, 3931, 1, &req, &resp)
-	if err != nil {
+	if _, err := m.request(uin, 3931, 1, &req, &resp); err != nil {
 		return nil, err
 	}
-	log.Debug("dump base64: %s", base64.RawStdEncoding.EncodeToString(p))
-	p, _ = json.Marshal(&resp)
-	log.Debug("dump: %s", string(p))
 	return &resp, nil
 }
 
@@ -98,27 +91,27 @@ func (m *Manager) GetChannelUserRoles(uin, channelID, tinyID int64) (*pb.Channel
 		},
 	}
 	resp := pb.Channel_GetChannelUserRolesResponse{}
-	p, err := m.request(uin, 4119, 1, &req, &resp)
-	if err != nil {
+	if _, err := m.request(uin, 4119, 1, &req, &resp); err != nil {
 		return nil, err
 	}
-	log.Debug("dump base64: %s", base64.RawStdEncoding.EncodeToString(p))
-	p, _ = json.Marshal(&resp)
-	log.Debug("dump: %s", string(p))
 	return &resp, nil
 }
 
 func (m *Manager) onGetChannelUsers(resp *pb.Channel_GetChannelUsersResponse) error {
-	p, _ := json.Marshal(&resp)
-	log.Debug("dump: %s", string(p))
-	if err := m.setChannelUsers(resp.ChannelId, penguin.AccountTypeChannel, resp.Owner); err != nil {
-		return err
+	if user := resp.GetOwner(); user != nil {
+		if err := m.setChannelUsers(resp.ChannelId, penguin.AccountTypeChannel, user); err != nil {
+			return err
+		}
 	}
-	if err := m.setChannelUsers(resp.ChannelId, penguin.AccountTypeChannelBot, resp.Bots...); err != nil {
-		return err
+	if bots := resp.GetBots(); bots != nil {
+		if err := m.setChannelUsers(resp.ChannelId, penguin.AccountTypeChannelBot, bots...); err != nil {
+			return err
+		}
 	}
-	if err := m.setChannelUsers(resp.ChannelId, penguin.AccountTypeChannel, resp.Users...); err != nil {
-		return err
+	if users := resp.GetUsers(); users != nil {
+		if err := m.setChannelUsers(resp.ChannelId, penguin.AccountTypeChannel, users...); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -133,7 +126,9 @@ func (m *Manager) setChannelUsers(channelID int64, typ penguin.AccountType, user
 		_, _ = m.GetAccountManager().SetChannelAccount(account.ID, &account)
 		user := penguin.User{
 			Account: &account,
-			Display: v.GetDisplay(),
+		}
+		if account.Username != v.GetDisplay() {
+			user.Display = v.GetDisplay()
 		}
 		_, _ = m.SetUser(channelID, account.ID, &user)
 		p, _ := json.Marshal(user)
