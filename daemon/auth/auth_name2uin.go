@@ -27,7 +27,7 @@ import (
 func (m *Manager) name2Uin(username string) (*Response, error) {
 	extraData, fake, session, tickets, seq := m.GetExtraData(0), m.c.GetFakeSource(0), m.c.GetSession(0), m.c.GetTickets(0), m.c.GetNextSeq()
 	tlvs := make(map[uint16]tlv.Codec)
-	tlvs[0x0100] = tlv.NewT100(constant.DstAppID, constant.OpenAppID, 0, constant.MainSigMap, fake.App.SSOVer)
+	tlvs[0x0100] = tlv.NewT100(constant.DstAppID, constant.OpenAppID, 0, constant.MainSigMap, fake.SDK.SSOVersion)
 	tlvs[0x0112] = tlv.NewT112([]byte(username))
 	tlvs[0x0107] = tlv.NewT107(0, 0, 0, 1)
 	tlvs[0x0154] = tlv.NewT154(seq)

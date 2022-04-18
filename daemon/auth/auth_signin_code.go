@@ -26,7 +26,7 @@ import (
 func (m *Manager) signInWithCode(username string, token []byte) (*Response, error) {
 	fake, tickets, seq := m.c.GetFakeSource(0), m.c.GetTickets(0), m.c.GetNextSeq()
 	tlvs := make(map[uint16]tlv.Codec)
-	tlvs[0x0100] = tlv.NewT100(constant.DstAppID, constant.OpenAppID, 0, constant.MainSigMap, fake.App.SSOVer)
+	tlvs[0x0100] = tlv.NewT100(constant.DstAppID, constant.OpenAppID, 0, constant.MainSigMap, fake.SDK.SSOVersion)
 	if len(tickets.KSID) != 0 {
 		tlvs[0x0108] = tlv.NewT108(tickets.KSID)
 	}
@@ -43,7 +43,7 @@ func (m *Manager) signInWithCode(username string, token []byte) (*Response, erro
 		InnerVer:    []byte(fake.Device.InnerVersion),
 	})
 	tlvs[0x0008] = tlv.NewT8(0, constant.LocaleID, 0)
-	tlvs[0x0142] = tlv.NewT142([]byte(fake.App.PkgName))
+	tlvs[0x0142] = tlv.NewT142([]byte(fake.App.Package))
 	tlvs[0x0145] = tlv.NewT145(fake.Device.GUID)
 	tlvs[0x0154] = tlv.NewT154(seq)
 	tlvs[0x0112] = tlv.NewT112([]byte(username))

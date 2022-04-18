@@ -18,46 +18,42 @@ type App struct {
 	FixID int32
 	AppID int32
 
-	PkgName  string
-	VerName  string
+	Package  string
+	Version  string
+	Build    string
 	Revision string
 	SigHash  [16]byte
-
-	BuildAt int64
-	SDKVer  string
-	SSOVer  uint32
-
-	ImageType  uint8
-	MiscBitMap uint32
-
-	CanCaptcha bool
 }
 
 var (
 	MobileQQAndroidApp = &App{
-		FixID:      537116314,
-		AppID:      537116314,
-		PkgName:    "com.tencent.mobileqq",
-		VerName:    "8.8.85", // 8.8.85.7685
-		Revision:   "8.8.85.6dd84073",
-		SigHash:    [16]byte{0xa6, 0xb7, 0x45, 0xbf, 0x24, 0xa2, 0xc2, 0x77, 0x52, 0x77, 0x16, 0xf6, 0xf3, 0x6e, 0xb6, 0x8d},
-		BuildAt:    1645432578,
-		SDKVer:     "6.0.0.2497",
-		SSOVer:     18,
-		ImageType:  1,
-		CanCaptcha: true,
+		FixID:    537116314,
+		AppID:    537116314,
+		Package:  "com.tencent.mobileqq",
+		Version:  "8.8.85",
+		Build:    "7685",
+		Revision: "6dd84073",
+		SigHash:  [16]byte{0xa6, 0xb7, 0x45, 0xbf, 0x24, 0xa2, 0xc2, 0x77, 0x52, 0x77, 0x16, 0xf6, 0xf3, 0x6e, 0xb6, 0x8d},
 	}
-	MobileQQNextAndroidApp = &App{
-		FixID:      537117844,
-		AppID:      537117844,
-		PkgName:    "com.tencent.mobileqq",
-		VerName:    "8.8.88", // 8.8.88.7770
-		Revision:   "8.8.88.d47ef8e2",
-		SigHash:    [16]byte{0xa6, 0xb7, 0x45, 0xbf, 0x24, 0xa2, 0xc2, 0x77, 0x52, 0x77, 0x16, 0xf6, 0xf3, 0x6e, 0xb6, 0x8d},
-		BuildAt:    1645432578,
-		SDKVer:     "6.0.0.2497",
-		SSOVer:     18,
-		ImageType:  1,
-		CanCaptcha: true,
+	MiniHDQQAndroidApp = &App{
+		FixID:    537066967,
+		AppID:    537066967,
+		Package:  "com.tencent.minihd.qq",
+		Version:  "5.9.4",
+		Build:    "3666",
+		Revision: "bc7c00",
+		SigHash:  [16]byte{0xaa, 0x39, 0x78, 0xf4, 0x1f, 0xd9, 0x6f, 0xf9, 0x91, 0x4a, 0x66, 0x9e, 0x18, 0x64, 0x74, 0xc7},
+	}
+)
+
+var (
+	NextMobileQQAndroidApp = &App{
+		FixID:    537117867,
+		AppID:    537117867,
+		Package:  "com.tencent.mobileqq",
+		Version:  "8.8.88",
+		Build:    "7785",
+		Revision: "b22f67e1",
+		SigHash:  [16]byte{0xa6, 0xb7, 0x45, 0xbf, 0x24, 0xa2, 0xc2, 0x77, 0x52, 0x77, 0x16, 0xf6, 0xf3, 0x6e, 0xb6, 0x8d},
 	}
 )

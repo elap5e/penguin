@@ -53,7 +53,7 @@ func (c *codec) WriteRequest(req *rpc.Request, args *rpc.Args) error {
 	if req.Version == rpc.VersionDefault {
 		body.WriteStringL32(fake.Device.IMEI)
 		body.WriteBytesL32(tickets.KSID)
-		body.WriteStringL16("|" + fake.Device.IMSI + "|A" + fake.App.Revision)
+		body.WriteStringL16("|" + fake.Device.IMSI + "|A" + fake.App.Version + "." + fake.App.Revision)
 	}
 	body.WriteBytesL32(args.ReserveField)
 	body.WriteUint32At(uint32(body.Len()), 0)

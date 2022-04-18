@@ -14,32 +14,27 @@
 
 package fake
 
-type Source struct {
-	App    *App
-	SDK    *SDK
-	Device *Device
+type SDK struct {
+	BuildAt    int64
+	Version    string
+	SSOVersion uint32
+	ImageType  uint8
+	CanCaptcha bool
 }
 
-func NewMobileQQAndroidSource(uin int64) *Source {
-	return &Source{
-		App:    MobileQQAndroidApp,
-		SDK:    MobileQQAndroidSDK,
-		Device: NewAndroidDevice(uin),
+var (
+	MobileQQAndroidSDK = &SDK{
+		BuildAt:    1645432578,
+		Version:    "6.0.0.2497",
+		SSOVersion: 18,
+		ImageType:  1,
+		CanCaptcha: true,
 	}
-}
-
-func NewMiniHDQQAndroidSource(uin int64) *Source {
-	return &Source{
-		App:    MiniHDQQAndroidApp,
-		SDK:    MiniHDQQAndroidSDK,
-		Device: NewAndroidDevice(uin),
+	MiniHDQQAndroidSDK = &SDK{
+		BuildAt:    1630653275,
+		Version:    "6.0.0.2484",
+		SSOVersion: 18,
+		ImageType:  1,
+		CanCaptcha: true,
 	}
-}
-
-func NewNextMobileQQAndroidSource(uin int64) *Source {
-	return &Source{
-		App:    NextMobileQQAndroidApp,
-		SDK:    MobileQQAndroidSDK,
-		Device: NewAndroidDevice(uin),
-	}
-}
+)

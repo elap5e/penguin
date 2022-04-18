@@ -32,32 +32,35 @@ type ChatType string
 
 const (
 	// default
-	ChatTypeDiscuss        ChatType = "discuss"
-	ChatTypeDiscussPrivate ChatType = "discuss_private"
-	ChatTypeGroup          ChatType = "group"
-	ChatTypeGroupPrivate   ChatType = "group_private"
-	ChatTypePrivate        ChatType = "private"
+	ChatTypeDiscuss        ChatType = "DISCUSS"
+	ChatTypeDiscussPrivate ChatType = "DISCUSS_PRIVATE"
+	ChatTypeGroup          ChatType = "GROUP"
+	ChatTypeGroupPrivate   ChatType = "GROUP_PRIVATE"
+	ChatTypePrivate        ChatType = "PRIVATE"
 
 	// channel
-	ChatTypeChannel     ChatType = "channel"
-	ChatTypeRoomText    ChatType = "room_text"
-	ChatTypeRoomVoice   ChatType = "room_voice"
-	ChatTypeRoomGroup   ChatType = "room_group"
-	ChatTypeRoomLive    ChatType = "room_live"
-	ChatTypeRoomApp     ChatType = "room_app"
-	ChatTypeRoomForum   ChatType = "room_forum"
-	ChatTypeRoomPrivate ChatType = "room_private"
+	ChatTypeChannel        ChatType = "CHANNEL"
+	ChatTypeChannelPrivate ChatType = "CHANNEL_PRIVATE"
+
+	// channel room
+	ChatTypeRoomText    ChatType = "ROOM_TEXT"
+	ChatTypeRoomVoice   ChatType = "ROOM_VOICE"
+	ChatTypeRoomGroup   ChatType = "ROOM_GROUP"
+	ChatTypeRoomLive    ChatType = "ROOM_LIVE"
+	ChatTypeRoomApp     ChatType = "ROOM_APP"
+	ChatTypeRoomForum   ChatType = "ROOM_FORUM"
+	ChatTypeRoomPrivate ChatType = "ROOM_PRIVATE"
 )
 
 type Chat struct {
 	ID      int64      `json:"id"`
 	Type    ChatType   `json:"type"`
 	Chat    *Chat      `json:"chat,omitempty"`
+	Channel *Chat      `json:"channel,omitempty"`
 	User    *User      `json:"user,omitempty"`
 	Title   string     `json:"title,omitempty"`
 	Photo   *ChatPhoto `json:"photo,omitempty"`
 	Display string     `json:"display,omitempty"`
-	Channel *Chat      `json:"channel,omitempty"`
 }
 
 type ChatPhoto struct {

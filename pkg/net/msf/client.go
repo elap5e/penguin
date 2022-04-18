@@ -90,10 +90,7 @@ func (c *Client) GetNextSeq() int32 {
 }
 
 func (c *Client) GetFakeSource(uin int64) *fake.Source {
-	return &fake.Source{
-		App:    fake.MobileQQNextAndroidApp,
-		Device: fake.NewAndroidDevice(uin),
-	}
+	return fake.NewMobileQQAndroidSource(uin)
 }
 
 func (c *Client) GetServerTime() int64 {

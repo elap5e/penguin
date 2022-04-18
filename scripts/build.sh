@@ -15,9 +15,5 @@
 # limitations under the License.
 
 go build -trimpath -ldflags="-w -s" -o build/penguin-cli -x cmd/penguin-cli/*.go
-upx -k -9 build/penguin-cli
-
 go build -trimpath -ldflags="-w -s" -o build/penguind -x cmd/penguind/*.go
-upx -k -9 build/penguind
-
 ls -la build/

@@ -17,6 +17,7 @@ package pgn
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"net/url"
@@ -60,7 +61,9 @@ func (md *messageDecoder) Decode(msg *penguin.Message) error {
 		if md.offset < entity.Offset {
 			md.decodeText(entity.Offset-md.offset, &elems)
 		}
-		if entity.Type == "face" {
+		if entity.Type == "mention" {
+			md.decodeMention(entity, &elems)
+		} else if entity.Type == "face" {
 			md.decodeFace(entity, &elems)
 		} else if entity.Type == "photo" {
 			md.decodePhoto(entity, &elems, msg)
@@ -84,6 +87,30 @@ func (md *messageDecoder) decodeText(length int64, elems *[]*pb.IMMsgBody_Elem) 
 		},
 	})
 	md.offset += length
+	return nil
+}
+
+func (md *messageDecoder) decodeMention(entity *penguin.MessageEntity, elems *[]*pb.IMMsgBody_Elem) error {
+	text := make([]byte, entity.Length)
+	_, _ = md.buffer.Read(text)
+	url, _ := url.Parse(entity.URL)
+	query := url.Query()
+	buf := make([]byte, 13)
+	buf[1] = 0x01
+	binary.BigEndian.PutUint16(buf[4:], uint16(len([]rune(string(text)))))
+	id, _ := strconv.ParseUint(query.Get("id"), 10, 64)
+	if id == 0 {
+		buf[6] = 0x01
+	} else {
+		binary.BigEndian.PutUint32(buf[7:], uint32(id))
+	}
+	*elems = append(*elems, &pb.IMMsgBody_Elem{
+		Text: &pb.IMMsgBody_Text{
+			Str:       text,
+			Attr_6Buf: buf,
+		},
+	})
+	md.offset += entity.Length
 	return nil
 }
 
