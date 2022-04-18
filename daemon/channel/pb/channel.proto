@@ -2,6 +2,148 @@ syntax = "proto3";
 
 option go_package = "github.com/elap5e/penguin/daemon/channel/pb";
 
+// Copyright 2022 Elapse and contributors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+// 
+// Channel is the message type for the Channel.
 message Channel {
-
+  message GetChannelUsersRequest {
+    int64 channel_id = 1;
+    int32 field2 = 2; // 3
+    int32 field3 = 3; // 0
+    Field4 field4 = 4;
+    int64 start = 6;
+    int32 limit = 8;
+    repeated int64 tiny_ids = 9;
+    int64 room_id = 12;
+    bytes cookie = 13;
+    int64 start_role_id = 14;
+    int64 role_id = 15;
+    message Field4 {
+      int32 field1 = 1;
+      int32 field2 = 2;
+      int32 field3 = 3;
+      int32 field4 = 4;
+      int32 field5 = 5;
+      int32 field6 = 6;
+      int32 field7 = 7;
+      int32 field8 = 8;
+      int32 field20 = 20;
+      int32 field21 = 21;
+      int32 field22 = 22;
+      int32 field25 = 25;
+    }
+  }
+  message GetChannelUsersResponse {
+    int64 channel_id = 1;
+    User owner = 2;
+    repeated User bots = 4;
+    repeated User users = 5;
+    int32 field8 = 8;
+    int32 finish = 9;
+    int64 offset = 10;
+    int32 members_limit = 14;
+    int32 members_count = 15;
+    int32 bots_count = 17;
+    int32 owner_count = 19;
+    int32 users_count = 20;
+    bytes cookie = 24;
+  }
+  message GetChannelUserRolesRequest {
+    int64 channel_id = 1;
+    int64 tiny_id = 2;
+    Field4 field4 = 4;
+    int64 room_id = 5;
+    message Field4 {
+      int32 field1 = 1;
+      int32 field2 = 2;
+      int32 field3 = 3;
+    }
+  }
+  message GetChannelUserRolesResponse {
+    Field1 field1 = 1;
+    Timestamp timestamp = 2;
+    message Field1 {
+      int32 tiny_id = 1;
+      repeated Role roles = 3;
+    }
+  }
+  message GetChannelRolesRequest {
+    int64 channel_id = 1;
+    Field3 field3 = 3;
+    message Field3 {
+      int32 field1 = 1;
+      int32 field2 = 2;
+    }
+  }
+  message GetChannelRolesResponse {
+    int64 channel_id = 1;
+    repeated Role roles = 2;
+    int32 limit = 3;
+    Timestamp timestamp = 4;
+    int64 field5 = 5;
+    repeated Field10 field10 = 10;
+    message Field10 {
+      int32 field1 = 1;
+      bytes field2 = 2;
+      string name = 3;
+      string desc = 4;
+      repeated Field5 field5 = 5;
+      message Field5 {
+        int32 key = 1;
+        string value = 2;
+      }
+    }
+  }
+  message Timestamp {
+    int64 nanoseconds = 1;
+    int64 seconds = 2;
+  }
+  message Role {
+    int64 id = 1;
+    string name = 2;
+    uint32 color = 3;
+    int32 hoist = 4;
+    int32 count = 5;
+    int32 field7 = 7;
+    int32 limit = 8;
+    int32 field20 = 20;
+  }
+  message User {
+    string display = 2;
+    string username = 3;
+    int64 joined_at = 4;
+    int32 field5 = 5;
+    int32 field6 = 6;
+    int32 field7 = 7;
+    int64 tiny_id = 8;
+    int32 field13 = 13;
+    repeated Field15 field15 = 15;
+    int32 field17 = 17;
+    int32 field19 = 19;
+    int64 field20 = 20;
+    repeated Field27 field27 = 27;
+    message Field15 {
+      uint32 key = 1;
+      string value = 2;
+    }
+    message Field27 {
+      uint32 key = 1;
+      Field2 field2 = 2;
+      message Field2 {
+        string value = 2;
+      }
+    }
+  }
 }

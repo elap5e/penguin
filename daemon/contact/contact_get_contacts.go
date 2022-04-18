@@ -233,7 +233,7 @@ func (m *Manager) requestGetContacts(uin int64, req *GetContactsRequest) (*GetCo
 			Type:     penguin.AccountTypeDefault,
 			Username: v.Nick,
 		}
-		_, _ = m.GetAccountManager().SetAccount(account.ID, &account)
+		_, _ = m.GetAccountManager().SetDefaultAccount(account.ID, &account)
 		contact := penguin.Contact{
 			Account: &account,
 			Display: v.Remark,

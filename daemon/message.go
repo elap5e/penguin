@@ -35,13 +35,13 @@ import (
 
 // mask 0x00000000ffffffff
 func (d *Daemon) prefetchAccount(id int64) error {
-	account, ok := d.accm.GetAccount(id)
+	account, ok := d.accm.GetDefaultAccount(id)
 	if !ok {
 		account = &penguin.Account{
 			ID:   id,
 			Type: penguin.AccountTypeDefault,
 		}
-		_, _ = d.accm.SetAccount(account.ID, account)
+		_, _ = d.accm.SetDefaultAccount(account.ID, account)
 	}
 	return nil
 }
@@ -49,7 +49,7 @@ func (d *Daemon) prefetchAccount(id int64) error {
 func (d *Daemon) getOrLoadContact(id, cid int64) *penguin.Contact {
 	contact, ok := d.cntm.GetContact(id, cid)
 	if !ok {
-		account, _ := d.accm.GetAccount(cid)
+		account, _ := d.accm.GetDefaultAccount(cid)
 		contact = &penguin.Contact{
 			Account: account,
 		}
@@ -61,7 +61,7 @@ func (d *Daemon) getOrLoadContact(id, cid int64) *penguin.Contact {
 func (d *Daemon) getOrLoadChatUser(cid, uid int64) *penguin.User {
 	from, ok := d.chtm.GetUser(cid, uid)
 	if !ok {
-		account, _ := d.accm.GetAccount(uid)
+		account, _ := d.accm.GetDefaultAccount(uid)
 		from = &penguin.User{
 			Account: account,
 		}

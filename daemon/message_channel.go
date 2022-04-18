@@ -29,13 +29,13 @@ import (
 
 // mask 0x02000007ffffffff
 func (d *Daemon) prefetchChannelAccount(id int64) error {
-	account, ok := d.accm.GetAccount(id)
+	account, ok := d.accm.GetChannelAccount(id)
 	if !ok {
 		account = &penguin.Account{
 			ID:   id,
 			Type: penguin.AccountTypeChannel,
 		}
-		_, _ = d.accm.SetAccount(account.ID, account)
+		_, _ = d.accm.SetChannelAccount(account.ID, account)
 	}
 	return nil
 }

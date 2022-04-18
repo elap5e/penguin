@@ -63,56 +63,75 @@ func (m *Manager) handlePushFirstView(reply *rpc.Reply) (*rpc.Args, error) {
 	}
 	if nodes := resp.GetDirectMessageGuildNodes(); nodes != nil {
 		for _, node := range nodes {
-			channel := penguin.Chat{
-				ID:   int64(node.GetGuildId()),
-				Type: penguin.ChatTypeChannel,
-			}
-			_, _ = m.SetChannel(channel.ID, &channel)
-			p, _ := json.Marshal(channel)
-			log.Debug("channel:%d:%s", channel.ID, p)
-			for _, node := range node.GetChannelNodes() {
-				room := penguin.Chat{
-					ID:   int64(node.GetChannelId()),
-					Type: penguin.ChatTypeRoomPrivate,
-				}
-				_, _ = m.SetRoom(channel.ID, room.ID, &room)
-				p, _ := json.Marshal(room)
-				log.Debug("channel:%d:room:%d:%s", channel.ID, room.ID, p)
+			if err := m.onPushFirstViewChannel(reply.Uin, penguin.ChatTypeChannelPrivate, node); err != nil {
+				log.Println(err)
 			}
 		}
 	} else if nodes := resp.GetGuildNodes(); nodes != nil {
 		for _, node := range nodes {
-			channel := penguin.Chat{
-				ID:    int64(node.GetGuildId()),
-				Type:  penguin.ChatTypeChannel,
-				Title: string(node.GetGuildName()),
-			}
-			_, _ = m.SetChannel(channel.ID, &channel)
-			p, _ := json.Marshal(channel)
-			log.Debug("channel:%d:%s", channel.ID, p)
-			for _, node := range node.GetChannelNodes() {
-				typ, ctyp := penguin.ChatTypeRoomText, node.GetChannelType()
-				if ctyp == 2 {
-					typ = penguin.ChatTypeRoomVoice
-				} else if ctyp == 4 {
-					typ = penguin.ChatTypeRoomGroup
-				} else if ctyp == 5 {
-					typ = penguin.ChatTypeRoomLive
-				} else if ctyp == 6 {
-					typ = penguin.ChatTypeRoomApp
-				} else if ctyp == 7 {
-					typ = penguin.ChatTypeRoomForum
-				}
-				room := penguin.Chat{
-					ID:    int64(node.GetChannelId()),
-					Type:  typ,
-					Title: string(node.GetChannelName()),
-				}
-				_, _ = m.SetRoom(channel.ID, room.ID, &room)
-				p, _ := json.Marshal(room)
-				log.Debug("channel:%d:room:%d:%s", channel.ID, room.ID, p)
+			if err := m.onPushFirstViewChannel(reply.Uin, penguin.ChatTypeChannel, node); err != nil {
+				log.Println(err)
 			}
 		}
 	}
 	return nil, nil
+}
+
+func (m *Manager) onPushFirstViewChannel(uin int64, typ penguin.ChatType, node *pb.SyncLogic_GuildNode) error {
+	channel := penguin.Chat{
+		ID:    int64(node.GetGuildId()),
+		Type:  typ,
+		Title: string(node.GetGuildName()),
+	}
+	_, _ = m.SetChannel(channel.ID, &channel)
+	p, _ := json.Marshal(channel)
+	log.Debug("channel:%d:%s", channel.ID, p)
+	for _, node := range node.GetChannelNodes() {
+		typ, ctyp := penguin.ChatTypeRoomPrivate, node.GetChannelType()
+		if ctyp == 0 {
+		} else if ctyp == 1 {
+			typ = penguin.ChatTypeRoomText
+		} else if ctyp == 2 {
+			typ = penguin.ChatTypeRoomVoice
+		} else if ctyp == 4 {
+			typ = penguin.ChatTypeRoomGroup
+		} else if ctyp == 5 {
+			typ = penguin.ChatTypeRoomLive
+		} else if ctyp == 6 {
+			typ = penguin.ChatTypeRoomApp
+		} else if ctyp == 7 {
+			typ = penguin.ChatTypeRoomForum
+		} else {
+			log.Warn("unknown channel type:%d", ctyp)
+		}
+		room := penguin.Chat{
+			ID:    int64(node.GetChannelId()),
+			Type:  typ,
+			Title: string(node.GetChannelName()),
+		}
+		_, _ = m.SetRoom(channel.ID, room.ID, &room)
+		p, _ := json.Marshal(room)
+		log.Debug("channel:%d:room:%d:%s", channel.ID, room.ID, p)
+	}
+	if typ == penguin.ChatTypeChannel {
+		var tinyID int64
+		finish, offset, cookie := false, int64(0), []byte{}
+		for !finish {
+			resp, err := m.GetChannelUsers(uin, channel.ID, offset, 100, cookie)
+			if err != nil {
+				log.Println(err)
+				break
+			}
+			finish, offset, cookie = resp.GetFinish() == 1, resp.GetOffset(), resp.GetCookie()
+			tinyID = resp.GetOwner().GetTinyId()
+		}
+		_, err := m.GetChannelRoles(uin, channel.ID)
+		if err != nil {
+			log.Println(err)
+		}
+		if _, err := m.GetChannelUserRoles(uin, channel.ID, tinyID); err != nil {
+			log.Println(err)
+		}
+	}
+	return nil
 }

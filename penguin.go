@@ -17,8 +17,9 @@ package penguin
 type AccountType string
 
 const (
-	AccountTypeDefault AccountType = "default"
-	AccountTypeChannel AccountType = "channel"
+	AccountTypeDefault    AccountType = "DEFAULT"
+	AccountTypeChannel    AccountType = "CHANNEL"
+	AccountTypeChannelBot AccountType = "CHANNEL_BOT"
 )
 
 type Account struct {

@@ -144,7 +144,7 @@ func (m *Manager) requestGetGroupUsers(uin int64, req *GetGroupUsersRequest) (*G
 			Type:     penguin.AccountTypeDefault,
 			Username: v.Nick,
 		}
-		_, _ = m.GetAccountManager().SetAccount(account.ID, &account)
+		_, _ = m.GetAccountManager().SetDefaultAccount(account.ID, &account)
 		user := penguin.User{
 			Account: &account,
 			Display: string(v.Remark),

@@ -148,6 +148,10 @@ func (d *Daemon) GetAuthManager() *auth.Manager {
 	return d.athm
 }
 
+func (d *Daemon) GetChannelManager() *channel.Manager {
+	return d.chnm
+}
+
 func (d *Daemon) GetMessageManager() *message.Manager {
 	return d.msgm
 }

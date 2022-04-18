@@ -19,6 +19,7 @@ import (
 	"sync"
 
 	"github.com/elap5e/penguin"
+	"github.com/elap5e/penguin/pkg/log"
 	"github.com/elap5e/penguin/pkg/net/msf/rpc"
 )
 
@@ -31,28 +32,53 @@ type Manager struct {
 	ctx context.Context
 
 	mu       sync.RWMutex
-	accounts map[int64]*penguin.Account // shared
+	defaults map[int64]*penguin.Account // shared
+	channels map[int64]*penguin.Account // shared
 }
 
 func NewManager(ctx context.Context, d Daemon) *Manager {
 	return &Manager{
 		Daemon:   d,
 		ctx:      ctx,
-		accounts: make(map[int64]*penguin.Account),
+		defaults: make(map[int64]*penguin.Account),
+		channels: make(map[int64]*penguin.Account),
 	}
 }
 
-func (m *Manager) GetAccount(k int64) (*penguin.Account, bool) {
+func (m *Manager) GetDefaultAccount(k int64) (*penguin.Account, bool) {
 	m.mu.RLock()
-	v, ok := m.accounts[k]
+	v, ok := m.defaults[k]
 	m.mu.RUnlock()
 	return v, ok
 }
 
-func (m *Manager) SetAccount(k int64, v *penguin.Account) (*penguin.Account, bool) {
+func (m *Manager) SetDefaultAccount(k int64, v *penguin.Account) (*penguin.Account, bool) {
 	m.mu.Lock()
-	vv, ok := m.accounts[k]
-	m.accounts[k] = v
+	vv, ok := m.defaults[k]
+	m.defaults[k] = v
+	m.mu.Unlock()
+	return vv, ok
+}
+
+func (m *Manager) GetChannelAccount(k int64) (*penguin.Account, bool) {
+	m.mu.RLock()
+	v, ok := m.channels[k]
+	m.mu.RUnlock()
+	if v.ID>>32 == 0 {
+		v.ID |= 0x0200000700000000
+	}
+	return v, ok
+}
+
+func (m *Manager) SetChannelAccount(k int64, v *penguin.Account) (*penguin.Account, bool) {
+	m.mu.Lock()
+	vv, ok := m.channels[k]
+	if v.ID>>32 != 0x02000007 {
+		log.Warn("account.Manager.SetChannelAccount: invalid account id: 0x%x", v.ID)
+	} else {
+		v.ID &= 0x00000000ffffffff
+	}
+	m.channels[k] = v
 	m.mu.Unlock()
 	return vv, ok
 }

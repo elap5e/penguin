@@ -80,6 +80,6 @@ const (
 	MethodServiceOnlinePushTicketExpired = "OnlinePush.SidTicketExpired"
 )
 
-func MethodOidbSvcTrpcTcp(cmd, typ uint32) string {
-	return fmt.Sprintf("OidbSvcTrpcTcp.0x%x_%d", cmd, typ)
+func MethodOidbSvcTrpcTcp(cmd, svc uint32) string {
+	return fmt.Sprintf("OidbSvcTrpcTcp.0x%x_%d", cmd, svc)
 }

@@ -16,10 +16,16 @@ package channel
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
+	"google.golang.org/protobuf/proto"
+
 	"github.com/elap5e/penguin"
+	"github.com/elap5e/penguin/daemon/account"
 	"github.com/elap5e/penguin/daemon/channel/pb"
+	"github.com/elap5e/penguin/fake"
+	"github.com/elap5e/penguin/pkg/encoding/trpc"
 	"github.com/elap5e/penguin/pkg/net/msf/rpc"
 	"github.com/elap5e/penguin/pkg/net/msf/service"
 )
@@ -28,6 +34,8 @@ type Daemon interface {
 	Call(serviceMethod string, args *rpc.Args, reply *rpc.Reply) error
 	Register(serviceMethod string, handler rpc.Handler) error
 
+	GetFakeSource(uin int64) *fake.Source
+	GetAccountManager() *account.Manager
 	OnRecvChannelMessage(id int64, recv *pb.Common_Msg) error
 }
 
@@ -52,6 +60,39 @@ func NewManager(ctx context.Context, d Daemon) *Manager {
 	m.Register(service.MethodChannelPushMessage, m.handlePushMessage)
 	m.Register(service.MethodChannelPushFirstView, m.handlePushFirstView)
 	return m
+}
+
+func (m *Manager) request(uin int64, cmd, svc uint32, req proto.Message, resp proto.Message) (p []byte, err error) {
+	if p, err = proto.Marshal(req); err != nil {
+		return nil, err
+	}
+	if p, err = trpc.Marshal(&trpc.Data{
+		Command: cmd,
+		Service: svc,
+		Payload: p,
+		Client:  "android " + m.GetFakeSource(uin).App.Version,
+	}); err != nil {
+		return nil, err
+	}
+	args, reply := rpc.Args{
+		Version: rpc.VersionSimple,
+		Uin:     uin,
+		Payload: p,
+	}, rpc.Reply{}
+	if err = m.Call(service.MethodOidbSvcTrpcTcp(cmd, svc), &args, &reply); err != nil {
+		return nil, err
+	}
+	data := trpc.Data{}
+	if err = trpc.Unmarshal(reply.Payload, &data); err != nil {
+		return nil, err
+	}
+	if data.Result != 0 {
+		return nil, fmt.Errorf("error(%d): %s ", data.Result, data.Message)
+	}
+	if err := proto.Unmarshal(data.Payload, resp); err != nil {
+		return nil, err
+	}
+	return data.Payload, nil
 }
 
 func (m *Manager) GetChannel(k int64) (*penguin.Chat, bool) {
