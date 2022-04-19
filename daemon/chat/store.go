@@ -188,7 +188,7 @@ func (s *memStore) SetChatSeq(accountID, chatID, userID int64, newSeq uint32) (o
 func (s *memStore) GetCookie(userID int64) (oldCookie []byte, ok bool) {
 	s.mu.RLock()
 	cookie, ok := s.cookies[userID]
-	oldCookie = append(oldCookie, cookie...)
+	oldCookie = append([]byte{}, cookie...)
 	s.mu.RUnlock()
 	return oldCookie, ok
 }
@@ -196,7 +196,7 @@ func (s *memStore) GetCookie(userID int64) (oldCookie []byte, ok bool) {
 func (s *memStore) SetCookie(userID int64, newCookie []byte) (oldCookie []byte, ok bool) {
 	s.mu.Lock()
 	cookie, ok := s.cookies[userID]
-	oldCookie = append(oldCookie, cookie...)
+	oldCookie = append([]byte{}, cookie...)
 	s.cookies[userID] = newCookie
 	s.mu.Unlock()
 	return oldCookie, ok

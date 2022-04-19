@@ -20,6 +20,7 @@ import (
 	"math/rand"
 	"net"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -29,11 +30,22 @@ import (
 	"github.com/elap5e/penguin/pkg/net/msf/rpc/tcp"
 )
 
+type Client struct {
+	rs  rpc.Sender
+	seq int32
+
+	mu       sync.Mutex
+	handlers map[string]rpc.Handler
+	sessions map[int64]*rpc.Session
+	stickets map[int64]*rpc.Tickets
+}
+
 func NewClient(ctx context.Context) rpc.Client {
 	conn, _ := net.Dial("tcp", "msfwifi.3g.qq.com:8080")
 	rr := rand.New(rand.NewSource(time.Now().UnixNano()))
 	cl := &Client{
 		seq:      rr.Int31n(100000),
+		mu:       sync.Mutex{},
 		handlers: make(map[string]rpc.Handler),
 		sessions: make(map[int64]*rpc.Session),
 		stickets: make(map[int64]*rpc.Tickets),
@@ -41,15 +53,6 @@ func NewClient(ctx context.Context) rpc.Client {
 	cl.rs = rpc.NewSender(cl, tcp.NewCodec(cl, conn))
 	go cl.rs.Run(ctx)
 	return cl
-}
-
-type Client struct {
-	rs  rpc.Sender
-	seq int32
-
-	handlers map[string]rpc.Handler
-	sessions map[int64]*rpc.Session
-	stickets map[int64]*rpc.Tickets
 }
 
 func (c *Client) Close() error {
@@ -73,11 +76,14 @@ func (c *Client) Handle(serviceMethod string, reply *rpc.Reply) (*rpc.Args, erro
 }
 
 func (c *Client) Register(serviceMethod string, handler rpc.Handler) error {
+	c.mu.Lock()
 	key := strings.ToLower(serviceMethod)
 	if _, ok := c.handlers[key]; ok {
+		c.mu.Unlock()
 		return fmt.Errorf("service method %s already registered", serviceMethod)
 	}
 	c.handlers[key] = handler
+	c.mu.Unlock()
 	return nil
 }
 
@@ -98,40 +104,52 @@ func (c *Client) GetServerTime() int64 {
 }
 
 func (c *Client) GetSession(uin int64) *rpc.Session {
+	c.mu.Lock()
 	session := c.sessions[uin]
 	if session == nil {
 		c.sessions[uin] = getSession(uin)
 		session = c.sessions[uin]
 	}
+	c.mu.Unlock()
 	return session
 }
 
 func (c *Client) SetSession(uin int64, tlvs map[uint16]tlv.Codec) {}
 
 func (c *Client) SetSessionAuth(uin int64, auth []byte) {
-	c.GetSession(uin).Auth = auth
+	session := c.GetSession(uin)
+	c.mu.Lock()
+	session.Auth = auth
+	c.mu.Unlock()
 }
 
 func (c *Client) SetSessionCookie(uin int64, cookie []byte) {
-	c.GetSession(uin).Cookie = cookie
+	session := c.GetSession(uin)
+	c.mu.Lock()
+	session.Cookie = append([]byte{}, cookie...)
+	c.mu.Unlock()
 }
 
 func (c *Client) GetTickets(uin int64) *rpc.Tickets {
+	c.mu.Lock()
 	tickets := c.stickets[uin]
 	if tickets == nil {
 		c.stickets[uin] = getTickets(uin)
 		tickets = c.stickets[uin]
 	}
+	c.mu.Unlock()
 	return tickets
 }
 
 func (c *Client) SetTickets(uin int64, tlvs map[uint16]tlv.Codec) {
+	c.mu.Lock()
 	tickets := c.stickets[uin]
 	if tickets == nil {
 		c.stickets[uin] = getTickets(uin)
 		tickets = c.stickets[uin]
 	}
 	setTickets(uin, tickets, tlvs)
+	c.mu.Unlock()
 }
 
 var _ rpc.Client = (*Client)(nil)

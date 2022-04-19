@@ -59,13 +59,13 @@ type sender struct {
 	wait   *list.List
 	waitMu sync.Mutex
 
-	heartbeating bool
-	lastRecvTime time.Time
-
 	mu       sync.Mutex
 	pending  map[int32]*Call
 	closing  bool // user has called Close
 	shutdown bool // server has told us to stop
+
+	heartbeating bool
+	lastRecvTime time.Time
 }
 
 func (s *sender) recvLoop(ctx context.Context) {
@@ -76,7 +76,6 @@ func (s *sender) recvLoop(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		default:
-			s.lastRecvTime = time.Now()
 		}
 
 		resp = Response{}
@@ -86,6 +85,7 @@ func (s *sender) recvLoop(ctx context.Context) {
 		}
 		seq := resp.Seq
 		s.mu.Lock()
+		s.lastRecvTime = time.Now()
 		call := s.pending[seq]
 		delete(s.pending, seq)
 		s.mu.Unlock()
@@ -191,10 +191,14 @@ func (s *sender) watchDog(ctx context.Context) {
 			return
 		case <-timer.C:
 		}
+		s.mu.Lock()
 		if s.lastRecvTime.Add(time.Second * 60).After(time.Now()) {
 			timer.Reset(s.lastRecvTime.Sub(time.Now()))
+			s.mu.Unlock()
 			continue
-		} else if !s.heartbeating {
+		}
+		s.mu.Unlock()
+		if !s.heartbeating {
 			s.heartbeat()
 		}
 		timer.Reset(time.Second * 60)

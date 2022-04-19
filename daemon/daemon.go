@@ -17,6 +17,7 @@ package daemon
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/elap5e/penguin"
@@ -48,10 +49,11 @@ type Daemon struct {
 	msgm *message.Manager
 	svcm *service.Manager
 
+	mu      sync.Mutex
+	msgChan chan *penguin.Message
+
 	heartbeating bool
 	lastRecvTime time.Time
-
-	msgChan chan *penguin.Message
 }
 
 func New(ctx context.Context, cfg *config.Config) *Daemon {
@@ -59,6 +61,7 @@ func New(ctx context.Context, cfg *config.Config) *Daemon {
 		ctx: ctx,
 		cfg: cfg,
 		c:   msf.NewClient(ctx),
+		mu:  sync.Mutex{},
 	}
 	d.accm = account.NewManager(d.ctx, d, account.NewMemStore())
 	d.athm = auth.NewManager(d.ctx, d.c, d)
@@ -78,10 +81,14 @@ func (d *Daemon) watchDog(uin int64) {
 		select {
 		case <-timer.C:
 		}
+		d.mu.Lock()
 		if d.lastRecvTime.Add(time.Second * 270).After(time.Now()) {
 			timer.Reset(d.lastRecvTime.Sub(time.Now()))
+			d.mu.Unlock()
 			continue
-		} else if !d.heartbeating {
+		}
+		d.mu.Unlock()
+		if !d.heartbeating {
 			if _, err = d.svcm.RegisterAppRegister(uin); err != nil {
 				log.Error("watchDog register app register, error: %v", err)
 			}
@@ -118,7 +125,9 @@ func (d *Daemon) Run() error {
 func (d *Daemon) Call(serviceMethod string, args *rpc.Args, reply *rpc.Reply) error {
 	err := d.c.Call(serviceMethod, args, reply)
 	if err != nil {
+		d.mu.Lock()
 		d.lastRecvTime = time.Now()
+		d.mu.Unlock()
 	}
 	return err
 }
@@ -130,7 +139,9 @@ func (d *Daemon) Register(serviceMethod string, handler rpc.Handler) error {
 			return nil, err
 		}
 		if args != nil {
+			d.mu.Lock()
 			d.lastRecvTime = time.Now()
+			d.mu.Unlock()
 		}
 		return args, nil
 	})
