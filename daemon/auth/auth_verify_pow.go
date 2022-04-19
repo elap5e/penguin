@@ -16,12 +16,12 @@ package auth
 
 import (
 	"crypto/sha256"
-	"log"
 	"math/big"
 	"reflect"
 	"time"
 
 	"github.com/elap5e/penguin/pkg/bytes"
+	"github.com/elap5e/penguin/pkg/log"
 )
 
 func calcPow(data []byte) []byte {

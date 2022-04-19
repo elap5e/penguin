@@ -16,7 +16,10 @@ package log
 
 import (
 	"fmt"
+	"io"
 	"log"
+	"os"
+	"path"
 
 	"github.com/mattn/go-colorable"
 )
@@ -36,8 +39,10 @@ var (
 )
 
 func init() {
+	home, _ := os.UserHomeDir()
+	base := path.Join(home, ".penguin", "log")
+	logger.SetOutput(io.MultiWriter(colorable.NewColorableStdout(), New(base)))
 	logger.SetFlags(log.Ltime | log.Lmicroseconds)
-	logger.SetOutput(colorable.NewColorableStdout())
 }
 
 func Trace(format string, v ...any) {

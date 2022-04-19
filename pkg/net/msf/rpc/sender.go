@@ -15,7 +15,6 @@
 package rpc
 
 import (
-	"container/list"
 	"context"
 	"encoding/hex"
 	"encoding/json"
@@ -40,11 +39,11 @@ type Sender interface {
 
 func NewSender(c Client, codec Codec) Sender {
 	return &sender{
-		c:       c,
-		codec:   codec,
-		send:    list.New(),
-		wait:    list.New(),
-		pending: make(map[int32]*Call),
+		c:         c,
+		codec:     codec,
+		sendFront: make(chan *Call, 1000),
+		sendBack:  make(chan *Call, 1000),
+		pending:   make(map[int32]*Call),
 	}
 }
 
@@ -54,10 +53,10 @@ type sender struct {
 	c     Client
 	codec Codec
 
-	send   *list.List
-	sendMu sync.Mutex
-	wait   *list.List
-	waitMu sync.Mutex
+	sendMu    sync.Mutex
+	sendFront chan *Call
+	sendBack  chan *Call
+	wait      chan *Call
 
 	mu       sync.Mutex
 	pending  map[int32]*Call
@@ -72,12 +71,6 @@ func (s *sender) recvLoop(ctx context.Context) {
 	var err error
 	var resp Response
 	for err == nil {
-		select {
-		case <-ctx.Done():
-			return
-		default:
-		}
-
 		resp = Response{}
 		err = s.codec.ReadResponseHeader(&resp)
 		if err != nil {
@@ -133,21 +126,11 @@ func (s *sender) sendLoop(ctx context.Context) {
 	var err error
 	var req Request
 	for err == nil {
+		var call *Call
 		select {
-		case <-ctx.Done():
-			return
-		default:
+		case call = <-s.sendFront:
+		case call = <-s.sendBack:
 		}
-
-		s.sendMu.Lock()
-		elem := s.send.Front()
-		if elem == nil {
-			s.sendMu.Unlock()
-			continue
-		}
-		call := elem.Value.(*Call)
-		s.send.Remove(elem)
-		s.sendMu.Unlock()
 
 		req = Request{
 			ServiceMethod: call.ServiceMethod,
@@ -177,8 +160,33 @@ func (s *sender) sendLoop(ctx context.Context) {
 	s.loopError(err)
 }
 
-func (s *sender) waitLoop(ctx context.Context) {
-	// wait for more calls to arrive
+func (s *sender) waitLoop(ctx context.Context) {}
+
+func (s *sender) sendCall(call *Call) {
+	req := Request{
+		ServiceMethod: call.ServiceMethod,
+		Seq:           call.Seq,
+		Version:       call.Version,
+		EncryptType:   EncryptTypeNotNeedEncrypt,
+		Username:      strconv.FormatInt(call.Args.Uin, 10),
+	}
+	err := s.codec.WriteRequest(&req, call.Args)
+	p, _ := json.Marshal(req)
+	log.Debug("send:head:%s", p)
+	if err != nil {
+		s.mu.Lock()
+		call = s.pending[call.Seq]
+		delete(s.pending, call.Seq)
+		s.mu.Unlock()
+		if call != nil {
+			call.Error = err
+			call.done()
+		}
+	}
+	p, _ = json.Marshal(call.Args)
+	log.Trace("send:%s data:\n%s", p, hex.Dump(call.Args.Payload))
+	log.Debug("send:%s data:%d", p, len(call.Args.Payload))
+	log.Info("send ver:%d uin:%s seq:%d cmd:%s data:%d", req.Version, req.Username, req.Seq, req.ServiceMethod, len(call.Args.Payload))
 }
 
 func (s *sender) watchDog(ctx context.Context) {
@@ -258,9 +266,9 @@ func (s *sender) push(call *Call, front bool) {
 	s.mu.Unlock()
 
 	if front {
-		s.send.PushFront(call)
+		s.sendFront <- call
 	} else {
-		s.send.PushBack(call)
+		s.sendBack <- call
 	}
 }
 

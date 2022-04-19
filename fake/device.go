@@ -17,9 +17,10 @@ package fake
 import (
 	"crypto/md5"
 	"fmt"
-	"log"
 	"math/rand"
 	"net"
+
+	"github.com/elap5e/penguin/pkg/log"
 )
 
 type Device struct {

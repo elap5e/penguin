@@ -15,11 +15,11 @@
 package tlv
 
 import (
-	"log"
 	"strconv"
 	"strings"
 
 	"github.com/elap5e/penguin/pkg/bytes"
+	"github.com/elap5e/penguin/pkg/log"
 )
 
 type T511 struct {

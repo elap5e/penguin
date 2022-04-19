@@ -17,11 +17,12 @@ package auth
 import (
 	"context"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/elap5e/penguin/pkg/log"
 )
 
 func serveHTTPVerifyCaptcha(l net.Listener) (*CaptchaSign, error) {

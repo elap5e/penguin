@@ -15,11 +15,11 @@
 package jce
 
 import (
-	"log"
 	"reflect"
 	"strconv"
 
 	"github.com/elap5e/penguin/pkg/bytes"
+	"github.com/elap5e/penguin/pkg/log"
 )
 
 func Marshal(v any, opts ...bool) ([]byte, error) {

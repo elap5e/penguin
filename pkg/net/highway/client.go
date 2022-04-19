@@ -18,7 +18,6 @@ import (
 	"crypto/md5"
 	"errors"
 	"io"
-	"log"
 	"math/rand"
 	"net"
 	"net/rpc"
@@ -28,6 +27,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/elap5e/penguin/pkg/log"
 	"github.com/elap5e/penguin/pkg/net/highway/pb"
 )
 

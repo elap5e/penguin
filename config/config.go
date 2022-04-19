@@ -17,8 +17,9 @@ package config
 import (
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"os"
+
+	"github.com/elap5e/penguin/pkg/log"
 )
 
 type Config struct {
