@@ -75,15 +75,18 @@ func New(ctx context.Context, cfg *config.Config) *Daemon {
 }
 
 func (d *Daemon) watchDog(uin int64) {
+	var now time.Time
 	var err error
-	timer := time.NewTimer(0)
+	duration := time.Second * 270
+	ticker := time.NewTicker(duration)
 	for err == nil {
 		select {
-		case <-timer.C:
+		case <-ticker.C:
 		}
 		d.mu.Lock()
-		if d.lastRecvTime.Add(time.Second * 270).After(time.Now()) {
-			timer.Reset(d.lastRecvTime.Sub(time.Now()))
+		now = time.Now()
+		if d.lastRecvTime.Add(duration).After(now) {
+			ticker.Reset(d.lastRecvTime.Add(duration).Sub(now))
 			d.mu.Unlock()
 			continue
 		}
@@ -93,7 +96,7 @@ func (d *Daemon) watchDog(uin int64) {
 				log.Error("watchDog register app register, error: %v", err)
 			}
 		}
-		timer.Reset(time.Second * 270)
+		ticker.Reset(duration)
 	}
 }
 

@@ -15,6 +15,7 @@
 package rpc
 
 import (
+	"container/list"
 	"context"
 	"encoding/hex"
 	"encoding/json"
@@ -37,26 +38,16 @@ type Sender interface {
 	Run(ctx context.Context)
 }
 
-func NewSender(c Client, codec Codec) Sender {
-	return &sender{
-		c:         c,
-		codec:     codec,
-		sendFront: make(chan *Call, 1000),
-		sendBack:  make(chan *Call, 1000),
-		pending:   make(map[int32]*Call),
-	}
-}
-
 type sender struct {
 	cancel context.CancelFunc
 
 	c     Client
 	codec Codec
 
-	sendMu    sync.Mutex
-	sendFront chan *Call
-	sendBack  chan *Call
-	wait      chan *Call
+	sendLock sync.Mutex
+	sendChan chan struct{}
+	sendList *list.List
+	sendIdle bool
 
 	mu       sync.Mutex
 	pending  map[int32]*Call
@@ -65,6 +56,17 @@ type sender struct {
 
 	heartbeating bool
 	lastRecvTime time.Time
+}
+
+func NewSender(c Client, codec Codec) Sender {
+	return &sender{
+		c:        c,
+		codec:    codec,
+		sendLock: sync.Mutex{},
+		sendChan: make(chan struct{}, 10),
+		sendList: list.New(),
+		pending:  make(map[int32]*Call),
+	}
 }
 
 func (s *sender) recvLoop(ctx context.Context) {
@@ -126,11 +128,20 @@ func (s *sender) sendLoop(ctx context.Context) {
 	var err error
 	var req Request
 	for err == nil {
-		var call *Call
-		select {
-		case call = <-s.sendFront:
-		case call = <-s.sendBack:
+		s.sendLock.Lock()
+		s.sendIdle = false
+		elem := s.sendList.Front()
+		if elem == nil {
+			s.sendIdle = true
+			s.sendLock.Unlock()
+			<-s.sendChan // queue is empty, waiting for push unlock
+			continue
 		}
+		call := elem.Value.(*Call)
+		s.sendList.Remove(elem)
+		s.sendLock.Unlock()
+
+		// time.Sleep(time.Millisecond * 100)
 
 		req = Request{
 			ServiceMethod: call.ServiceMethod,
@@ -160,48 +171,26 @@ func (s *sender) sendLoop(ctx context.Context) {
 	s.loopError(err)
 }
 
-func (s *sender) waitLoop(ctx context.Context) {}
-
-func (s *sender) sendCall(call *Call) {
-	req := Request{
-		ServiceMethod: call.ServiceMethod,
-		Seq:           call.Seq,
-		Version:       call.Version,
-		EncryptType:   EncryptTypeNotNeedEncrypt,
-		Username:      strconv.FormatInt(call.Args.Uin, 10),
-	}
-	err := s.codec.WriteRequest(&req, call.Args)
-	p, _ := json.Marshal(req)
-	log.Debug("send:head:%s", p)
-	if err != nil {
-		s.mu.Lock()
-		call = s.pending[call.Seq]
-		delete(s.pending, call.Seq)
-		s.mu.Unlock()
-		if call != nil {
-			call.Error = err
-			call.done()
-		}
-	}
-	p, _ = json.Marshal(call.Args)
-	log.Trace("send:%s data:\n%s", p, hex.Dump(call.Args.Payload))
-	log.Debug("send:%s data:%d", p, len(call.Args.Payload))
-	log.Info("send ver:%d uin:%s seq:%d cmd:%s data:%d", req.Version, req.Username, req.Seq, req.ServiceMethod, len(call.Args.Payload))
+func (s *sender) waitLoop(ctx context.Context) {
+	// wait for more calls to arrive
 }
 
 func (s *sender) watchDog(ctx context.Context) {
+	var now time.Time
 	var err error
-	timer := time.NewTimer(0)
+	duration := time.Second * 60
+	ticker := time.NewTicker(duration)
 	for err == nil {
 		select {
 		case <-ctx.Done():
-			timer.Stop()
+			ticker.Stop()
 			return
-		case <-timer.C:
+		case <-ticker.C:
 		}
 		s.mu.Lock()
-		if s.lastRecvTime.Add(time.Second * 60).After(time.Now()) {
-			timer.Reset(s.lastRecvTime.Sub(time.Now()))
+		now = time.Now()
+		if s.lastRecvTime.Add(duration).After(now) {
+			ticker.Reset(s.lastRecvTime.Add(duration).Sub(now))
 			s.mu.Unlock()
 			continue
 		}
@@ -209,14 +198,13 @@ func (s *sender) watchDog(ctx context.Context) {
 		if !s.heartbeating {
 			s.heartbeat()
 		}
-		timer.Reset(time.Second * 60)
+		ticker.Reset(duration)
 	}
 }
 
 func (s *sender) loopError(err error) {
 	log.Error("loop error: %s", err)
 	// Terminate pending calls.
-	s.sendMu.Lock()
 	s.mu.Lock()
 	s.shutdown = true
 	closing := s.closing
@@ -232,7 +220,6 @@ func (s *sender) loopError(err error) {
 		call.done()
 	}
 	s.mu.Unlock()
-	s.sendMu.Unlock()
 	s.cancel()
 }
 
@@ -249,9 +236,6 @@ func (s *sender) Run(ctx context.Context) {
 }
 
 func (s *sender) push(call *Call, front bool) {
-	s.sendMu.Lock()
-	defer s.sendMu.Unlock()
-
 	// Register this call.
 	s.mu.Lock()
 	if s.shutdown || s.closing {
@@ -265,11 +249,16 @@ func (s *sender) push(call *Call, front bool) {
 	}
 	s.mu.Unlock()
 
+	s.sendLock.Lock()
 	if front {
-		s.sendFront <- call
+		s.sendList.PushFront(call)
 	} else {
-		s.sendBack <- call
+		s.sendList.PushBack(call)
 	}
+	if s.sendList.Len() != 0 && len(s.sendChan) == 0 && s.sendIdle {
+		s.sendChan <- struct{}{}
+	}
+	s.sendLock.Unlock()
 }
 
 func (s *sender) Close() error {

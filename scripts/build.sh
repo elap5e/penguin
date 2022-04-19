@@ -14,6 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-go build -trimpath -ldflags="-w -s" -o build/penguin-cli -x cmd/penguin-cli/*.go
-go build -trimpath -ldflags="-w -s" -o build/penguind -x cmd/penguind/*.go
+go build -trimpath -ldflags="-w -s" -o build/penguin-cli -x cmd/penguin-cli/main.go
+go build -trimpath -ldflags="-w -s" -o build/penguind -x cmd/penguind/main.go
 ls -la build/
