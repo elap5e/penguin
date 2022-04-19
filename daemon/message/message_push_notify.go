@@ -15,10 +15,13 @@
 package message
 
 import (
+	"encoding/json"
+
 	"github.com/elap5e/penguin/daemon/message/dto"
 	"github.com/elap5e/penguin/daemon/message/pb"
 	"github.com/elap5e/penguin/daemon/service"
 	"github.com/elap5e/penguin/pkg/encoding/uni"
+	"github.com/elap5e/penguin/pkg/log"
 	"github.com/elap5e/penguin/pkg/net/msf/rpc"
 )
 
@@ -58,6 +61,13 @@ func (m *Manager) handlePushNotifyRequest(reply *rpc.Reply) (*rpc.Args, error) {
 							SSOIP:    0,
 							ClientIP: 0,
 						})
+					default:
+						p, _ := json.Marshal(msg)
+						log.Warn("unhandled c2c cmd:%d msg:%s", head.GetC2CCmd(), p)
+					}
+				case 208:
+					if err := m.OnRecvMessage(reply.Uin, head, msg.GetMsgBody()); err != nil {
+						return nil, err
 					}
 				case 78, 81, 103, 107, 110, 111, 114, 118:
 					_, _ = m.DeleteMessage(reply.Uin, &pb.MsgService_PbDeleteMsgReq_MsgItem{
@@ -68,6 +78,9 @@ func (m *Manager) handlePushNotifyRequest(reply *rpc.Reply) (*rpc.Args, error) {
 						MsgUid:  head.GetMsgUid(),
 						Sig:     []byte{},
 					})
+				default:
+					p, _ := json.Marshal(msg)
+					log.Warn("unhandled type cmd:%d msg:%s", head.GetMsgType(), p)
 				}
 			}
 		}

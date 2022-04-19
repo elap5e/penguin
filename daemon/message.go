@@ -15,7 +15,9 @@
 package daemon
 
 import (
+	"bytes"
 	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -59,13 +61,13 @@ func (d *Daemon) getOrLoadContact(id, cid int64) *penguin.Contact {
 }
 
 func (d *Daemon) getOrLoadChatUser(cid, uid int64) *penguin.User {
-	from, ok := d.chtm.GetUser(cid, uid)
+	from, ok := d.chtm.GetChatUser(cid, uid)
 	if !ok {
 		account, _ := d.accm.GetDefaultAccount(uid)
 		from = &penguin.User{
 			Account: account,
 		}
-		_, _ = d.chtm.SetUser(cid, account.ID, from)
+		_, _ = d.chtm.SetChatUser(cid, account.ID, from)
 	}
 	return from
 }
@@ -149,9 +151,12 @@ func (d *Daemon) OnRecvMessage(id int64, head *pb.MsgCommon_MsgHead, body *pb.IM
 			}
 		} else {
 			msg.Chat.User = msg.From
-			// tid = fid
+			// if seq, ok := d.chtm.GetChatSeq(id, 1, fid); ok && seq < head.GetMsgSeq() {
+			// 	_, _ = d.chtm.SetChatSeq(id, 1, fid, head.GetMsgSeq())
+			// } else {
+			// 	return nil
+			// }
 		}
-		// _, _ = d.chtm.SetChatSeq(id, 0, tid, head.GetMsgSeq())
 	}
 	if err := pgn.NewMessageEncoder(body).Encode(&msg); err != nil {
 		return err
@@ -187,6 +192,7 @@ func (d *Daemon) SendMessage(id int64, msg *penguin.Message) error {
 		req.MsgSeq, _ = d.chtm.GetNextChatSeq(id, msg.Chat.ID, msg.Chat.User.Account.ID)
 	} else if msg.Chat.Type == penguin.ChatTypePrivate {
 		// private
+		msg.From = d.getOrLoadChatUser(msg.Chat.ID, id)
 		req.RoutingHead.C2C = &pb.MsgService_C2C{
 			ToUin: uint64(msg.Chat.User.Account.ID),
 		}
@@ -300,14 +306,18 @@ func (d *Daemon) fetchBlobs(msg *penguin.Message) error {
 		switch v.Type {
 		case "photo":
 			if err := d.fetchBlob(v.Type, v.URL); err != nil {
-				log.Error("fetchBlob %s%s failed, error:%v", v.Type, v.URL, err)
+				log.Error("fetchBlob %s/%s failed, error:%v", v.Type, v.URL, err)
+			}
+		case "voice":
+			if err := d.fetchBlob(v.Type, v.URL, msg.Voice.Path); err != nil {
+				log.Error("fetchBlob %s/%s failed, error:%v", v.Type, v.URL, err)
 			}
 		}
 	}
 	return nil
 }
 
-func (d *Daemon) fetchBlob(typ, str string) error {
+func (d *Daemon) fetchBlob(typ, str string, download ...string) error {
 	u, _ := url.Parse(str)
 	query := u.Query()
 	homepath, _ := os.UserHomeDir()
@@ -322,6 +332,11 @@ func (d *Daemon) fetchBlob(typ, str string) error {
 	switch typ {
 	case "photo":
 		url = fmt.Sprintf("https://gchat.qpic.cn/gchatpic_new/0/0-0-%s/0?term=2", strings.ToUpper(query.Get("md5")))
+	case "voice":
+		if len(download) == 0 || !strings.HasPrefix(download[0], "/") {
+			return errors.New("invailed download path")
+		}
+		url = "https://grouptalk.c2c.qq.com" + download[0]
 	}
 	resp, err := http.Get(url)
 	if err != nil {
@@ -361,21 +376,50 @@ func (d *Daemon) fetchBlob(typ, str string) error {
 	case "voice":
 		filepath = path.Join(basepath, "voice", query.Get("md5"))
 	}
-	switch http.DetectContentType(head) {
-	default:
-		return nil
-	case "image/bmp":
-		filepath += ".bmp"
-	case "image/gif":
-		filepath += ".gif"
-	case "image/jpeg":
-		filepath += ".jpg"
-	case "image/png":
-		filepath += ".png"
-	case "image/webp":
-		filepath += ".webp"
-	case "image/x-icon":
-		filepath += ".ico"
-	}
+	filepath += DetectContentType(head)
 	return os.Symlink("../blobs/"+hashpath, filepath)
+}
+
+func DetectContentType(data []byte) string {
+	switch http.DetectContentType(data) {
+	case "image/x-icon":
+		return ".ico"
+	case "image/bmp":
+		return ".bmp"
+	case "image/gif":
+		return ".gif"
+	case "image/jpeg":
+		return ".jpg"
+	case "image/webp":
+		return ".webp"
+	case "image/png":
+		return ".png"
+	case "audio/basic":
+		return ".snd"
+	case "audio/aiff":
+		return ".aiff"
+	case "audio/mpeg":
+		return ".mp3"
+	case "application/ogg":
+		return ".ogg"
+	case "audio/midi":
+		return ".midi"
+	case "video/avi":
+		return ".avi"
+	case "audio/wave":
+		return ".wav"
+	case "video/mp4":
+		return ".mp4"
+	case "video/webm":
+		return ".mkv"
+	default:
+		if bytes.HasPrefix(data, []byte("#!AMR")) {
+			return ".amr"
+		} else if bytes.HasPrefix(data, []byte("\x02#!SILK_V3")) {
+			return ".sil"
+		}
+		log.Debug("dump data:\n%s", hex.Dump(data))
+		log.Warn("unknown content type: %s", http.DetectContentType(data))
+	}
+	return ""
 }

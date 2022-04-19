@@ -49,8 +49,17 @@ func (d *Daemon) getOrLoadChannel(id int64, name string) *penguin.Chat {
 }
 
 func (d *Daemon) getOrLoadChannelRoom(cid, rid int64, ctrl *pb.Common_MsgCtrlHead, extra *pb.Common_ExtInfo) *penguin.Chat {
-	typ, ctyp := penguin.ChatTypeRoomText, ctrl.GetChannelType()
-	if ctyp == 2 {
+	channel := penguin.Chat{
+		ID:    cid,
+		Type:  penguin.ChatTypeChannel,
+		Title: string(extra.GetGuildName()),
+	}
+	typ, ctyp := penguin.ChatTypeRoomPrivate, ctrl.GetChannelType()
+	if ctyp == 0 {
+		channel.Type = penguin.ChatTypeChannelPrivate
+	} else if ctyp == 1 {
+		typ = penguin.ChatTypeRoomText
+	} else if ctyp == 2 {
 		typ = penguin.ChatTypeRoomVoice
 	} else if ctyp == 4 {
 		typ = penguin.ChatTypeRoomGroup
@@ -60,16 +69,14 @@ func (d *Daemon) getOrLoadChannelRoom(cid, rid int64, ctrl *pb.Common_MsgCtrlHea
 		typ = penguin.ChatTypeRoomApp
 	} else if ctyp == 7 {
 		typ = penguin.ChatTypeRoomForum
+	} else {
+		log.Warn("unknown channel type:%d", ctyp)
 	}
 	return &penguin.Chat{
-		ID:    rid,
-		Type:  penguin.ChatTypeRoomText,
-		Title: string(extra.GetChannelName()),
-		Channel: &penguin.Chat{
-			ID:    cid,
-			Type:  typ,
-			Title: string(extra.GetGuildName()),
-		},
+		ID:      rid,
+		Type:    typ,
+		Title:   string(extra.GetChannelName()),
+		Channel: &channel,
 	}
 }
 

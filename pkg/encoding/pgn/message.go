@@ -16,10 +16,12 @@ package pgn
 
 import (
 	"bytes"
+	"compress/zlib"
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"math/rand"
 	"net/url"
 	"path"
@@ -32,6 +34,7 @@ import (
 	"github.com/elap5e/penguin"
 	"github.com/elap5e/penguin/daemon/message/face"
 	"github.com/elap5e/penguin/daemon/message/pb"
+	"github.com/elap5e/penguin/pkg/log"
 )
 
 type messageDecoder struct {
@@ -68,6 +71,10 @@ func (md *messageDecoder) Decode(msg *penguin.Message) error {
 			md.decodeFace(entity, &elems)
 		} else if entity.Type == "photo" {
 			md.decodePhoto(entity, &elems, msg)
+		} else if entity.Type == "video" {
+			md.decodeVideo(entity, &elems, msg)
+		} else if entity.Type == "voice" {
+			md.decodeVoice(entity, &elems, msg)
 		}
 	}
 	if md.offset < md.length {
@@ -130,7 +137,7 @@ func (md *messageDecoder) decodeFace(entity *penguin.MessageEntity, elems *[]*pb
 			Qsid:        uint32(id),
 			Sourcetype:  1,
 			Stickertype: 1,
-			Text:        []byte(text),
+			Text:        []byte("[" + strings.TrimLeft(text, "/") + "]请使用最新版手机QQ体验新功能。"),
 		})
 		*elems = append(*elems, &pb.IMMsgBody_Elem{
 			CommonElem: &pb.IMMsgBody_CommonElem{
@@ -141,7 +148,7 @@ func (md *messageDecoder) decodeFace(entity *penguin.MessageEntity, elems *[]*pb
 		})
 		*elems = append(*elems, &pb.IMMsgBody_Elem{
 			Text: &pb.IMMsgBody_Text{
-				Str: []byte("[" + strings.TrimLeft(text, "/") + "]请使用最新版手机QQ体验新功能"),
+				Str: []byte(text),
 			},
 		})
 	} else if id < 260 {
@@ -230,6 +237,23 @@ func (md *messageDecoder) decodePhoto(entity *penguin.MessageEntity, elems *[]*p
 	return nil
 }
 
+func (md *messageDecoder) decodeLightApp(entity *penguin.MessageEntity, elems *[]*pb.IMMsgBody_Elem, msg *penguin.Message) error {
+	return nil
+}
+
+func (md *messageDecoder) decodeVideo(entity *penguin.MessageEntity, elems *[]*pb.IMMsgBody_Elem, msg *penguin.Message) error {
+	*elems = append(*elems, &pb.IMMsgBody_Elem{
+		Text: &pb.IMMsgBody_Text{
+			Str: []byte("你的QQ暂不支持查看视频短片，请期待后续版本。"),
+		},
+	})
+	return nil
+}
+
+func (md *messageDecoder) decodeVoice(entity *penguin.MessageEntity, elems *[]*pb.IMMsgBody_Elem, msg *penguin.Message) error {
+	return nil
+}
+
 type messageEncoder struct {
 	body   *pb.IMMsgBody_MsgBody
 	next   int
@@ -249,9 +273,30 @@ func NewMessageEncoder(body *pb.IMMsgBody_MsgBody) *messageEncoder {
 func (me *messageEncoder) Encode(msg *penguin.Message) error {
 	me.buffer.Reset()
 	me.next = 0
+	defer func() {
+		msg.Text = me.buffer.String()
+	}()
+
+	if ptt := me.body.GetRichText().GetPtt(); ptt != nil {
+		me.encodeVoice(ptt, msg)
+		return nil
+	}
+
 	elems := me.body.GetRichText().GetElems()
 	for i, elem := range elems {
-		if v := elem.GetSrcMsg(); v != nil {
+		if v := elem.GetVideoFile(); v != nil {
+			me.encodeVideo(v, msg)
+			return nil
+		} else if v := elem.GetLightApp(); v != nil {
+			me.encodeLightApp(v, msg)
+			return nil
+		} else if v := elem.GetRichMsg(); v != nil {
+			me.encodeRichMsg(v, msg)
+			return nil
+		} else if v := elem.GetQqwalletMsg(); v != nil {
+			me.encodeWallet(v, msg)
+			return nil
+		} else if v := elem.GetSrcMsg(); v != nil {
 			me.encodeSrcMsg(v, msg)
 			if i == 0 {
 				me.next++
@@ -273,28 +318,165 @@ func (me *messageEncoder) Encode(msg *penguin.Message) error {
 			break
 		}
 	}
+
 	for ; me.next < len(elems); me.next++ {
 		elem := elems[me.next]
-		if v := elem.GetText(); v != nil {
+		if v := elem.GetAnonGroupMsg(); v != nil {
+			me.encodeAnonGroupMsg(v, msg)
+		} else if v := elem.GetShakeWindow(); v != nil {
+			me.encodeShakeWindow(v, msg)
+		} else if v := elem.GetText(); v != nil {
 			me.encodeText(v, msg)
 		} else if v := elem.GetFace(); v != nil {
 			me.encodeFace(v, msg)
-		} else if v := elem.GetNotOnlineImage(); v != nil {
-			me.encodeNotOnlineImage(v, msg)
 		} else if v := elem.GetMarketFace(); v != nil {
 			me.encodeMarketFace(v, msg)
-		} else if v := elem.GetShakeWindow(); v != nil {
-			me.encodeShakeWindow(v, msg)
 		} else if v := elem.GetCustomFace(); v != nil {
 			me.encodeCustomFace(v, msg)
+		} else if v := elem.GetNotOnlineImage(); v != nil {
+			me.encodeNotOnlineImage(v, msg)
 		} else if v := elem.GetCommonElem(); v != nil {
 			me.encodeCommonElem(v, msg)
-		} else if v := elem.GetAnonGroupMsg(); v != nil {
-			me.encodeAnonGroupMsg(v, msg)
 		}
 	}
-	msg.Text = me.buffer.String()
 	return nil
+}
+
+func (me *messageEncoder) encodeVoice(elem *pb.IMMsgBody_Ptt, msg *penguin.Message) {
+	msg.Voice = &penguin.Voice{
+		ID:   int64(elem.GetFileId()),
+		Path: string(elem.GetDownPara()),
+		Name: hex.EncodeToString(elem.GetFileMd5()) + ".amr",
+		Size: int64(elem.GetFileSize()),
+		Digest: &penguin.Digest{
+			MD5: elem.GetFileMd5(),
+		},
+	}
+	n, _ := me.buffer.Write([]byte("[语音]"))
+	msg.Entities = append(msg.Entities, &penguin.MessageEntity{
+		Type:   "voice",
+		Offset: me.offset,
+		Length: int64(n),
+		URL:    fmt.Sprintf("?md5=%x", elem.GetFileMd5()),
+	})
+	me.offset += int64(n)
+}
+
+func (me *messageEncoder) encodeVideo(elem *pb.IMMsgBody_VideoFile, msg *penguin.Message) {
+	p, err := hex.DecodeString(string(elem.GetFileUuid()))
+	if err != nil {
+		log.Warn("hex.DecodeString(%s) error(%v)", elem.GetFileUuid(), err)
+		p = append([]byte("~"), elem.GetFileUuid()...)
+	}
+	uuid := base64.RawURLEncoding.EncodeToString(p)
+	msg.Video = &penguin.Video{
+		UUID: uuid,
+		Name: string(elem.GetFileName()),
+		Size: int64(elem.GetFileSize()),
+		Digest: &penguin.Digest{
+			MD5: elem.GetFileMd5(),
+		},
+	}
+	msg.Video.Thumbnail = &penguin.Photo{
+		Size:   int64(elem.GetThumbFileSize()),
+		Width:  int(elem.GetThumbWidth()),
+		Height: int(elem.GetThumbHeight()),
+		Digest: &penguin.Digest{
+			MD5: elem.GetThumbFileMd5(),
+		},
+	}
+	n, _ := me.buffer.Write([]byte("[视频]"))
+	msg.Entities = append(msg.Entities, &penguin.MessageEntity{
+		Type:   "video",
+		Offset: me.offset,
+		Length: int64(n),
+		URL:    fmt.Sprintf("?md5=%x&uuid=%s", elem.GetFileMd5(), uuid),
+	})
+	me.offset += int64(n)
+}
+
+func (me *messageEncoder) encodeLightApp(elem *pb.IMMsgBody_LightAppElem, msg *penguin.Message) {
+	data := elem.GetData()[1:]
+	if elem.GetData()[0] == 1 {
+		r, _ := zlib.NewReader(bytes.NewReader(data))
+		defer r.Close()
+		var buf bytes.Buffer
+		io.Copy(&buf, r)
+		data = buf.Bytes()
+	}
+	_, _ = me.buffer.Write(data)
+}
+
+func (me *messageEncoder) encodeRichMsg(elem *pb.IMMsgBody_RichMsg, msg *penguin.Message) {
+	data := elem.GetTemplate_1()[1:]
+	if elem.GetTemplate_1()[0] == 1 {
+		r, _ := zlib.NewReader(bytes.NewReader(data))
+		defer r.Close()
+		var buf bytes.Buffer
+		io.Copy(&buf, r)
+		data = buf.Bytes()
+	}
+	_, _ = me.buffer.Write(data)
+}
+
+func (me *messageEncoder) encodeWallet(elem *pb.IMMsgBody_QQWalletMsg, msg *penguin.Message) {
+	var n int
+	if elem.GetAioBody().GetMsgtype() == 1 {
+		n, _ = me.buffer.Write([]byte("[转账]"))
+	} else if elem.GetAioBody().GetMsgtype() == 2 {
+		n, _ = me.buffer.Write([]byte("[红包]"))
+	} else {
+		log.Warn("unknown wallet msgtype: %d", elem.GetAioBody().GetMsgtype())
+	}
+	msg.Entities = append(msg.Entities, &penguin.MessageEntity{
+		Type:   "wallet",
+		Offset: me.offset,
+		Length: int64(n),
+		URL:    fmt.Sprintf("?id=%d", msg.ReplyTo.MessageID),
+	})
+	me.offset += int64(n)
+}
+
+func (me *messageEncoder) encodeSrcMsg(elem *pb.IMMsgBody_SourceMsg, msg *penguin.Message) {
+	msg.ReplyTo = &penguin.Message{
+		MessageID: int64(elem.GetOrigSeqs()[0]),
+		Chat:      msg.Chat,
+		From:      &penguin.User{Account: &penguin.Account{ID: int64(elem.GetSenderUin())}},
+		Time:      int64(elem.GetTime()),
+	}
+	_ = NewMessageEncoder(&pb.IMMsgBody_MsgBody{
+		RichText: &pb.IMMsgBody_RichText{
+			Elems: elem.GetElems(),
+		},
+	}).Encode(msg.ReplyTo)
+	n, _ := me.buffer.Write([]byte("[回复:" + msg.ReplyTo.Text + "]:"))
+	msg.Entities = append(msg.Entities, &penguin.MessageEntity{
+		Type:   "reply",
+		Offset: me.offset,
+		Length: int64(n),
+		URL:    fmt.Sprintf("?id=%d", msg.ReplyTo.MessageID),
+	})
+	me.offset += int64(n)
+}
+
+func (me *messageEncoder) encodeAnonGroupMsg(elem *pb.IMMsgBody_AnonymousGroupMsg, msg *penguin.Message) {
+	msg.From.Account.Type = penguin.AccountTypeAnonymous
+	msg.From.Display = string(elem.GetAnonNick())
+	msg.Entities = append([]*penguin.MessageEntity{{
+		Type:   "anonymous",
+		Offset: me.offset,
+		Length: 0,
+		URL:    fmt.Sprintf("?id=%s", base64.RawURLEncoding.EncodeToString(elem.GetAnonId())),
+	}}, msg.Entities...)
+}
+
+func (me *messageEncoder) encodeShakeWindow(elem *pb.IMMsgBody_ShakeWindow, msg *penguin.Message) {
+	msg.Entities = append(msg.Entities, &penguin.MessageEntity{
+		Type:   "poke",
+		Offset: 0,
+		Length: 0,
+		URL:    "?id=0",
+	})
 }
 
 func (me *messageEncoder) encodeText(elem *pb.IMMsgBody_Text, msg *penguin.Message) {
@@ -328,25 +510,26 @@ func (me *messageEncoder) encodeFace(elem *pb.IMMsgBody_Face, msg *penguin.Messa
 	me.offset += int64(n)
 }
 
-func (me *messageEncoder) encodeNotOnlineImage(elem *pb.IMMsgBody_NotOnlineImage, msg *penguin.Message, flash ...bool) {
-	n, _ := me.buffer.Write([]byte("[图片]"))
-	entity := &penguin.MessageEntity{
-		Type:   "photo",
+func (me *messageEncoder) encodeMarketFace(elem *pb.IMMsgBody_MarketFace, msg *penguin.Message) {
+	me.next++
+	name := elem.GetFaceName()
+	if len(name) == 0 {
+		name = me.body.GetRichText().GetElems()[me.next].GetText().GetStr()
+	}
+	n, _ := me.buffer.Write(name)
+	msg.Entities = append(msg.Entities, &penguin.MessageEntity{
+		Type:   "sticker",
 		Offset: me.offset,
 		Length: int64(n),
 		URL: fmt.Sprintf(
-			"?md5=%x&size=%d&w=%d&h=%d&uid=%d",
-			elem.GetPicMd5(),
-			elem.GetFileLen(),
-			elem.GetPicWidth(),
-			elem.GetPicHeight(),
-			msg.From.Account.ID,
+			"?id=%s&tid=%d&key=%s&h=%d&w=%d",
+			base64.RawURLEncoding.EncodeToString(elem.GetFaceId()),
+			elem.GetTabId(),
+			base64.RawURLEncoding.EncodeToString(elem.GetKey()),
+			elem.GetImageHeight(),
+			elem.GetImageWidth(),
 		),
-	}
-	if len(flash) > 0 && flash[0] {
-		entity.URL += "&flash=true"
-	}
-	msg.Entities = append(msg.Entities, entity)
+	})
 	me.offset += int64(n)
 }
 
@@ -362,6 +545,28 @@ func (me *messageEncoder) encodeCustomFace(elem *pb.IMMsgBody_CustomFace, msg *p
 			elem.GetSize(),
 			elem.GetWidth(),
 			elem.GetHeight(),
+			msg.From.Account.ID,
+		),
+	}
+	if len(flash) > 0 && flash[0] {
+		entity.URL += "&flash=true"
+	}
+	msg.Entities = append(msg.Entities, entity)
+	me.offset += int64(n)
+}
+
+func (me *messageEncoder) encodeNotOnlineImage(elem *pb.IMMsgBody_NotOnlineImage, msg *penguin.Message, flash ...bool) {
+	n, _ := me.buffer.Write([]byte("[图片]"))
+	entity := &penguin.MessageEntity{
+		Type:   "photo",
+		Offset: me.offset,
+		Length: int64(n),
+		URL: fmt.Sprintf(
+			"?md5=%x&size=%d&w=%d&h=%d&uid=%d",
+			elem.GetPicMd5(),
+			elem.GetFileLen(),
+			elem.GetPicWidth(),
+			elem.GetPicHeight(),
 			msg.From.Account.ID,
 		),
 	}
@@ -421,59 +626,4 @@ func (me *messageEncoder) encodeCommonElem(elem *pb.IMMsgBody_CommonElem, msg *p
 		})
 		me.offset += int64(n)
 	}
-}
-
-func (me *messageEncoder) encodeShakeWindow(elem *pb.IMMsgBody_ShakeWindow, msg *penguin.Message) {
-	msg.Entities = append(msg.Entities, &penguin.MessageEntity{
-		Type:   "poke",
-		Offset: 0,
-		Length: 0,
-		URL:    "?id=0",
-	})
-}
-
-func (me *messageEncoder) encodeSrcMsg(elem *pb.IMMsgBody_SourceMsg, msg *penguin.Message) {
-	// TODO: implement
-	msg.ReplyTo = &penguin.Message{
-		MessageID: int64(elem.GetOrigSeqs()[0]),
-		Chat:      msg.Chat,
-		From:      &penguin.User{Account: &penguin.Account{ID: int64(elem.GetSenderUin())}},
-		Time:      int64(elem.GetTime()),
-		Text:      "",
-		Entities:  []*penguin.MessageEntity{},
-	}
-}
-
-func (me *messageEncoder) encodeMarketFace(elem *pb.IMMsgBody_MarketFace, msg *penguin.Message) {
-	me.next++
-	name := elem.GetFaceName()
-	if len(name) == 0 {
-		name = me.body.GetRichText().GetElems()[me.next].GetText().GetStr()
-	}
-	n, _ := me.buffer.Write(name)
-	msg.Entities = append(msg.Entities, &penguin.MessageEntity{
-		Type:   "sticker",
-		Offset: me.offset,
-		Length: int64(n),
-		URL: fmt.Sprintf(
-			"?id=%s&tid=%d&key=%s&h=%d&w=%d",
-			base64.RawURLEncoding.EncodeToString(elem.GetFaceId()),
-			elem.GetTabId(),
-			base64.RawURLEncoding.EncodeToString(elem.GetKey()),
-			elem.GetImageHeight(),
-			elem.GetImageWidth(),
-		),
-	})
-	me.offset += int64(n)
-}
-
-func (me *messageEncoder) encodeAnonGroupMsg(elem *pb.IMMsgBody_AnonymousGroupMsg, msg *penguin.Message) {
-	msg.From.Account.Type = penguin.AccountTypeAnonymous
-	msg.From.Display = string(elem.GetAnonNick())
-	msg.Entities = append([]*penguin.MessageEntity{{
-		Type:   "anonymous",
-		Offset: me.offset,
-		Length: 0,
-		URL:    fmt.Sprintf("?id=%s", base64.RawURLEncoding.EncodeToString(elem.GetAnonId())),
-	}}, msg.Entities...)
 }

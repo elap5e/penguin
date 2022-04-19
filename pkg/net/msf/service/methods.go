@@ -14,7 +14,9 @@
 
 package service
 
-import "fmt"
+import (
+	"fmt"
+)
 
 const (
 	MethodHeartbeatAlive = "Heartbeat.Alive"
@@ -39,6 +41,9 @@ const (
 	MethodChannelSyncFirstView = "trpc.group_pro.synclogic.SyncLogic.SyncFirstView"
 	MethodChannelPushFirstView = "trpc.group_pro.synclogic.SyncLogic.PushFirstView"
 	MethodChannelPushMessage   = "MsgPush.PushGroupProMsg"
+
+	MethodChannelDownloadPhoto = "ImgStore.QQMeetPicDown"
+	MethodChannelUploadPhoto   = "ImgStore.QQMeetPicUp"
 )
 
 const (
@@ -56,21 +61,38 @@ const (
 	MethodMessagePushNotify = "MessageSvc.PushNotify"
 	MethodMessagePushReaded = "MessageSvc.PushReaded"
 
+	MethodMessageChatDownloadMedia = "MultiMsg.ApplyDown"
+	MethodMessageChatUploadMedia   = "MultiMsg.ApplyUp"
+
 	MethodMessageChatDownloadPhoto = "ImgStore.GroupPicDown"
 	MethodMessageChatUploadPhoto   = "ImgStore.GroupPicUp"
 	MethodMessageUserDownloadPhoto = "LongConn.OffPicDown"
 	MethodMessageUserUploadPhoto   = "LongConn.OffPicUp"
+
+	MethodMessageChatDownloadVideo = "PttCenterSvr.GroupShortVideoDownReq"
+	MethodMessageChatUploadVideo   = "PttCenterSvr.GroupShortVideoUpReq"
+	MethodMessageUserDownloadVideo = "PttCenterSvr.ShortVideoDownReq"
+	MethodMessageUserForwardVideo  = "PttCenterSvr.ShortVideoRetweetReq"
+	MethodMessageUserUploadVideo   = "PttCenterSvr.ShortVideoUpReq"
+
+	MethodMessageChatDownloadVoice = "PttStore.GroupPttDown"
+	MethodMessageChatUploadVoice   = "PttStore.GroupPttUp"
+
+	MethodMessageChatDownloadVideoSticker = "OidbSvcTrpcTcp.0x10dd_1"
+	MethodMessageChatUploadVideoSticker   = "OidbSvcTrpcTcp.0x10dd_0"
+
+	_ = "MultiVideo.s2c"
 )
 
 const (
 	MethodServiceRegister            = "StatSvc.register"
 	MethodServiceSetStatusFromClient = "StatSvc.SetStatusFromClient"
 
+	MethodServicePushForceOffline = "MessageSvc.PushForceOffline"
+
 	MethodServiceConfigPushDomain   = "ConfigPushSvc.PushDomain"
 	MethodServiceConfigPushRequest  = "ConfigPushSvc.PushReq"
 	MethodServiceConfigPushResponse = "ConfigPushSvc.PushResp"
-
-	_ = "MessageSvc.PushForceOffline"
 
 	MethodServiceOnlinePushUserMessage   = "OnlinePush.PbC2CMsgSync"
 	MethodServiceOnlinePushChatMessage   = "OnlinePush.PbPushGroupMsg"

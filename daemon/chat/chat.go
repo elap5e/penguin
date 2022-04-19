@@ -16,10 +16,7 @@ package chat
 
 import (
 	"context"
-	"fmt"
-	"sync"
 
-	"github.com/elap5e/penguin"
 	"github.com/elap5e/penguin/daemon/account"
 	"github.com/elap5e/penguin/pkg/net/msf/rpc"
 )
@@ -31,107 +28,15 @@ type Daemon interface {
 }
 
 type Manager struct {
+	context.Context
 	Daemon
-	ctx context.Context
-
-	mu    sync.RWMutex
-	chats map[int64]*penguin.Chat           // shared
-	users map[int64]map[int64]*penguin.User // shared
-
-	// session
-	chatSeq map[string]uint32
-	cookies map[int64][]byte
+	Store
 }
 
-func NewManager(ctx context.Context, d Daemon) *Manager {
+func NewManager(ctx context.Context, daemon Daemon, store Store) *Manager {
 	return &Manager{
-		Daemon:  d,
-		ctx:     ctx,
-		chats:   make(map[int64]*penguin.Chat),
-		users:   make(map[int64]map[int64]*penguin.User),
-		chatSeq: make(map[string]uint32),
-		cookies: make(map[int64][]byte),
+		Context: ctx,
+		Daemon:  daemon,
+		Store:   store,
 	}
-}
-
-func (m *Manager) GetChat(k int64) (*penguin.Chat, bool) {
-	m.mu.RLock()
-	v, ok := m.chats[k]
-	m.mu.RUnlock()
-	return v, ok
-}
-
-func (m *Manager) SetChat(k int64, v *penguin.Chat) (*penguin.Chat, bool) {
-	m.mu.Lock()
-	vv, ok := m.chats[k]
-	m.chats[k] = v
-	m.mu.Unlock()
-	return vv, ok
-}
-
-func (m *Manager) GetChatSeq(id, gid, tid int64) (uint32, bool) {
-	m.mu.RLock()
-	k := fmt.Sprintf("%d|%d|%d", id, gid, tid)
-	v, ok := m.chatSeq[k]
-	m.mu.RUnlock()
-	return v, ok
-}
-
-func (m *Manager) GetNextChatSeq(id, gid, tid int64) (uint32, bool) {
-	m.mu.RLock()
-	k := fmt.Sprintf("%d|%d|%d", id, gid, tid)
-	v, ok := m.chatSeq[k]
-	m.chatSeq[k] = v + 1
-	m.mu.RUnlock()
-	return v + 1, ok
-}
-
-func (m *Manager) SetChatSeq(id, gid, tid int64, v uint32) (uint32, bool) {
-	m.mu.Lock()
-	k := fmt.Sprintf("%d|%d|%d", id, gid, tid)
-	vv, ok := m.chatSeq[k]
-	m.chatSeq[k] = v
-	m.mu.Unlock()
-	return vv, ok
-}
-
-func (m *Manager) getUsers(uin int64) map[int64]*penguin.User {
-	users, ok := m.users[uin]
-	if !ok {
-		m.users[uin] = make(map[int64]*penguin.User)
-		users = m.users[uin]
-	}
-	return users
-}
-
-func (m *Manager) GetUser(uin, k int64) (*penguin.User, bool) {
-	m.mu.RLock()
-	users := m.getUsers(uin)
-	v, ok := users[k]
-	m.mu.RUnlock()
-	return v, ok
-}
-
-func (m *Manager) SetUser(uin, k int64, v *penguin.User) (*penguin.User, bool) {
-	m.mu.Lock()
-	users := m.getUsers(uin)
-	vv, ok := users[k]
-	users[k] = v
-	m.mu.Unlock()
-	return vv, ok
-}
-
-func (m *Manager) GetCookie(k int64) ([]byte, bool) {
-	m.mu.RLock()
-	v, ok := m.cookies[k]
-	m.mu.RUnlock()
-	return v, ok
-}
-
-func (m *Manager) SetCookie(k int64, v []byte) ([]byte, bool) {
-	m.mu.Lock()
-	vv, ok := m.cookies[k]
-	m.cookies[k] = v
-	m.mu.Unlock()
-	return vv, ok
 }

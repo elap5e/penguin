@@ -149,7 +149,7 @@ func (m *Manager) requestGetGroupUsers(uin int64, req *GetGroupUsersRequest) (*G
 			Account: &account,
 			Display: string(v.Remark),
 		}
-		_, _ = m.SetUser(resp.GroupCode, account.ID, &user)
+		_, _ = m.SetChatUser(resp.GroupCode, account.ID, &user)
 		p, _ := json.Marshal(user)
 		log.Debug("chat:%d:user:%d:%s", resp.GroupCode, account.ID, p)
 	}

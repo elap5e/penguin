@@ -74,7 +74,7 @@ func (c *codec) WriteRequest(req *rpc.Request, args *rpc.Args) error {
 			method == "wtlogin.exchange_emp" ||
 			method == "wtlogin.trans_emp" ||
 			method == "account.requestverifywtlogin_emp" ||
-			method == "account.requestrebindmblwtLogin_emp" ||
+			method == "account.requestrebindmblwtlogin_emp" ||
 			method == "connauthsvr.get_app_info_emp" ||
 			method == "connauthsvr.get_auth_api_list_emp" ||
 			method == "connauthsvr.sdk_auth_api_emp" ||

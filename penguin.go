@@ -131,9 +131,21 @@ type Sticker struct {
 }
 
 type Video struct {
+	ID     int64   `json:"id"`
+	UUID   string  `json:"uuid"`
+	Name   string  `json:"name"`
+	Size   int64   `json:"size"`
+	Digest *Digest `json:"digest,omitempty"`
+
+	Thumbnail *Photo `json:"thumbnail,omitempty"`
 }
 
 type Voice struct {
+	ID     int64   `json:"id"`
+	Path   string  `json:"path"`
+	Name   string  `json:"name"`
+	Size   int64   `json:"size"`
+	Digest *Digest `json:"digest,omitempty"`
 }
 
 type Dice struct {
