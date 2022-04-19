@@ -58,11 +58,11 @@ func NewMemStore() Store {
 }
 
 func copyChat(newChat, oldChat *penguin.Chat) {
-	if newChat == nil {
-		log.Warn("chat.copyChat: newChat is nil")
-		return
-	} else if oldChat == nil {
+	if oldChat == nil {
 		log.Warn("chat.copyChat: oldChat is nil")
+		return
+	} else if newChat == nil {
+		log.Warn("chat.copyChat: newChat is nil")
 		return
 	}
 	newChat.ID = oldChat.ID
@@ -103,11 +103,11 @@ func (s *memStore) SetChat(chatID int64, newChat *penguin.Chat) (oldChat *pengui
 }
 
 func copyUser(newChatUser, oldChatUser *penguin.User) {
-	if newChatUser == nil {
-		log.Warn("chat.copyUser: newChatUser is nil")
-		return
-	} else if oldChatUser == nil {
+	if oldChatUser == nil {
 		log.Warn("chat.copyUser: oldChatUser is nil")
+		return
+	} else if newChatUser == nil {
+		log.Warn("chat.copyUser: newChatUser is nil")
 		return
 	}
 	newChatUser.Account = oldChatUser.Account
@@ -166,7 +166,9 @@ func (s *memStore) GetNextChatSeq(accountID, chatID, userID int64) (seq uint32, 
 	s.mu.RLock()
 	key := fmt.Sprintf("%d|%d|%d", accountID, chatID, userID)
 	oldSeq, ok := s.chatSeq[key]
-	if chatID == 0 && (oldSeq == 0 || oldSeq > 1000000) {
+	if oldSeq == 0 {
+		oldSeq = uint32(rand.Int31n(100000) + 10000)
+	} else if oldSeq > 1000000 {
 		oldSeq = uint32(rand.Int31n(100000) + 60000)
 	}
 	s.chatSeq[key] = oldSeq + 1

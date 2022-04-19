@@ -139,14 +139,15 @@ func (m *Manager) requestGetGroupUsers(uin int64, req *GetGroupUsersRequest) (*G
 		return nil, err
 	}
 	for _, v := range resp.GroupUsers {
-		account := penguin.Account{
-			ID:       v.MemberUin,
+		accountID := v.MemberUin
+		_, _ = m.GetAccountManager().SetDefaultAccount(accountID, &penguin.Account{
+			ID:       accountID,
 			Type:     penguin.AccountTypeDefault,
 			Username: v.Nick,
-		}
-		_, _ = m.GetAccountManager().SetDefaultAccount(account.ID, &account)
+		})
+		account, _ := m.GetAccountManager().GetDefaultAccount(accountID)
 		user := penguin.User{
-			Account: &account,
+			Account: account,
 			Display: string(v.Remark),
 		}
 		_, _ = m.SetChatUser(resp.GroupCode, account.ID, &user)

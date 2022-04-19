@@ -118,19 +118,22 @@ func (m *Manager) onGetChannelUsers(resp *pb.Channel_GetChannelUsersResponse) er
 
 func (m *Manager) setChannelUsers(channelID int64, typ penguin.AccountType, users ...*pb.Channel_User) error {
 	for _, v := range users {
-		account := penguin.Account{
-			ID:       v.GetTinyId(),
+		accountID := v.GetTinyId()
+		_, _ = m.GetAccountManager().SetChannelAccount(accountID, &penguin.Account{
+			ID:       accountID,
 			Type:     typ,
 			Username: v.GetUsername(),
-		}
-		_, _ = m.GetAccountManager().SetChannelAccount(account.ID, &account)
-		user := penguin.User{
-			Account: &account,
-		}
+		})
+		account, _ := m.GetAccountManager().GetChannelAccount(accountID)
+		userDisplay := ""
 		if account.Username != v.GetDisplay() {
-			user.Display = v.GetDisplay()
+			userDisplay = v.GetDisplay()
 		}
-		_, _ = m.SetUser(channelID, account.ID, &user)
+		_, _ = m.SetUser(channelID, account.ID, &penguin.User{
+			Account: account,
+			Display: userDisplay,
+		})
+		user, _ := m.GetUser(channelID, accountID)
 		p, _ := json.Marshal(user)
 		log.Debug("channel:%d:user:%d:%s", channelID, account.ID, p)
 	}

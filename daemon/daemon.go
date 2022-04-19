@@ -63,7 +63,7 @@ func New(ctx context.Context, cfg *config.Config) *Daemon {
 	d.accm = account.NewManager(d.ctx, d, account.NewMemStore())
 	d.athm = auth.NewManager(d.ctx, d.c, d)
 	d.chtm = chat.NewManager(d.ctx, d, chat.NewMemStore())
-	d.chnm = channel.NewManager(d.ctx, d)
+	d.chnm = channel.NewManager(d.ctx, d, channel.NewMemStore())
 	d.cntm = contact.NewManager(d.ctx, d, contact.NewMemStore())
 	d.msgm = message.NewManager(d.ctx, d)
 	d.svcm = service.NewManager(d.ctx, d)

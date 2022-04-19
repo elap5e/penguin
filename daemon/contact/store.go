@@ -50,11 +50,11 @@ func (s *memStore) getContactsByAccountID(accountID int64) map[int64]*penguin.Co
 }
 
 func copyContact(newContact, oldContact *penguin.Contact) {
-	if newContact == nil {
-		log.Warn("contact.copyContact: newContact is nil")
-		return
-	} else if oldContact == nil {
+	if oldContact == nil {
 		log.Warn("contact.copyContact: oldContact is nil")
+		return
+	} else if newContact == nil {
+		log.Warn("contact.copyContact: newContact is nil")
 		return
 	}
 	newContact.Account = oldContact.Account

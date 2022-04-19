@@ -36,68 +36,67 @@ import (
 )
 
 // mask 0x00000000ffffffff
-func (d *Daemon) prefetchAccount(id int64) error {
-	account, ok := d.accm.GetDefaultAccount(id)
+func (d *Daemon) prefetchDefaultAccount(accountID int64) error {
+	_, ok := d.accm.GetDefaultAccount(accountID)
 	if !ok {
-		account = &penguin.Account{
-			ID:   id,
+		_, _ = d.accm.SetDefaultAccount(accountID, &penguin.Account{
+			ID:   accountID,
 			Type: penguin.AccountTypeDefault,
-		}
-		_, _ = d.accm.SetDefaultAccount(account.ID, account)
+		})
 	}
 	return nil
 }
 
-func (d *Daemon) getOrLoadContact(id, cid int64) *penguin.Contact {
-	contact, ok := d.cntm.GetContact(id, cid)
+func (d *Daemon) getOrLoadContact(accountID, contactID int64) *penguin.Contact {
+	contact, ok := d.cntm.GetContact(accountID, contactID)
 	if !ok {
-		account, _ := d.accm.GetDefaultAccount(cid)
-		contact = &penguin.Contact{
+		account, _ := d.accm.GetDefaultAccount(contactID)
+		_, _ = d.cntm.SetContact(accountID, account.ID, &penguin.Contact{
 			Account: account,
-		}
-		_, _ = d.cntm.SetContact(id, account.ID, contact)
+		})
+		contact, _ = d.cntm.GetContact(accountID, contactID)
 	}
 	return contact
 }
 
-func (d *Daemon) getOrLoadChatUser(cid, uid int64) *penguin.User {
-	from, ok := d.chtm.GetChatUser(cid, uid)
+func (d *Daemon) getOrLoadChatUser(chatID, userID int64) *penguin.User {
+	user, ok := d.chtm.GetChatUser(chatID, userID)
 	if !ok {
-		account, _ := d.accm.GetDefaultAccount(uid)
-		from = &penguin.User{
+		account, _ := d.accm.GetDefaultAccount(userID)
+		_, _ = d.chtm.SetChatUser(chatID, account.ID, &penguin.User{
 			Account: account,
-		}
-		_, _ = d.chtm.SetChatUser(cid, account.ID, from)
+		})
+		user, _ = d.chtm.GetChatUser(chatID, userID)
 	}
-	return from
+	return user
 }
 
-func (d *Daemon) getOrLoadChatGroup(id int64, name string) *penguin.Chat {
-	chat, ok := d.chtm.GetChat(id)
+func (d *Daemon) getOrLoadChatGroup(chatID int64, title string) *penguin.Chat {
+	chat, ok := d.chtm.GetChat(chatID)
 	if !ok {
-		chat = &penguin.Chat{
-			ID:    id,
+		_, _ = d.chtm.SetChat(chatID, &penguin.Chat{
+			ID:    chatID,
 			Type:  penguin.ChatTypeGroup,
-			Title: name,
-		}
-		_, _ = d.chtm.SetChat(id, chat)
+			Title: title,
+		})
+		chat, _ = d.chtm.GetChat(chatID)
 	}
 	return chat
 }
 
-func (d *Daemon) getOrLoadChatGroupPrivate(id int64, name string) *penguin.Chat {
-	chat, ok := d.chtm.GetChat(id)
+func (d *Daemon) getOrLoadChatGroupPrivate(chatID int64) *penguin.Chat {
+	chat, ok := d.chtm.GetChat(chatID)
 	if !ok {
-		chat = &penguin.Chat{
-			ID:      id,
-			Type:    penguin.ChatTypeGroup,
-			Display: name,
-		}
+		_, _ = d.chtm.SetChat(chatID, &penguin.Chat{
+			ID:   chatID,
+			Type: penguin.ChatTypeGroup,
+		})
+		chat, _ = d.chtm.GetChat(chatID)
 	}
 	return &penguin.Chat{
-		ID:      chat.ID,
-		Type:    penguin.ChatTypeGroupPrivate,
-		Display: chat.Display,
+		ID:    chat.ID,
+		Type:  penguin.ChatTypeGroupPrivate,
+		Title: chat.Title,
 	}
 }
 
@@ -107,8 +106,8 @@ func (d *Daemon) OnRecvMessage(id int64, head *pb.MsgCommon_MsgHead, body *pb.IM
 		Time:      int64(head.GetMsgTime()),
 	}
 	// pre-fetch accounts
-	_ = d.prefetchAccount(int64(head.GetFromUin()))
-	_ = d.prefetchAccount(int64(head.GetToUin()))
+	_ = d.prefetchDefaultAccount(int64(head.GetFromUin()))
+	_ = d.prefetchDefaultAccount(int64(head.GetToUin()))
 	// identify message type
 	if v := head.GetDiscussInfo(); v != nil {
 		// discuss
@@ -116,46 +115,39 @@ func (d *Daemon) OnRecvMessage(id int64, head *pb.MsgCommon_MsgHead, body *pb.IM
 		// discuss private
 	} else if v := head.GetGroupInfo(); v != nil {
 		// group
-		gid, fid := int64(v.GetGroupCode()), int64(head.GetFromUin())
-		msg.Chat = d.getOrLoadChatGroup(gid, string(v.GetGroupName()))
-		msg.From = d.getOrLoadChatUser(gid, fid)
-		_, _ = d.chtm.SetChatSeq(0, gid, 0, head.GetMsgSeq())
+		chatID, fromID := int64(v.GetGroupCode()), int64(head.GetFromUin())
+		msg.Chat = d.getOrLoadChatGroup(chatID, string(v.GetGroupName()))
+		msg.From = d.getOrLoadChatUser(chatID, fromID)
+		_, _ = d.chtm.SetChatSeq(0, chatID, 0, head.GetMsgSeq())
 	} else if v := head.GetC2CTmpMsgHead(); v != nil {
 		// group private
-		gid, fid, tid := int64(v.GetGroupCode()), int64(head.GetFromUin()), int64(head.GetToUin())
-		msg.Chat = d.getOrLoadChatGroupPrivate(gid, "")
-		msg.From = d.getOrLoadChatUser(gid, fid)
+		chatID, fromID, toID := int64(v.GetGroupCode()), int64(head.GetFromUin()), int64(head.GetToUin())
+		msg.Chat = d.getOrLoadChatGroupPrivate(chatID)
+		msg.From = d.getOrLoadChatUser(chatID, fromID)
 		// check if the sender is self
-		if id == fid && id != tid {
-			msg.Chat.User = d.getOrLoadChatUser(gid, tid)
+		if id == fromID && id != toID {
+			msg.Chat.User = d.getOrLoadChatUser(chatID, toID)
 		} else {
 			msg.Chat.User = msg.From
-			// tid = fid
 		}
-		// _, _ = d.chtm.SetChatSeq(id, gid, tid, head.GetMsgSeq())
 	} else if v := head.GetC2CCmd(); v != 0 {
 		// private
 		msg.Chat = &penguin.Chat{Type: penguin.ChatTypePrivate}
-		fid, tid := int64(head.GetFromUin()), int64(head.GetToUin())
-		from := d.getOrLoadContact(id, fid)
+		fromID, toID := int64(head.GetFromUin()), int64(head.GetToUin())
+		from := d.getOrLoadContact(id, fromID)
 		msg.From = &penguin.User{
 			Account: from.Account,
 			Display: from.Display,
 		}
 		// check if the sender is self
-		if id == fid && id != tid {
-			to := d.getOrLoadContact(id, tid)
+		if id == fromID && id != toID {
+			to := d.getOrLoadContact(id, toID)
 			msg.Chat.User = &penguin.User{
 				Account: to.Account,
 				Display: to.Display,
 			}
 		} else {
 			msg.Chat.User = msg.From
-			// if seq, ok := d.chtm.GetChatSeq(id, 1, fid); ok && seq < head.GetMsgSeq() {
-			// 	_, _ = d.chtm.SetChatSeq(id, 1, fid, head.GetMsgSeq())
-			// } else {
-			// 	return nil
-			// }
 		}
 	}
 	if err := pgn.NewMessageEncoder(body).Encode(&msg); err != nil {

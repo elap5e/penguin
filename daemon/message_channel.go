@@ -31,69 +31,87 @@ import (
 func (d *Daemon) prefetchChannelAccount(id int64) error {
 	account, ok := d.accm.GetChannelAccount(id)
 	if !ok {
-		account = &penguin.Account{
+		_, _ = d.accm.SetChannelAccount(account.ID, &penguin.Account{
 			ID:   id,
 			Type: penguin.AccountTypeChannel,
+		})
+	}
+	return nil
+}
+
+func (d *Daemon) getOrLoadChannel(channelID int64, title string, private ...bool) *penguin.Chat {
+	channel, ok := d.chnm.GetChannel(channelID)
+	if !ok {
+		typ := penguin.ChatTypeChannel
+		if len(private) > 0 && private[0] {
+			typ = penguin.ChatTypeChannelPrivate
 		}
-		_, _ = d.accm.SetChannelAccount(account.ID, account)
+		_, _ = d.chnm.SetChannel(channelID, &penguin.Chat{
+			ID:    channelID,
+			Type:  typ,
+			Title: title,
+		})
+		channel, _ = d.chnm.GetChannel(channelID)
 	}
-	return nil
+	return channel
 }
 
-func (d *Daemon) getOrLoadChannel(id int64, name string) *penguin.Chat {
-	return &penguin.Chat{
-		ID:    id,
-		Type:  penguin.ChatTypeChannel,
-		Title: name,
+func (d *Daemon) getOrLoadChannelRoom(channelID, roomID int64, ctrl *pb.Common_MsgCtrlHead, extra *pb.Common_ExtInfo) *penguin.Chat {
+	room, ok := d.chnm.GetRoom(channelID, roomID)
+	if !ok {
+		typ, ctyp := penguin.ChatTypeRoomPrivate, ctrl.GetChannelType()
+		channel := d.getOrLoadChannel(channelID, string(extra.GetGuildName()), ctyp == 0)
+		if ctyp == 0 {
+		} else if ctyp == 1 {
+			typ = penguin.ChatTypeRoomText
+		} else if ctyp == 2 {
+			typ = penguin.ChatTypeRoomVoice
+		} else if ctyp == 4 {
+			typ = penguin.ChatTypeRoomGroup
+		} else if ctyp == 5 {
+			typ = penguin.ChatTypeRoomLive
+		} else if ctyp == 6 {
+			typ = penguin.ChatTypeRoomApp
+		} else if ctyp == 7 {
+			typ = penguin.ChatTypeRoomForum
+		} else {
+			log.Warn("unknown channel type:%d", ctyp)
+		}
+		_, _ = d.chnm.SetRoom(channelID, roomID, &penguin.Chat{
+			ID:      roomID,
+			Type:    typ,
+			Title:   string(extra.GetChannelName()),
+			Channel: channel,
+		})
+		room, _ = d.chnm.GetRoom(channelID, roomID)
 	}
+	if room.Channel.Type == penguin.ChatTypeChannelPrivate {
+		// fix src channel
+		srcChannelID, srcChannelTitle := int64(extra.GetDirectMessageMember()[0].GetSourceGuildId()), string(extra.GetDirectMessageMember()[0].GetSourceGuildName())
+		room.Channel.Channel = d.getOrLoadChannel(srcChannelID, srcChannelTitle)
+	}
+	return room
 }
 
-func (d *Daemon) getOrLoadChannelRoom(cid, rid int64, ctrl *pb.Common_MsgCtrlHead, extra *pb.Common_ExtInfo) *penguin.Chat {
-	channel := penguin.Chat{
-		ID:    cid,
-		Type:  penguin.ChatTypeChannel,
-		Title: string(extra.GetGuildName()),
+func (d *Daemon) getOrLoadChannelUser(channelID, userID int64, extra *pb.Common_ExtInfo) *penguin.User {
+	user, ok := d.chnm.GetUser(channelID, userID)
+	if !ok {
+		account, ok := d.accm.GetChannelAccount(userID)
+		if !ok {
+			_, _ = d.accm.SetChannelAccount(account.ID, &penguin.Account{
+				ID:       userID,
+				Type:     penguin.AccountTypeChannel,
+				Username: string(extra.GetFromNick()),
+				Photo:    string(extra.GetFromAvatar()),
+			})
+		}
+		_, _ = d.chnm.SetUser(channelID, account.ID, &penguin.User{
+			Account: account,
+			Display: string(extra.GetMemberName()),
+		})
+		user, _ = d.chnm.GetUser(channelID, userID)
 	}
-	typ, ctyp := penguin.ChatTypeRoomPrivate, ctrl.GetChannelType()
-	if ctyp == 0 {
-		channel.Type = penguin.ChatTypeChannelPrivate
-	} else if ctyp == 1 {
-		typ = penguin.ChatTypeRoomText
-	} else if ctyp == 2 {
-		typ = penguin.ChatTypeRoomVoice
-	} else if ctyp == 4 {
-		typ = penguin.ChatTypeRoomGroup
-	} else if ctyp == 5 {
-		typ = penguin.ChatTypeRoomLive
-	} else if ctyp == 6 {
-		typ = penguin.ChatTypeRoomApp
-	} else if ctyp == 7 {
-		typ = penguin.ChatTypeRoomForum
-	} else {
-		log.Warn("unknown channel type:%d", ctyp)
-	}
-	return &penguin.Chat{
-		ID:      rid,
-		Type:    typ,
-		Title:   string(extra.GetChannelName()),
-		Channel: &channel,
-	}
-}
-
-func (d *Daemon) getOrLoadChannelRoomPrivate(cid, rid int64, name string) *penguin.Chat {
-	return nil
-}
-
-func (d *Daemon) getOrLoadChannelUser(cid, uid int64, extra *pb.Common_ExtInfo) *penguin.User {
-	return &penguin.User{
-		Account: &penguin.Account{
-			ID:       uid,
-			Type:     penguin.AccountTypeChannel,
-			Username: string(extra.GetFromNick()),
-			Photo:    string(extra.GetFromAvatar()),
-		},
-		Display: string(extra.GetMemberName()),
-	}
+	return user
 }
 
 func (d *Daemon) OnRecvChannelMessage(id int64, recv *pb.Common_Msg) error {
@@ -107,12 +125,14 @@ func (d *Daemon) OnRecvChannelMessage(id int64, recv *pb.Common_Msg) error {
 	_ = d.prefetchChannelAccount(int64(rhead.GetFromTinyid()))
 	if rhead.GetDirectMessageFlag() == 0 {
 		// room any
-		cid, rid, fid := int64(rhead.GetGuildId()), int64(rhead.GetChannelId()), int64(rhead.GetFromTinyid())
-		channel := d.getOrLoadChannel(cid, string(extra.GetGuildName()))
-		msg.Chat = d.getOrLoadChannelRoom(channel.ID, rid, recv.GetCtrlHead(), extra)
-		msg.From = d.getOrLoadChannelUser(channel.ID, fid, extra)
+		channelID, roomID, fromID := int64(rhead.GetGuildId()), int64(rhead.GetChannelId()), int64(rhead.GetFromTinyid())
+		msg.Chat = d.getOrLoadChannelRoom(channelID, roomID, recv.GetCtrlHead(), extra)
+		msg.From = d.getOrLoadChannelUser(channelID, fromID, extra)
 	} else {
 		// room private
+		channelID, roomID, fromID := int64(rhead.GetGuildId()), int64(rhead.GetChannelId()), int64(rhead.GetFromTinyid())
+		msg.Chat = d.getOrLoadChannelRoom(channelID, roomID, recv.GetCtrlHead(), extra)
+		msg.From = d.getOrLoadChannelUser(channelID, fromID, extra)
 	}
 	if err := pgn.NewMessageEncoder(recv.GetBody()).Encode(&msg); err != nil {
 		return err
@@ -130,7 +150,7 @@ func (d *Daemon) SendChannelMessage(id int64, msg *penguin.Message) error {
 		// channel
 		return fmt.Errorf("a channel message can not be sent to a channel")
 	} else if msg.Chat.Type == penguin.ChatTypeRoomText ||
-		msg.Chat.Type == penguin.ChatTypeRoomVoice {
+		msg.Chat.Type == penguin.ChatTypeRoomLive {
 		// room any
 		req.Msg.Head.RoutingHead = &pb.Common_RoutingHead{
 			GuildId:   uint64(msg.Chat.Channel.ID),

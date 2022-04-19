@@ -22,6 +22,10 @@ import (
 
 func Chat(id int64, msg *penguin.Message) {
 	str := fmt.Sprintf("[%d] message not parsed", id)
+	chatDisplay := msg.Chat.Display
+	if chatDisplay == "" {
+		chatDisplay = msg.Chat.Title
+	}
 	fromDisplay := msg.From.Display
 	if fromDisplay == "" {
 		fromDisplay = msg.From.Account.Username
@@ -32,29 +36,37 @@ func Chat(id int64, msg *penguin.Message) {
 			"[%d] group:%d(%s) user:%d(%s) text:%q",
 			id,
 			msg.Chat.ID,
-			msg.Chat.Title,
+			chatDisplay,
 			msg.From.Account.ID,
 			fromDisplay,
 			msg.Text,
 		)
 	case penguin.ChatTypeGroupPrivate:
+		userDisplay := msg.Chat.User.Display
+		if userDisplay == "" {
+			userDisplay = msg.Chat.User.Account.Username
+		}
 		str = fmt.Sprintf(
 			"[%d] group:%d(%s) private:%d(%s) user:%d(%s) text:%q",
 			id,
 			msg.Chat.ID,
-			msg.Chat.Title,
+			chatDisplay,
 			msg.Chat.User.Account.ID,
-			msg.Chat.User.Account.Username,
+			userDisplay,
 			msg.From.Account.ID,
 			fromDisplay,
 			msg.Text,
 		)
 	case penguin.ChatTypePrivate:
+		userDisplay := msg.Chat.User.Display
+		if userDisplay == "" {
+			userDisplay = msg.Chat.User.Account.Username
+		}
 		str = fmt.Sprintf(
 			"[%d] private:%d(%s) user:%d(%s) text:%q",
 			id,
 			msg.Chat.User.Account.ID,
-			msg.Chat.User.Account.Username,
+			userDisplay,
 			msg.From.Account.ID,
 			fromDisplay,
 			msg.Text,
@@ -66,7 +78,19 @@ func Chat(id int64, msg *penguin.Message) {
 			msg.Chat.Channel.ID,
 			msg.Chat.Channel.Title,
 			msg.Chat.ID,
-			msg.Chat.Title,
+			chatDisplay,
+			msg.From.Account.ID,
+			fromDisplay,
+			msg.Text,
+		)
+	case penguin.ChatTypeRoomPrivate:
+		str = fmt.Sprintf(
+			"[%d] channel:%d(%s) private:%d:%d user:%d(%s) text:%q",
+			id,
+			msg.Chat.Channel.Channel.ID,
+			msg.Chat.Channel.Channel.Title,
+			msg.Chat.Channel.ID,
+			msg.Chat.ID,
 			msg.From.Account.ID,
 			fromDisplay,
 			msg.Text,

@@ -15,9 +15,12 @@
 package channel
 
 import (
+	"encoding/json"
+
 	"google.golang.org/protobuf/proto"
 
 	"github.com/elap5e/penguin/daemon/channel/pb"
+	"github.com/elap5e/penguin/pkg/log"
 	"github.com/elap5e/penguin/pkg/net/msf/rpc"
 )
 
@@ -26,8 +29,14 @@ func (m *Manager) handlePushMessage(reply *rpc.Reply) (*rpc.Args, error) {
 	if err := proto.Unmarshal(reply.Payload, &push); err != nil {
 		return nil, err
 	}
-	for _, v := range push.GetMsgs() {
-		_ = m.OnRecvChannelMessage(reply.Uin, v)
+	for _, msg := range push.GetMsgs() {
+		typ := msg.GetHead().GetContentHead().GetMsgType()
+		if typ == 3840 {
+			_ = m.OnRecvChannelMessage(reply.Uin, msg)
+		} else {
+			p, _ := json.Marshal(msg)
+			log.Warn("unknown msg type:%d msg:%s", typ, p)
+		}
 	}
 	return nil, nil
 }

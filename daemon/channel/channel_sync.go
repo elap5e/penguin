@@ -78,14 +78,15 @@ func (m *Manager) handlePushFirstView(reply *rpc.Reply) (*rpc.Args, error) {
 }
 
 func (m *Manager) onPushFirstViewChannel(uin int64, typ penguin.ChatType, node *pb.SyncLogic_GuildNode) error {
-	channel := penguin.Chat{
-		ID:    int64(node.GetGuildId()),
+	channelID := int64(node.GetGuildId())
+	_, _ = m.SetChannel(channelID, &penguin.Chat{
+		ID:    channelID,
 		Type:  typ,
 		Title: string(node.GetGuildName()),
-	}
-	_, _ = m.SetChannel(channel.ID, &channel)
+	})
+	channel, _ := m.GetChannel(channelID)
 	p, _ := json.Marshal(channel)
-	log.Debug("channel:%d:%s", channel.ID, p)
+	log.Debug("channel:%d:%s", channelID, p)
 	for _, node := range node.GetChannelNodes() {
 		typ, ctyp := penguin.ChatTypeRoomPrivate, node.GetChannelType()
 		if ctyp == 0 {
@@ -104,20 +105,22 @@ func (m *Manager) onPushFirstViewChannel(uin int64, typ penguin.ChatType, node *
 		} else {
 			log.Warn("unknown channel type:%d", ctyp)
 		}
-		room := penguin.Chat{
-			ID:    int64(node.GetChannelId()),
-			Type:  typ,
-			Title: string(node.GetChannelName()),
-		}
-		_, _ = m.SetRoom(channel.ID, room.ID, &room)
+		roomID := int64(node.GetChannelId())
+		_, _ = m.SetRoom(channelID, roomID, &penguin.Chat{
+			ID:      roomID,
+			Type:    typ,
+			Title:   string(node.GetChannelName()),
+			Channel: channel,
+		})
+		room, _ := m.GetRoom(channelID, roomID)
 		p, _ := json.Marshal(room)
-		log.Debug("channel:%d:room:%d:%s", channel.ID, room.ID, p)
+		log.Debug("channel:%d:room:%d:%s", channelID, roomID, p)
 	}
 	if typ == penguin.ChatTypeChannel {
 		var tinyID int64
 		finish, offset, cookie := false, int64(0), []byte{}
 		for !finish {
-			resp, err := m.GetChannelUsers(uin, channel.ID, offset, 100, cookie)
+			resp, err := m.GetChannelUsers(uin, channelID, offset, 100, cookie)
 			if err != nil {
 				log.Println(err)
 				break
@@ -125,11 +128,11 @@ func (m *Manager) onPushFirstViewChannel(uin int64, typ penguin.ChatType, node *
 			finish, offset, cookie = resp.GetFinish() == 1, resp.GetOffset(), resp.GetCookie()
 			tinyID = resp.GetOwner().GetTinyId()
 		}
-		_, err := m.GetChannelRoles(uin, channel.ID)
+		_, err := m.GetChannelRoles(uin, channelID)
 		if err != nil {
 			log.Println(err)
 		}
-		if _, err := m.GetChannelUserRoles(uin, channel.ID, tinyID); err != nil {
+		if _, err := m.GetChannelUserRoles(uin, channelID, tinyID); err != nil {
 			log.Println(err)
 		}
 	}

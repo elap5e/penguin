@@ -74,6 +74,12 @@ type Contact struct {
 	Display string   `json:"display,omitempty"`
 }
 
+type Role struct {
+	ID    int64  `json:"id"`
+	Color uint32 `json:"color,omitempty"`
+	Hoist bool   `json:"hoist,omitempty"`
+}
+
 type User struct {
 	Account *Account `json:"account"`
 	Display string   `json:"display,omitempty"`

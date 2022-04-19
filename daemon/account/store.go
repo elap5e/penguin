@@ -85,11 +85,11 @@ func (s *memStore) SetDefaultAccount(id int64, newAccount *penguin.Account) (old
 }
 
 func copyChannelAccount(newAccount, oldAccount *penguin.Account, set ...bool) {
-	if newAccount == nil {
-		log.Warn("account.copyChannelAccount: newAccount is nil")
-		return
-	} else if oldAccount == nil {
+	if oldAccount == nil {
 		log.Warn("account.copyChannelAccount: oldAccount is nil")
+		return
+	} else if newAccount == nil {
+		log.Warn("account.copyChannelAccount: newAccount is nil")
 		return
 	}
 	if len(set) > 0 && set[0] {
