@@ -57,12 +57,15 @@ const (
 type Chat struct {
 	ID      int64      `json:"id"`
 	Type    ChatType   `json:"type"`
-	Chat    *Chat      `json:"chat,omitempty"`
-	Channel *Chat      `json:"channel,omitempty"`
-	User    *User      `json:"user,omitempty"`
 	Title   string     `json:"title,omitempty"`
 	Photo   *ChatPhoto `json:"photo,omitempty"`
 	Display string     `json:"display,omitempty"`
+
+	PinnedMessage *Message `json:"pinned_message,omitempty"`
+
+	Chat    *Chat `json:"chat,omitempty"`
+	User    *User `json:"user,omitempty"`
+	Channel *Chat `json:"channel,omitempty"`
 }
 
 type ChatPhoto struct {
@@ -86,27 +89,35 @@ type User struct {
 }
 
 type Message struct {
-	MessageID     int64            `json:"message_id"`
-	Chat          *Chat            `json:"chat"`
-	From          *User            `json:"from,omitempty"`
-	Forward       *Message         `json:"forward,omitempty"`
-	ReplyTo       *Message         `json:"reply_to,omitempty"`
-	PinnedMessage *Message         `json:"pinned_message,omitempty"`
-	Time          int64            `json:"time"`
-	EditTime      int64            `json:"edit_time,omitempty"`
-	Text          string           `json:"text,omitempty"`
-	Entities      []*MessageEntity `json:"entities,omitempty"`
-	Audio         *Audio           `json:"audio,omitempty"`
-	Document      *Document        `json:"document,omitempty"`
-	Photo         *Photo           `json:"photo,omitempty"`
-	Sticker       *Sticker         `json:"sticker,omitempty"`
-	Video         *Video           `json:"video,omitempty"`
-	Voice         *Voice           `json:"voice,omitempty"`
-	Contact       *Contact         `json:"contact,omitempty"`
-	Dice          *Dice            `json:"dice,omitempty"`
-	Poll          *Poll            `json:"poll,omitempty"`
-	NewChatUsers  []*User          `json:"new_chat_users,omitempty"`
-	LeftChatUser  *User            `json:"left_chat_user,omitempty"`
+	MessageID int64            `json:"message_id"`
+	Chat      *Chat            `json:"chat"`
+	From      *User            `json:"from,omitempty"`
+	Forward   *Message         `json:"forward,omitempty"`
+	ReplyTo   *Message         `json:"reply_to,omitempty"`
+	Time      int64            `json:"time"`
+	EditTime  int64            `json:"edit_time,omitempty"`
+	Text      string           `json:"text,omitempty"`
+	Entities  []*MessageEntity `json:"entities,omitempty"`
+
+	Animation *Animation `json:"animation,omitempty"`
+	Audio     *Audio     `json:"audio,omitempty"`
+	Document  *Document  `json:"document,omitempty"`
+	Photo     *Photo     `json:"photo,omitempty"`
+	Sticker   *Sticker   `json:"sticker,omitempty"`
+	Video     *Video     `json:"video,omitempty"`
+	Voice     *Voice     `json:"voice,omitempty"`
+	Contact   *Contact   `json:"contact,omitempty"`
+	Dice      *Dice      `json:"dice,omitempty"`
+	Poll      *Poll      `json:"poll,omitempty"`
+	Venue     *Venue     `json:"venue,omitempty"`
+
+	NewChatUsers []*User `json:"new_chat_users,omitempty"`
+	LeftChatUser *User   `json:"left_chat_user,omitempty"`
+
+	NewChatTitle string `json:"new_chat_title,omitempty"`
+	NewChatPhoto *Photo `json:"new_chat_photo,omitempty"`
+
+	PinnedMessage *Message `json:"pinned_message,omitempty"`
 }
 
 type MessageEntity struct {
@@ -117,11 +128,11 @@ type MessageEntity struct {
 	User   *User  `json:"user,omitempty"`
 }
 
-type Audio struct {
-}
+type Animation struct{}
 
-type Document struct {
-}
+type Audio struct{}
+
+type Document struct{}
 
 type Photo struct {
 	ID     int64   `json:"id"`
@@ -133,8 +144,7 @@ type Photo struct {
 	Digest *Digest `json:"digest,omitempty"`
 }
 
-type Sticker struct {
-}
+type Sticker struct{}
 
 type Video struct {
 	ID     int64   `json:"id"`
@@ -155,10 +165,32 @@ type Voice struct {
 }
 
 type Dice struct {
+	Emoji string `json:"emoji"`
+	Value int8   `json:"value"`
+}
+
+type PollOption struct {
+	Text  string `json:"text"`
+	Count int64  `json:"count"`
+
+	Users []*User `json:"users,omitempty"`
 }
 
 type Poll struct {
+	ID   int64  `json:"id"`
+	Type string `json:"type"`
+	Text string `json:"text"`
+
+	Multiple bool          `json:"multiple"`
+	Options  []*PollOption `json:"options"`
+
+	Count int64 `json:"count"`
+
+	IsAnonymous bool `json:"is_anonymous"`
+	IsClosed    bool `json:"is_closed"`
 }
+
+type Venue struct{}
 
 type Digest struct {
 	MD5    []byte `json:"md5,omitempty"`

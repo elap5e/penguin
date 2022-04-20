@@ -27,7 +27,6 @@ import (
 	"github.com/elap5e/penguin/pkg/log"
 )
 
-// mask 0x02000007ffffffff
 func (d *Daemon) prefetchChannelAccount(id int64) error {
 	account, ok := d.accm.GetChannelAccount(id)
 	if !ok {

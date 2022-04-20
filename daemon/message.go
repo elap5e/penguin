@@ -35,7 +35,6 @@ import (
 	"github.com/elap5e/penguin/pkg/net/highway"
 )
 
-// mask 0x00000000ffffffff
 func (d *Daemon) prefetchDefaultAccount(accountID int64) error {
 	_, ok := d.accm.GetDefaultAccount(accountID)
 	if !ok {

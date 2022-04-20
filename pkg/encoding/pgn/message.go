@@ -69,6 +69,8 @@ func (md *messageDecoder) Decode(msg *penguin.Message) error {
 			md.decodeMention(entity, &elems)
 		} else if entity.Type == "face" {
 			md.decodeFace(entity, &elems)
+		} else if entity.Type == "dice" {
+			md.decodeDice(entity, &elems)
 		} else if entity.Type == "photo" {
 			md.decodePhoto(entity, &elems, msg)
 		} else if entity.Type == "video" {
@@ -89,6 +91,7 @@ func (md *messageDecoder) Decode(msg *penguin.Message) error {
 func (md *messageDecoder) decodeText(length int64, elems *[]*pb.IMMsgBody_Elem) error {
 	text := make([]byte, length)
 	_, _ = md.buffer.Read(text)
+	// a text entity is no more than 4500 runes
 	*elems = append(*elems, &pb.IMMsgBody_Elem{
 		Text: &pb.IMMsgBody_Text{
 			Str: text,
@@ -173,6 +176,55 @@ func (md *messageDecoder) decodeFace(entity *penguin.MessageEntity, elems *[]*pb
 			},
 		})
 	}
+	md.offset += entity.Length
+	return nil
+}
+
+func (md *messageDecoder) decodeDice(entity *penguin.MessageEntity, elems *[]*pb.IMMsgBody_Elem) error {
+	text := make([]byte, entity.Length)
+	_, _ = md.buffer.Read(text)
+	url, _ := url.Parse(entity.URL)
+	query := url.Query()
+	key := query.Get("key")
+	value, _ := strconv.Atoi(query.Get("value"))
+	if key == "409e2a69b16918f9" { // dice
+		*elems = append(*elems, &pb.IMMsgBody_Elem{
+			MarketFace: &pb.IMMsgBody_MarketFace{
+				FaceName:    text,
+				ItemType:    6,
+				FaceInfo:    1,
+				FaceId:      []byte{0x48, 0x23, 0xd3, 0xad, 0xb1, 0x5d, 0xf0, 0x80, 0x14, 0xce, 0x5d, 0x67, 0x96, 0xb7, 0x6e, 0xe1},
+				TabId:       11464,
+				SubType:     3,
+				Key:         []byte(key),
+				ImageWidth:  200,
+				ImageHeight: 200,
+				Mobileparam: []byte("rscType?1;value=" + strconv.Itoa(value)),
+				PbReserve:   []byte{0x0a, 0x06, 0x08, 0xc8, 0x01, 0x10, 0xc8, 0x01, 0x40, 0x01},
+			},
+		})
+	} else if key == "7de39febcf45e6db" { // rock-paper-scissors
+		*elems = append(*elems, &pb.IMMsgBody_Elem{
+			MarketFace: &pb.IMMsgBody_MarketFace{
+				FaceName:    text,
+				ItemType:    6,
+				FaceInfo:    1,
+				FaceId:      []byte{0x83, 0xc8, 0xa2, 0x93, 0xae, 0x65, 0xca, 0x14, 0x0f, 0x34, 0x81, 0x20, 0xa7, 0x74, 0x48, 0xee},
+				TabId:       11415,
+				SubType:     3,
+				Key:         []byte(key),
+				ImageWidth:  200,
+				ImageHeight: 200,
+				Mobileparam: []byte("rscType?1;value=" + strconv.Itoa(value)),
+				PbReserve:   []byte{0x0a, 0x06, 0x08, 0xc8, 0x01, 0x10, 0xc8, 0x01, 0x40, 0x01},
+			},
+		})
+	}
+	*elems = append(*elems, &pb.IMMsgBody_Elem{
+		Text: &pb.IMMsgBody_Text{
+			Str: text,
+		},
+	})
 	md.offset += entity.Length
 	return nil
 }
@@ -519,19 +571,31 @@ func (me *messageEncoder) encodeMarketFace(elem *pb.IMMsgBody_MarketFace, msg *p
 		name = me.body.GetRichText().GetElems()[me.next].GetText().GetStr()
 	}
 	n, _ := me.buffer.Write(name)
-	msg.Entities = append(msg.Entities, &penguin.MessageEntity{
-		Type:   "sticker",
-		Offset: me.offset,
-		Length: int64(n),
-		URL: fmt.Sprintf(
-			"?id=%s&tid=%d&key=%s&h=%d&w=%d",
-			base64.RawURLEncoding.EncodeToString(elem.GetFaceId()),
-			elem.GetTabId(),
-			base64.RawURLEncoding.EncodeToString(elem.GetKey()),
-			elem.GetImageHeight(),
-			elem.GetImageWidth(),
-		),
-	})
+	key := string(elem.GetKey())
+	if key == "409e2a69b16918f9" || // dice
+		key == "7de39febcf45e6db" { // rock-paper-scissors
+		value, _ := strconv.Atoi(strings.TrimPrefix(string(elem.GetMobileparam()), "rscType?1;value="))
+		msg.Entities = append(msg.Entities, &penguin.MessageEntity{
+			Type:   "dice",
+			Offset: me.offset,
+			Length: int64(n),
+			URL:    fmt.Sprintf("?key=%s&value=%d", key, value),
+		})
+	} else {
+		msg.Entities = append(msg.Entities, &penguin.MessageEntity{
+			Type:   "sticker",
+			Offset: me.offset,
+			Length: int64(n),
+			URL: fmt.Sprintf(
+				"?id=%s&tid=%d&key=%s&h=%d&w=%d",
+				base64.RawURLEncoding.EncodeToString(elem.GetFaceId()),
+				elem.GetTabId(),
+				key,
+				elem.GetImageHeight(),
+				elem.GetImageWidth(),
+			),
+		})
+	}
 	me.offset += int64(n)
 }
 

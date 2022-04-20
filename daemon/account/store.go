@@ -70,6 +70,9 @@ func (s *memStore) GetDefaultAccount(id int64) (oldAccount *penguin.Account, ok 
 }
 
 func (s *memStore) SetDefaultAccount(id int64, newAccount *penguin.Account) (oldAccount *penguin.Account, ok bool) {
+	if id>>32 != 0 {
+		log.Warn("account.SetDefaultAccount: invalid account id: 0x%x", id)
+	}
 	s.mu.Lock()
 	account, ok := s.defaults[id]
 	if !ok {
