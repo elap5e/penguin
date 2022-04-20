@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"github.com/elap5e/penguin/daemon/auth"
+	"github.com/elap5e/penguin/daemon/chat"
 	"github.com/elap5e/penguin/daemon/message/pb"
 	"github.com/elap5e/penguin/fake"
 	"github.com/elap5e/penguin/pkg/net/msf/rpc"
@@ -29,6 +30,7 @@ type Daemon interface {
 	Register(serviceMethod string, handler rpc.Handler) error
 
 	GetAuthManager() *auth.Manager
+	GetChatManager() *chat.Manager
 	GetFakeSource(uin int64) *fake.Source
 	OnRecvMessage(uin int64, head *pb.MsgCommon_MsgHead, body *pb.IMMsgBody_MsgBody) error
 }

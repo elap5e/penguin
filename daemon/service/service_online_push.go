@@ -119,6 +119,15 @@ func (m *Manager) handleOnlinePushRequest(reply *rpc.Reply) (*rpc.Args, error) {
 	items := []*dto.MessageDelete{}
 	for _, msg := range push.Messages {
 		switch msg.Type {
+		case 528: // 0x210(528)
+			_ = m.Decode0x210(reply.Uin, msg)
+		case 529: // 0x211(529)
+			dumpUnknown(msg.Type, msg)
+		case 732: // 0x2dc(732)
+			_ = m.Decode0x2dc(reply.Uin, msg)
+		case 736: // 0x2e0(736)
+			_, _ = m.decode0x2e0(reply.Uin, msg.MessageBytes)
+			dumpUnknown(msg.Type, msg)
 		case -1010, -1009, -1008, -1007, -1006:
 			// service message
 			fallthrough
@@ -127,7 +136,7 @@ func (m *Manager) handleOnlinePushRequest(reply *rpc.Reply) (*rpc.Args, error) {
 			fallthrough
 		case 0x8: // 8
 			fallthrough
-		case 9, 10, 31, 79, 97, 120, 0x84, 133, 166, 167: // 132
+		case 9, 10, 31, 79, 97, 120, 132, 133, 166, 167: // 0x84(132)
 			fallthrough
 		case 35, 36, 37, 45, 46, 84, 85, 86, 87:
 			// chat service message
@@ -145,20 +154,8 @@ func (m *Manager) handleOnlinePushRequest(reply *rpc.Reply) (*rpc.Args, error) {
 			fallthrough
 		case 0xe6: // 230
 			fallthrough
-		case 0x210: // 528
-			// _, _ = m.decode0x210Jce(reply.Uin, msg.MessageBytes)
-			fallthrough
-		case 0x211: // 529
-			fallthrough
-		case 0x2dc: // 732
-			// _, _ = m.decode0x2dc(reply.Uin, msg.MessageBytes)
-			fallthrough
-		case 0x2e0: // 736
-			// _, _ = m.decode0x2e0(reply.Uin, msg.MessageBytes)
-			fallthrough
 		default:
-			p, _ := json.Marshal(msg)
-			log.Warn("msg:%s", p)
+			dumpUnknown(msg.Type, msg)
 		}
 		items = append(items, &dto.MessageDelete{
 			FromUin: msg.FromUin,
@@ -191,4 +188,9 @@ func (m *Manager) handleOnlinePushTicketExpired(reply *rpc.Reply) (*rpc.Args, er
 		Seq:           reply.Seq,
 		ServiceMethod: service.MethodServiceOnlinePushTicketExpired,
 	}, nil
+}
+
+func dumpUnknown(typ int16, msg *dto.Message) {
+	p, _ := json.Marshal(msg)
+	log.Warn("unknown msg type:%d msg:%s", typ, p)
 }

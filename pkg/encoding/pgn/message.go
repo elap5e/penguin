@@ -137,7 +137,7 @@ func (md *messageDecoder) decodeFace(entity *penguin.MessageEntity, elems *[]*pb
 			Qsid:        uint32(id),
 			Sourcetype:  1,
 			Stickertype: 1,
-			Text:        []byte("[" + strings.TrimLeft(text, "/") + "]请使用最新版手机QQ体验新功能。"),
+			Text:        []byte(text),
 		})
 		*elems = append(*elems, &pb.IMMsgBody_Elem{
 			CommonElem: &pb.IMMsgBody_CommonElem{
@@ -146,9 +146,11 @@ func (md *messageDecoder) decodeFace(entity *penguin.MessageEntity, elems *[]*pb
 				BusinessType: 1,
 			},
 		})
+		info := []byte("[" + strings.TrimLeft(text, "/") + "]请使用最新版手机QQ体验新功能")
 		*elems = append(*elems, &pb.IMMsgBody_Elem{
 			Text: &pb.IMMsgBody_Text{
-				Str: []byte(text),
+				Str:       []byte(text),
+				PbReserve: append([]byte{0x0a, byte(len(info))}, info...),
 			},
 		})
 	} else if id < 260 {

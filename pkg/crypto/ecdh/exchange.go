@@ -67,9 +67,12 @@ func updateServerPublicKey() error {
 			PublicKeySign string `json:"PubKeySign"`
 		} `json:"PubKeyMeta"`
 	}
-	resp, err := http.Get(
-		"https://keyrotate.qq.com/rotate_key?cipher_suite_ver=305&uin=10000",
-	)
+	req, err := http.NewRequest("GET", "https://keyrotate.qq.com/rotate_key?cipher_suite_ver=305&uin=10000", nil)
+	if err != nil {
+		return err
+	}
+	// req.Header.Add("js.fetch:mode", "no-cors")
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
 	}

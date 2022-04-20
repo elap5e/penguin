@@ -80,9 +80,7 @@ func (d *Daemon) watchDog(uin int64) {
 	duration := time.Second * 270
 	ticker := time.NewTicker(duration)
 	for err == nil {
-		select {
-		case <-ticker.C:
-		}
+		<-ticker.C
 		d.mu.Lock()
 		now = time.Now()
 		if d.lastRecvTime.Add(duration).After(now) {
@@ -93,7 +91,7 @@ func (d *Daemon) watchDog(uin int64) {
 		d.mu.Unlock()
 		if !d.heartbeating {
 			if _, err = d.svcm.RegisterAppRegister(uin); err != nil {
-				log.Error("watchDog register app register, error: %v", err)
+				log.Error("watchDog daemon, error: %v", err)
 			}
 		}
 		ticker.Reset(duration)
@@ -160,6 +158,10 @@ func (d *Daemon) GetAccountManager() *account.Manager {
 
 func (d *Daemon) GetAuthManager() *auth.Manager {
 	return d.athm
+}
+
+func (d *Daemon) GetChatManager() *chat.Manager {
+	return d.chtm
 }
 
 func (d *Daemon) GetChannelManager() *channel.Manager {

@@ -102,7 +102,7 @@ type Response struct {
 }
 
 func checkUsername(username string) bool {
-	uin, err := strconv.Atoi(username)
+	uin, err := strconv.ParseInt(username, 10, 64)
 	if err != nil || uin < 10000 || uin > 4000000000 {
 		return false
 	}

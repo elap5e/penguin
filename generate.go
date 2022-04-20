@@ -38,6 +38,9 @@
 //go:generate protoc --go_out=$GOPATH/src daemon/message/pb/cmd_0x388.proto
 //go:generate protoc --go_out=$GOPATH/src daemon/message/pb/ptt_short_video.proto
 
+//go:generate protoc --go_out=$GOPATH/src daemon/service/pb/apollo_game_status.proto
+//go:generate protoc --go_out=$GOPATH/src daemon/service/pb/apollo_push_message.proto
+//go:generate protoc --go_out=$GOPATH/src daemon/service/pb/chat_tips.proto
 //go:generate protoc --go_out=$GOPATH/src daemon/service/pb/domain_ip.proto
 //go:generate protoc --go_out=$GOPATH/src daemon/service/pb/oidb_0x769.proto
 //go:generate protoc --go_out=$GOPATH/src daemon/service/pb/online_push.proto

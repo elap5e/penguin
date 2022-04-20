@@ -65,10 +65,6 @@ func (m *Manager) handlePushNotifyRequest(reply *rpc.Reply) (*rpc.Args, error) {
 						p, _ := json.Marshal(msg)
 						log.Warn("unhandled c2c cmd:%d msg:%s", head.GetC2CCmd(), p)
 					}
-				case 208:
-					if err := m.OnRecvMessage(reply.Uin, head, msg.GetMsgBody()); err != nil {
-						return nil, err
-					}
 				case 78, 81, 103, 107, 110, 111, 114, 118:
 					_, _ = m.DeleteMessage(reply.Uin, &pb.MsgService_PbDeleteMsgReq_MsgItem{
 						FromUin: head.GetFromUin(),
@@ -77,6 +73,20 @@ func (m *Manager) handlePushNotifyRequest(reply *rpc.Reply) (*rpc.Args, error) {
 						MsgSeq:  head.GetMsgSeq(),
 						MsgUid:  head.GetMsgUid(),
 						Sig:     []byte{},
+					})
+				case 208:
+					if err := m.OnRecvMessage(reply.Uin, head, msg.GetMsgBody()); err != nil {
+						return nil, err
+					}
+				case 528: // 0x210(528)
+					_ = m.GetServiceManager().Decode0x210(reply.Uin, &dto.Message{
+						Type:         528,
+						MessageBytes: msg.GetMsgBody().GetMsgContent(),
+					}, true)
+				case 732: // 0x2dc(732)
+					_ = m.GetServiceManager().Decode0x2dc(reply.Uin, &dto.Message{
+						Type:         732,
+						MessageBytes: msg.GetMsgBody().GetMsgContent(),
 					})
 				default:
 					p, _ := json.Marshal(msg)

@@ -196,7 +196,9 @@ func (s *sender) watchDog(ctx context.Context) {
 		}
 		s.mu.Unlock()
 		if !s.heartbeating {
-			s.heartbeat()
+			if err := s.heartbeat(); err != nil {
+				log.Error("watchDog sender, error: %v", err)
+			}
 		}
 		ticker.Reset(duration)
 	}

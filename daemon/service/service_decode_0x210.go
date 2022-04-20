@@ -15,26 +15,40 @@
 package service
 
 import (
+	"github.com/elap5e/penguin/daemon/message/dto"
+	"github.com/elap5e/penguin/daemon/message/pb"
 	"github.com/elap5e/penguin/pkg/encoding/jce"
 )
 
 type Message0x210 struct {
-	SubType int64  `jce:"0" json:"sub_type"`
+	SubType int32  `jce:"0" json:"sub_type"`
 	Payload []byte `jce:"10" json:"payload"`
 }
 
-func (m *Manager) decode0x210Jce(uin int64, p []byte) (any, error) {
+func (m *Manager) Decode0x210(uin int64, msg *dto.Message, isPb ...bool) error {
+	dumpUnknown(msg.Type, msg)
+	if len(isPb) > 0 && isPb[0] {
+		return m.decode0x210Pb(uin, msg.MessageBytes)
+	}
+	return m.decode0x210Jce(uin, msg.MessageBytes)
+}
+
+func (m *Manager) decode0x210Jce(uin int64, p []byte) error {
 	msg := Message0x210{}
 	if err := jce.Unmarshal(p, &msg, true); err != nil {
-		return nil, err
+		return err
 	}
 	return m.decode0x210(uin, msg.SubType, msg.Payload)
 }
 
-func (m *Manager) decode0x210Pb(uin int64, p []byte) (any, error) {
-	return nil, nil
+func (m *Manager) decode0x210Pb(uin int64, p []byte) error {
+	msg := pb.MsgCommon_MsgType0X210{}
+	if err := jce.Unmarshal(p, &msg, true); err != nil {
+		return err
+	}
+	return m.decode0x210(uin, int32(msg.GetSubMsgType()), msg.GetMsgContent())
 }
 
-func (m *Manager) decode0x210(uin, typ int64, p []byte) (any, error) {
-	return nil, nil
+func (m *Manager) decode0x210(uin int64, typ int32, p []byte) error {
+	return nil
 }
