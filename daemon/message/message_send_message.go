@@ -16,7 +16,6 @@ package message
 
 import (
 	"fmt"
-	"math/rand"
 
 	"google.golang.org/protobuf/proto"
 
@@ -30,7 +29,7 @@ func (m *Manager) SendMessage(uin int64, req *pb.MsgService_PbSendMsgReq) (*pb.M
 		return nil, fmt.Errorf("invalid msg seq")
 	}
 	if req.GetMsgRand() == 0 {
-		req.MsgRand = rand.Uint32()
+		req.MsgRand = random.Uint32()
 	}
 	if len(req.GetSyncCookie()) == 0 {
 		req.SyncCookie, _ = m.GetCookie(uin)

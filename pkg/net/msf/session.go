@@ -15,8 +15,7 @@
 package msf
 
 import (
-	"math/rand"
-	"time"
+	"crypto/rand"
 
 	"github.com/elap5e/penguin/pkg/crypto/ecdh"
 	"github.com/elap5e/penguin/pkg/net/msf/rpc"
@@ -24,14 +23,13 @@ import (
 
 func newSession() *rpc.Session {
 	var session rpc.Session
-	r := rand.New(rand.NewSource(time.Now().Unix()))
 	session = rpc.Session{}
 	session.Cookie = make([]byte, 4)
-	r.Read(session.Cookie)
+	rand.Read(session.Cookie)
 	session.RandomKey = [16]byte{}
-	r.Read(session.RandomKey[:])
+	rand.Read(session.RandomKey[:])
 	session.RandomPass = [16]byte{}
-	r.Read(session.RandomPass[:])
+	rand.Read(session.RandomPass[:])
 	strs := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	for i := range session.RandomPass {
 		session.RandomPass[i] = strs[session.RandomPass[i]%52]

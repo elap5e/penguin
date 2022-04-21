@@ -118,6 +118,10 @@ func (m *Manager) onPushFirstViewChannel(uin int64, typ penguin.ChatType, node *
 		log.Debug("channel:%d:room:%d:%s", channelID, roomID, p)
 	}
 	if typ == penguin.ChatTypeChannel {
+		_, err := m.GetChannelRoles(uin, channelID)
+		if err != nil {
+			log.Println(err)
+		}
 		var tinyID int64
 		finish, offset, cookie := false, int64(0), []byte{}
 		for !finish {
@@ -128,10 +132,6 @@ func (m *Manager) onPushFirstViewChannel(uin int64, typ penguin.ChatType, node *
 			}
 			finish, offset, cookie = resp.GetFinish() == 1, resp.GetOffset(), resp.GetCookie()
 			tinyID = resp.GetOwner().GetTinyId()
-		}
-		_, err := m.GetChannelRoles(uin, channelID)
-		if err != nil {
-			log.Println(err)
 		}
 		if _, err := m.GetChannelUserRoles(uin, channelID, tinyID); err != nil {
 			log.Println(err)

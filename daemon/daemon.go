@@ -17,6 +17,7 @@ package daemon
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"sync"
 	"time"
 
@@ -34,6 +35,8 @@ import (
 	"github.com/elap5e/penguin/pkg/net/msf"
 	"github.com/elap5e/penguin/pkg/net/msf/rpc"
 )
+
+var random = rand.New(rand.NewSource(time.Now().UTC().UnixMicro()))
 
 type Daemon struct {
 	ctx context.Context
@@ -160,8 +163,12 @@ func (d *Daemon) Wait() {
 
 func (d *Daemon) Register(serviceMethod string, handler rpc.Handler) error {
 	return d.c.Register(serviceMethod, func(reply *rpc.Reply) (*rpc.Args, error) {
-		if d.waiting {
-			log.Warn("daemon is waiting, pending push %s", serviceMethod)
+		{
+			d.mu.Lock()
+			if d.waiting {
+				log.Warn("daemon is waiting, pending push %s", serviceMethod)
+			}
+			d.mu.Unlock()
 		}
 		d.wg.Wait()
 		args, err := handler(reply)

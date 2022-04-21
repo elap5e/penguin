@@ -26,41 +26,64 @@ import (
 
 	"github.com/elap5e/penguin/fake"
 	"github.com/elap5e/penguin/pkg/encoding/tlv"
+	"github.com/elap5e/penguin/pkg/log"
 	"github.com/elap5e/penguin/pkg/net/msf/rpc"
 	"github.com/elap5e/penguin/pkg/net/msf/rpc/tcp"
 )
 
+var random = rand.New(rand.NewSource(time.Now().UnixNano()))
+
 type Client struct {
-	rs  rpc.Sender
+	rpc.Sender
 	seq int32
 
-	mu       sync.Mutex
-	handlers map[string]rpc.Handler
-	sessions map[int64]*rpc.Session
-	stickets map[int64]*rpc.Tickets
+	mu          sync.Mutex
+	handlers    map[string]rpc.Handler
+	sessions    map[int64]*rpc.Session
+	stickets    map[int64]*rpc.Tickets
+	fakeSources map[int64]*fake.Source
 }
 
 func NewClient(ctx context.Context) rpc.Client {
-	conn, _ := net.Dial("tcp", "msfwifi.3g.qq.com:8080")
-	rr := rand.New(rand.NewSource(time.Now().UnixNano()))
-	cl := &Client{
-		seq:      rr.Int31n(100000),
-		mu:       sync.Mutex{},
-		handlers: make(map[string]rpc.Handler),
-		sessions: make(map[int64]*rpc.Session),
-		stickets: make(map[int64]*rpc.Tickets),
+	c := &Client{
+		seq:         random.Int31n(100000),
+		mu:          sync.Mutex{},
+		handlers:    make(map[string]rpc.Handler),
+		sessions:    make(map[int64]*rpc.Session),
+		stickets:    make(map[int64]*rpc.Tickets),
+		fakeSources: make(map[int64]*fake.Source),
 	}
-	cl.rs = rpc.NewSender(cl, tcp.NewCodec(cl, conn))
-	go cl.rs.Run(ctx)
-	return cl
+	if err := c.DialDefault(ctx); err != nil {
+		log.Warn("msf.Client.DialDefault error: %v", err)
+	}
+	return c
+}
+
+func (c *Client) Dial(network, address string) error {
+	return c.DialWithContext(context.Background(), network, address)
+}
+
+func (c *Client) DialDefault(ctx context.Context) error {
+	return c.DialWithContext(ctx, "tcp", "msfwifi.3g.qq.com:8080")
+}
+
+func (c *Client) DialWithContext(ctx context.Context, network, address string) error {
+	if c.Sender != nil {
+		if err := c.Sender.Close(); err != nil {
+			return err
+		}
+	}
+	conn, err := net.Dial(network, address)
+	if err != nil {
+		return err
+	}
+	c.Sender = rpc.NewSender(c, tcp.NewCodec(c, conn))
+	go c.Sender.Run(ctx)
+	return nil
 }
 
 func (c *Client) Close() error {
-	return c.rs.Close()
-}
-
-func (c *Client) Go(serviceMethod string, args *rpc.Args, reply *rpc.Reply, done chan *rpc.Call) *rpc.Call {
-	return c.rs.Go(serviceMethod, args, reply, done)
+	return c.Sender.Close()
 }
 
 func (c *Client) Call(serviceMethod string, args *rpc.Args, reply *rpc.Reply) error {
@@ -90,13 +113,20 @@ func (c *Client) Register(serviceMethod string, handler rpc.Handler) error {
 func (c *Client) GetNextSeq() int32 {
 	seq := atomic.AddInt32(&c.seq, 1)
 	if seq > 1000000 {
-		c.seq = rand.Int31n(100000) + 60000
+		c.seq = random.Int31n(100000) + 60000
 	}
 	return seq
 }
 
 func (c *Client) GetFakeSource(uin int64) *fake.Source {
-	return fake.NewMobileQQAndroidSource(uin)
+	c.mu.Lock()
+	fakeSource := c.fakeSources[uin]
+	if fakeSource == nil {
+		c.fakeSources[uin] = fake.NewMobileQQAndroidSource(uin)
+		fakeSource = c.fakeSources[uin]
+	}
+	c.mu.Unlock()
+	return fakeSource
 }
 
 func (c *Client) GetServerTime() int64 {

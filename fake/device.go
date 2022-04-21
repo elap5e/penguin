@@ -67,9 +67,9 @@ type DeviceOS struct {
 }
 
 func NewAndroidDevice(uin int64) *Device {
-	r := rand.New(rand.NewSource(uin))
+	random := rand.New(rand.NewSource(uin))
 	buf := make([]byte, 20)
-	_, err := r.Read(buf)
+	_, err := random.Read(buf)
 	if err != nil {
 		log.Fatalf("failed to generate device config")
 	}
@@ -77,9 +77,9 @@ func NewAndroidDevice(uin int64) *Device {
 	mac1 := fmt.Sprintf("00:50:%02x:%02x:00:%02x", buf[1], buf[2], buf[0])
 	mac2 := fmt.Sprintf("00:50:%02x:%02x:00:%02x", buf[1], buf[2], buf[3])
 	uuid := fmt.Sprintf("%08x-%04x-%04x-%04x-%012x", buf[4:7], buf[8:9], buf[10:11], buf[12:13], buf[14:19])
-	imei := fmt.Sprintf("86030802%07d", r.Int31n(10000000))
-	imsi := fmt.Sprintf("460001%09d", r.Int31n(1000000000))
-	osid := fmt.Sprintf("RKQ1.%07d.002", r.Int31n(10000000))
+	imei := fmt.Sprintf("86030802%07d", random.Int31n(10000000))
+	imsi := fmt.Sprintf("460001%09d", random.Int31n(1000000000))
+	osid := fmt.Sprintf("RKQ1.%07d.002", random.Int31n(10000000))
 	return &Device{
 		OS: DeviceOS{
 			Type:        "android",

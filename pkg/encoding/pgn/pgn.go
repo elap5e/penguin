@@ -14,6 +14,13 @@
 
 package pgn
 
+import (
+	"math/rand"
+	"time"
+)
+
+var random = rand.New(rand.NewSource(time.Now().UTC().UnixMicro()))
+
 func ParsePhotoType(ext string) uint32 {
 	switch ext {
 	case ".jpeg", ".jpg":

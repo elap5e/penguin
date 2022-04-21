@@ -22,7 +22,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"math/rand"
 	"net/url"
 	"path"
 	"reflect"
@@ -256,7 +255,7 @@ func (md *messageDecoder) decodePhoto(entity *penguin.MessageEntity, elems *[]*p
 				size = int64(w * h)
 			}
 			photo = &penguin.Photo{
-				ID:     rand.Int63n(0xffffffff),
+				ID:     random.Int63n(0xffffffff),
 				Name:   hex.EncodeToString(md5) + ".jpg",
 				Size:   size,
 				Width:  w,

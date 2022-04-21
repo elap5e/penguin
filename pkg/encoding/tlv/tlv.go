@@ -16,9 +16,13 @@ package tlv
 
 import (
 	"fmt"
+	"math/rand"
+	"time"
 
 	"github.com/elap5e/penguin/pkg/bytes"
 )
+
+var random = rand.New(rand.NewSource(time.Now().UTC().UnixMicro()))
 
 type Codec interface {
 	ReadFrom(b *bytes.Buffer) error

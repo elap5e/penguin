@@ -17,7 +17,6 @@ package tlv
 import (
 	"crypto/md5"
 	"encoding/binary"
-	"math/rand"
 	"net"
 
 	"github.com/elap5e/penguin/pkg/bytes"
@@ -80,7 +79,7 @@ func (t *T106) ReadFrom(b *bytes.Buffer) error {
 func (t *T106) WriteTo(b *bytes.Buffer) error {
 	v := bytes.NewBuffer([]byte{})
 	v.WriteUint16(4)
-	v.WriteUint32(rand.Uint32())
+	v.WriteUint32(random.Uint32())
 	v.WriteUint32(t.ssoVer)
 	v.WriteUint32(uint32(t.appID))
 	v.WriteUint32(t.acVer)
@@ -97,8 +96,8 @@ func (t *T106) WriteTo(b *bytes.Buffer) error {
 	v.WriteUint32(0)
 	v.WriteBool(t.haveGUID)
 	if len(t.guid) == 0 {
-		v.WriteUint64(rand.Uint64())
-		v.WriteUint64(rand.Uint64())
+		v.WriteUint64(random.Uint64())
+		v.WriteUint64(random.Uint64())
 	} else {
 		v.Write(t.guid)
 	}

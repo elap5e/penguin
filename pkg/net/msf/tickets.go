@@ -15,10 +15,10 @@
 package msf
 
 import (
+	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
 	"io/ioutil"
-	"math/rand"
 	"os"
 	"path"
 	"strconv"
@@ -49,8 +49,7 @@ func newTickets(uin int64) *rpc.Tickets {
 		Domains:  map[string]string{},
 		KSID:     []byte{},
 	}
-	r := rand.New(rand.NewSource(time.Now().Unix()))
-	r.Read(tickets.A1.Key[:])
+	rand.Read(tickets.A1.Key[:])
 	return &tickets
 }
 

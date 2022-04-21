@@ -16,7 +16,6 @@ package chat
 
 import (
 	"fmt"
-	"math/rand"
 	"sync"
 
 	"github.com/elap5e/penguin"
@@ -167,9 +166,9 @@ func (s *memStore) GetNextChatSeq(accountID, chatID, userID int64) (seq uint32, 
 	key := fmt.Sprintf("%d|%d|%d", accountID, chatID, userID)
 	oldSeq, ok := s.chatSeq[key]
 	if oldSeq == 0 {
-		oldSeq = uint32(rand.Int31n(100000) + 10000)
+		oldSeq = uint32(random.Int31n(100000))
 	} else if oldSeq > 1000000 {
-		oldSeq = uint32(rand.Int31n(100000) + 60000)
+		oldSeq = uint32(random.Int31n(100000) + 60000)
 	}
 	s.chatSeq[key] = oldSeq + 1
 	s.mu.RUnlock()

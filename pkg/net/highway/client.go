@@ -31,6 +31,8 @@ import (
 	"github.com/elap5e/penguin/pkg/net/highway/pb"
 )
 
+var random = rand.New(rand.NewSource(time.Now().UnixNano()))
+
 type Client struct {
 	codec *Codec
 
@@ -53,7 +55,6 @@ func Dial(network, address string) (*Client, error) {
 }
 
 func NewClient(conn io.ReadWriteCloser) *Client {
-	random := rand.New(rand.NewSource(time.Now().UnixNano()))
 	client := &Client{
 		codec:   NewCodec(conn),
 		seq:     random.Int31n(100000),
@@ -66,7 +67,7 @@ func NewClient(conn io.ReadWriteCloser) *Client {
 func (c *Client) getNextSeq() int32 {
 	seq := atomic.AddInt32(&c.seq, 1)
 	if seq > 1000000 {
-		c.seq = rand.Int31n(100000) + 60000
+		c.seq = random.Int31n(100000) + 60000
 	}
 	return seq
 }

@@ -15,10 +15,15 @@
 package message
 
 import (
+	"math/rand"
+	"time"
+
 	"github.com/elap5e/penguin/daemon/message/pb"
 	"github.com/elap5e/penguin/daemon/service"
 	"github.com/elap5e/penguin/pkg/net/msf/rpc"
 )
+
+var random = rand.New(rand.NewSource(time.Now().UTC().UnixMicro()))
 
 type Daemon interface {
 	Call(serviceMethod string, args *rpc.Args, reply *rpc.Reply) error

@@ -17,8 +17,6 @@ package daemon
 import (
 	"encoding/json"
 	"fmt"
-	"math/rand"
-	"time"
 
 	"github.com/elap5e/penguin"
 	"github.com/elap5e/penguin/daemon/channel/pb"
@@ -143,7 +141,6 @@ func (d *Daemon) SendChannelMessage(id int64, msg *penguin.Message) error {
 	var req pb.Oidb0Xf62_ReqBody
 	req.Msg = &pb.Common_Msg{}
 	req.Msg.Head = &pb.Common_MsgHead{}
-	random := rand.New(rand.NewSource(time.Now().Unix()))
 	// identify message type
 	if msg.Chat.Type == penguin.ChatTypeChannel {
 		// channel

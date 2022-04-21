@@ -16,7 +16,6 @@ package tlv
 
 import (
 	"fmt"
-	"math/rand"
 	"net"
 
 	"github.com/elap5e/penguin/pkg/bytes"
@@ -86,7 +85,7 @@ func (t *T1) ReadFrom(b *bytes.Buffer) error {
 func (t *T1) WriteTo(b *bytes.Buffer) error {
 	v := bytes.NewBuffer([]byte{})
 	v.WriteInt16(0x0001)
-	v.WriteInt32(rand.Int31())
+	v.WriteInt32(random.Int31())
 	v.WriteInt32(int32(t.uin))
 	v.WriteInt32(int32(t.serverTime))
 	v.Write(t.ip.To4())

@@ -16,10 +16,14 @@ package chat
 
 import (
 	"context"
+	"math/rand"
+	"time"
 
 	"github.com/elap5e/penguin/daemon/account"
 	"github.com/elap5e/penguin/pkg/net/msf/rpc"
 )
+
+var random = rand.New(rand.NewSource(time.Now().UTC().UnixMicro()))
 
 type Daemon interface {
 	Call(serviceMethod string, args *rpc.Args, reply *rpc.Reply) error
