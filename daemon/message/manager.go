@@ -43,6 +43,7 @@ func NewManager(ctx context.Context, d Daemon) *Manager {
 		flags:  make(map[int64]int32),
 	}
 	m.Register(service.MethodMessagePushNotify, m.handlePushNotifyRequest)
+	m.Register(service.MethodMessagePushReaded, m.handlePushReadedRequest)
 	return m
 }
 

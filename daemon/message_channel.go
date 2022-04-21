@@ -189,6 +189,14 @@ func (d *Daemon) onRecvChannelMessage(id int64, recv *pb.Common_Msg, msg *pengui
 }
 
 func (d *Daemon) onSendChannelMessage(id int64, req *pb.Oidb0Xf62_ReqBody, resp *pb.Oidb0Xf62_RspBody, msg *penguin.Message) error {
+	if msg.From.Account.Type == penguin.AccountTypeDefault {
+		account, ok := d.accm.GetChannelFromDefault(msg.From.Account.ID)
+		if ok {
+			_ = msg.Chat.Channel.ID
+			_ = account.ID
+			msg.From = d.getOrLoadChannelUser(msg.Chat.Channel.ID, account.ID, nil)
+		}
+	}
 	go d.pushMessage(msg)
 	preq, _ := json.Marshal(req)
 	prsp, _ := json.Marshal(resp)

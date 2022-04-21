@@ -27,12 +27,19 @@ type Store interface {
 
 	GetChannelAccount(id int64) (account *penguin.Account, ok bool)
 	SetChannelAccount(id int64, newAccount *penguin.Account) (oldAccount *penguin.Account, ok bool)
+
+	GetChannelFromDefault(id int64) (*penguin.Account, bool)
+	GetDefaultFromChannel(id int64) (*penguin.Account, bool)
+	SetDefaultChannelPair(src, dst int64)
 }
 
 type memStore struct {
 	mu       sync.RWMutex
 	defaults map[int64]*penguin.Account // shared
 	channels map[int64]*penguin.Account // shared
+
+	defaultToChannel map[int64]int64 // shared
+	channelToDefault map[int64]int64 // shared
 }
 
 func NewMemStore() Store {
@@ -40,6 +47,9 @@ func NewMemStore() Store {
 		mu:       sync.RWMutex{},
 		defaults: make(map[int64]*penguin.Account),
 		channels: make(map[int64]*penguin.Account),
+
+		defaultToChannel: make(map[int64]int64),
+		channelToDefault: make(map[int64]int64),
 	}
 }
 
@@ -147,4 +157,31 @@ func (s *memStore) SetChannelAccount(id int64, newAccount *penguin.Account) (old
 	copyChannelAccount(account, newAccount, true)
 	s.mu.Unlock()
 	return oldAccount, ok
+}
+
+func (s *memStore) GetChannelFromDefault(id int64) (*penguin.Account, bool) {
+	s.mu.RLock()
+	id, ok := s.defaultToChannel[id]
+	s.mu.RUnlock()
+	if !ok {
+		return nil, false
+	}
+	return s.GetChannelAccount(id)
+}
+
+func (s *memStore) GetDefaultFromChannel(id int64) (*penguin.Account, bool) {
+	s.mu.RLock()
+	id, ok := s.channelToDefault[id]
+	s.mu.RUnlock()
+	if !ok {
+		return nil, false
+	}
+	return s.GetDefaultAccount(id)
+}
+
+func (s *memStore) SetDefaultChannelPair(src, dst int64) {
+	s.mu.RLock()
+	s.channelToDefault[dst] = src
+	s.defaultToChannel[src] = dst
+	s.mu.RUnlock()
 }

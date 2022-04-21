@@ -15,8 +15,8 @@
 //go:generate go run cmd/message-face-gen/main.go
 //go:generate go run cmd/proto-message-gen/main.go
 
+//go:generate protoc --go_out=$GOPATH/src pkg/encoding/oidb/pb/oidb_sso.proto
 //go:generate protoc --go_out=$GOPATH/src pkg/encoding/tlv/pb/device_report.proto
-//go:generate protoc --go_out=$GOPATH/src pkg/encoding/trpc/pb/oidb_sso.proto
 //go:generate protoc --go_out=$GOPATH/src pkg/net/highway/pb/highway.proto
 
 //go:generate protoc --go_out=$GOPATH/src daemon/auth/pb/gateway_verify.proto
@@ -45,6 +45,7 @@
 //go:generate protoc --go_out=$GOPATH/src daemon/service/pb/domain_ip.proto
 //go:generate protoc --go_out=$GOPATH/src daemon/service/pb/oidb_0x769.proto
 //go:generate protoc --go_out=$GOPATH/src daemon/service/pb/online_push.proto
+//go:generate protoc --go_out=$GOPATH/src daemon/service/pb/online_push_service.proto
 
 //go:generate protoc --go_out=$GOPATH/src daemon/channel/pb/channel.proto
 //go:generate protoc --go_out=$GOPATH/src daemon/channel/pb/channel_base.proto

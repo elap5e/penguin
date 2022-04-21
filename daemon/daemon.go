@@ -51,6 +51,8 @@ type Daemon struct {
 
 	mu      sync.Mutex
 	msgChan chan *penguin.Message
+	wg      sync.WaitGroup
+	waiting bool
 
 	heartbeating bool
 	lastRecvTime time.Time
@@ -70,7 +72,8 @@ func New(ctx context.Context, cfg *config.Config) *Daemon {
 	d.cntm = contact.NewManager(d.ctx, d, contact.NewMemStore())
 	d.msgm = message.NewManager(d.ctx, d)
 	d.svcm = service.NewManager(d.ctx, d)
-	d.msgChan = make(chan *penguin.Message, 100)
+	d.msgChan = make(chan *penguin.Message, 1000)
+	d.Wait()
 	return d
 }
 
@@ -118,6 +121,7 @@ func (d *Daemon) Run() error {
 	if _, err := d.svcm.RegisterSetOnlineStatus(resp.Data.Uin, service.StatusTypeOnline, true); err != nil {
 		return fmt.Errorf("service register set online status, error: %v", err)
 	}
+	d.Start()
 	go d.watchDog(resp.Data.Uin)
 	select {}
 }
@@ -132,8 +136,34 @@ func (d *Daemon) Call(serviceMethod string, args *rpc.Args, reply *rpc.Reply) er
 	return err
 }
 
+func (d *Daemon) Start() {
+	d.mu.Lock()
+	if d.waiting {
+		d.wg.Done()
+		d.waiting = false
+	} else {
+		log.Warn("daemon already started")
+	}
+	d.mu.Unlock()
+}
+
+func (d *Daemon) Wait() {
+	d.mu.Lock()
+	if !d.waiting {
+		d.wg.Add(1)
+		d.waiting = true
+	} else {
+		log.Warn("daemon already waiting")
+	}
+	d.mu.Unlock()
+}
+
 func (d *Daemon) Register(serviceMethod string, handler rpc.Handler) error {
 	return d.c.Register(serviceMethod, func(reply *rpc.Reply) (*rpc.Args, error) {
+		if d.waiting {
+			log.Warn("daemon is waiting, pending push %s", serviceMethod)
+		}
+		d.wg.Wait()
 		args, err := handler(reply)
 		if err != nil {
 			return nil, err

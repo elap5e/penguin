@@ -50,6 +50,6 @@ func (m *Manager) handlePushLoginNotify(reply *rpc.Reply) (*rpc.Args, error) {
 		return nil, err
 	}
 	p, _ := json.Marshal(push)
-	log.Debug("service.PushLoginNotifyRequest: %s", p)
+	log.Debug("service.handlePushLoginNotify: %s", p)
 	return nil, nil
 }

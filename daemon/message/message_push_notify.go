@@ -41,8 +41,9 @@ func (m *Manager) handlePushNotifyRequest(reply *rpc.Reply) (*rpc.Args, error) {
 		for _, uniPairMsgs := range resp.GetUinPairMsgs() {
 			for _, msg := range uniPairMsgs.GetMsg() {
 				head := msg.GetMsgHead()
-				switch head.GetMsgType() {
-				case 9, 10, 31, 79, 97, 120, 132, 133, 141, 166, 167:
+				switch int32(head.GetMsgType()) {
+				// case 9, 10, 31, 79, 97, 120, 132, 133, 141, 166, 167:
+				case 9, 10, 31, 79, 97, 120, 132, 133, 166, 167: // 0x84(132)
 					switch head.GetC2CCmd() {
 					case 11, 175:
 						if err := m.OnRecvMessage(reply.Uin, head, msg.GetMsgBody()); err != nil {
@@ -63,7 +64,7 @@ func (m *Manager) handlePushNotifyRequest(reply *rpc.Reply) (*rpc.Args, error) {
 						})
 					default:
 						p, _ := json.Marshal(msg)
-						log.Warn("unhandled c2c cmd:%d msg:%s", head.GetC2CCmd(), p)
+						log.Warn("unhandled private message cmd:%d msg:%s", head.GetC2CCmd(), p)
 					}
 				case 78, 81, 103, 107, 110, 111, 114, 118:
 					_, _ = m.DeleteMessage(reply.Uin, &pb.MsgService_PbDeleteMsgReq_MsgItem{
@@ -88,6 +89,21 @@ func (m *Manager) handlePushNotifyRequest(reply *rpc.Reply) (*rpc.Args, error) {
 						Type:         732,
 						MessageBytes: msg.GetMsgBody().GetMsgContent(),
 					})
+				case -1010, -1009, -1008, -1007, -1006:
+					// service message
+					fallthrough
+				case -1023, -1022, -1021, -1020:
+					// chat service message
+					fallthrough
+				case 33, 34:
+					// chat user joined
+					fallthrough
+				case 35, 36, 37, 45, 46, 84, 85, 86, 87:
+					// chat service message
+					fallthrough
+				case 187, 188, 189, 190, 191:
+					// service message
+					fallthrough
 				default:
 					p, _ := json.Marshal(msg)
 					log.Warn("unhandled type cmd:%d msg:%s", head.GetMsgType(), p)

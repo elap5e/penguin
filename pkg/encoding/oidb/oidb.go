@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package trpc
+package oidb
 
 import (
 	"google.golang.org/protobuf/proto"
 
-	"github.com/elap5e/penguin/pkg/encoding/trpc/pb"
+	"github.com/elap5e/penguin/pkg/encoding/oidb/pb"
 )
 
 type Data struct {

@@ -89,6 +89,16 @@ func (m *Manager) handleOnlinePushMessage(reply *rpc.Reply) (*rpc.Args, error) {
 	})
 }
 
+func (m *Manager) handleOnlinePushService(reply *rpc.Reply) (*rpc.Args, error) {
+	push := pb.OnlinePushService_PbMsgInfo{}
+	if err := proto.Unmarshal(reply.Payload, &push); err != nil {
+		return nil, err
+	}
+	p, _ := json.Marshal(&push)
+	log.Debug("service.handleOnlinePushService: %s", p)
+	return nil, nil
+}
+
 func (m *Manager) OnlinePushResponse(reply *rpc.Reply, resp *OnlinePushResponse) (*rpc.Args, error) {
 	p, err := uni.Marshal(&uni.Data{
 		Version:     3,
@@ -128,31 +138,17 @@ func (m *Manager) handleOnlinePushRequest(reply *rpc.Reply) (*rpc.Args, error) {
 			_ = m.Decode0x2dc(reply.Uin, msg)
 		case 736: // 0x2e0(736)
 			_ = m.decode0x2e0(reply.Uin, msg)
-		case -1010, -1009, -1008, -1007, -1006:
-			// service message
-			fallthrough
-		case -1023, -1022, -1021, -1020:
-			// chat service message
-			fallthrough
-		case 0x8: // 8
-			fallthrough
-		case 9, 10, 31, 79, 97, 120, 132, 133, 166, 167: // 0x84(132)
-			fallthrough
-		case 35, 36, 37, 45, 46, 84, 85, 86, 87:
-			// chat service message
+		case 8: // 0x8(8)
 			fallthrough
 		case 42, 83:
 			fallthrough
 		case 43, 82:
 			fallthrough
-		case 0xa9: // 169
-			fallthrough
-		case 187, 188, 189, 190, 191:
-			// service message
+		case 169: // 0xa9(169)
 			fallthrough
 		case 208: // 208
 			fallthrough
-		case 0xe6: // 230
+		case 230: // 0xe6(230)
 			fallthrough
 		default:
 			dumpUnknown(msg.Type, msg)

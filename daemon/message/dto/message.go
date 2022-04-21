@@ -32,6 +32,13 @@ type PushNotifyRequest struct {
 	ServerIP      uint32   `jce:"13" json:"server_ip,omitempty"`
 }
 
+type PushReadedRequest struct {
+	Type    uint8                   `jce:"0" json:"type,omitempty"`
+	Private []*MessageReadedPrivate `jce:"1" json:"private,omitempty"`
+	Group   []*MessageReadedGroup   `jce:"2" json:"group,omitempty"`
+	Discuss []*MessageReadedDiscuss `jce:"3" json:"discuss,omitempty"`
+}
+
 type Message struct {
 	FromUin         int64            `jce:"0" json:"from_uin,omitempty"`
 	Time            int64            `jce:"1" json:"time,omitempty"`
@@ -69,7 +76,7 @@ type MessageDelete struct {
 	ClientIP int32  `jce:"10" json:"client_ip,omitempty"`
 }
 
-type MessageReadedC2C struct {
+type MessageReadedPrivate struct {
 	Uin          int64 `jce:"0" json:"uin,omitempty"`
 	LastReadTime int64 `jce:"1" json:"last_read_time,omitempty"`
 }

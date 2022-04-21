@@ -53,6 +53,7 @@ func (m *Manager) syncFirstView(uin int64, req *pb.SyncLogic_FirstViewReq) (*pb.
 	if err := proto.Unmarshal(reply.Payload, &resp); err != nil {
 		return nil, err
 	}
+	m.GetAccountManager().SetDefaultChannelPair(uin, int64(resp.GetSelfTinyid()))
 	return &resp, nil
 }
 

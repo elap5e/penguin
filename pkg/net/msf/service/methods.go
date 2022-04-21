@@ -78,10 +78,12 @@ const (
 	MethodMessageChatDownloadVoice = "PttStore.GroupPttDown"
 	MethodMessageChatUploadVoice   = "PttStore.GroupPttUp"
 
-	MethodMessageChatDownloadVideoSticker = "OidbSvcTrpcTcp.0x10dd_1"
-	MethodMessageChatUploadVideoSticker   = "OidbSvcTrpcTcp.0x10dd_0"
-
 	_ = "MultiVideo.s2c"
+)
+
+var (
+	MethodMessageChatDownloadVideoSticker = MethodOidbSvcTrpcTcp(4317, 1)
+	MethodMessageChatUploadVideoSticker   = MethodOidbSvcTrpcTcp(4317, 0)
 )
 
 const (
@@ -102,6 +104,10 @@ const (
 	MethodServicePushForceOffline = "MessageSvc.PushForceOffline"
 	MethodServicePushLoginNotify  = "StatSvc.SvcReqMSFLoginNotify"
 )
+
+func MethodOidbSvc(cmd, svc uint32) string {
+	return fmt.Sprintf("OidbSvc.0x%x_%d", cmd, svc)
+}
 
 func MethodOidbSvcTrpcTcp(cmd, svc uint32) string {
 	return fmt.Sprintf("OidbSvcTrpcTcp.0x%x_%d", cmd, svc)

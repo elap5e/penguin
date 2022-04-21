@@ -23,7 +23,7 @@ import (
 	"github.com/elap5e/penguin/daemon/account"
 	"github.com/elap5e/penguin/daemon/channel/pb"
 	"github.com/elap5e/penguin/fake"
-	"github.com/elap5e/penguin/pkg/encoding/trpc"
+	"github.com/elap5e/penguin/pkg/encoding/oidb"
 	"github.com/elap5e/penguin/pkg/net/msf/rpc"
 	"github.com/elap5e/penguin/pkg/net/msf/service"
 )
@@ -58,7 +58,7 @@ func (m *Manager) request(uin int64, cmd, svc uint32, req proto.Message, resp pr
 	if p, err = proto.Marshal(req); err != nil {
 		return nil, err
 	}
-	if p, err = trpc.Marshal(&trpc.Data{
+	if p, err = oidb.Marshal(&oidb.Data{
 		Command: cmd,
 		Service: svc,
 		Payload: p,
@@ -74,8 +74,8 @@ func (m *Manager) request(uin int64, cmd, svc uint32, req proto.Message, resp pr
 	if err = m.Call(service.MethodOidbSvcTrpcTcp(cmd, svc), &args, &reply); err != nil {
 		return nil, err
 	}
-	data := trpc.Data{}
-	if err = trpc.Unmarshal(reply.Payload, &data); err != nil {
+	data := oidb.Data{}
+	if err = oidb.Unmarshal(reply.Payload, &data); err != nil {
 		return nil, err
 	}
 	if data.Result != 0 {

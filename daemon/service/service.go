@@ -53,6 +53,7 @@ func NewManager(ctx context.Context, d Daemon) *Manager {
 	m.Daemon.Register(service.MethodServiceConfigPushRequest, m.handleConfigPushRequest)
 	m.Daemon.Register(service.MethodServiceOnlinePushRequest, m.handleOnlinePushRequest)
 	m.Daemon.Register(service.MethodServiceOnlinePushChatMessage, m.handleOnlinePushMessage)
+	m.Daemon.Register(service.MethodServiceOnlinePushChatSerivce, m.handleOnlinePushService)
 	m.Daemon.Register(service.MethodServiceOnlinePushUserMessage, m.handleOnlinePushMessage)
 	m.Daemon.Register(service.MethodServiceOnlinePushTicketExpired, m.handleOnlinePushTicketExpired)
 	m.Daemon.Register(service.MethodServicePushForceOffline, m.handlePushForceOffline)
