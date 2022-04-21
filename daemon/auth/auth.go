@@ -16,11 +16,13 @@ package auth
 
 import (
 	"context"
+	"crypto/md5"
 	"crypto/rand"
 	"strconv"
 
 	"github.com/elap5e/penguin/daemon/auth/pb"
 	"github.com/elap5e/penguin/pkg/encoding/oicq"
+	"github.com/elap5e/penguin/pkg/log"
 	"github.com/elap5e/penguin/pkg/net/msf/rpc"
 )
 
@@ -35,7 +37,14 @@ type Manager struct {
 	d Daemon
 
 	// session
+	accounts     map[string]*Account
 	mapExtraData map[int64]*ExtraData
+}
+
+type Account struct {
+	Username string
+	Password [16]byte
+	Generate bool
 }
 
 func NewManager(ctx context.Context, c rpc.Client, d Daemon) *Manager {
@@ -43,8 +52,55 @@ func NewManager(ctx context.Context, c rpc.Client, d Daemon) *Manager {
 		ctx:          ctx,
 		c:            c,
 		d:            d,
+		accounts:     make(map[string]*Account),
 		mapExtraData: make(map[int64]*ExtraData),
 	}
+}
+
+func copyAccount(newAccount, oldAccount *Account) {
+	if oldAccount == nil {
+		log.Warn("auth.copyAccount: oldAccount is nil")
+		return
+	} else if newAccount == nil {
+		log.Warn("auth.copyAccount: newAccount is nil")
+		return
+	}
+	newAccount.Username = oldAccount.Username
+	copy(newAccount.Password[:], oldAccount.Password[:])
+	newAccount.Generate = oldAccount.Generate
+	return
+}
+
+func (m *Manager) GetAccount(username string) (oldAccount *Account) {
+	account, ok := m.accounts[username]
+	if !ok {
+		m.accounts[username] = &Account{
+			Username: username,
+			Password: md5.Sum([]byte(randomPassword())),
+			Generate: true,
+		}
+		account = m.accounts[username]
+	}
+	oldAccount = new(Account)
+	copyAccount(oldAccount, account)
+	return oldAccount
+}
+
+func (m *Manager) SetAccount(username, password string) (oldAccount *Account) {
+	account, ok := m.accounts[username]
+	if !ok {
+		m.accounts[username] = new(Account)
+		account = m.accounts[username]
+	} else {
+		oldAccount = new(Account)
+		copyAccount(oldAccount, account)
+	}
+	copyAccount(account, &Account{
+		Username: username,
+		Password: md5.Sum([]byte(randomPassword())),
+		Generate: false,
+	})
+	return account
 }
 
 type CaptchaSign struct {

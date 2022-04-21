@@ -39,7 +39,7 @@ func (m *Manager) Decode0x2dc(uin int64, msg *dto.Message) error {
 
 	switch typ {
 	case 0x0c: // ChatMute
-		_ = m.onChatMute(uin, chatID, msg)
+		return m.onChatMute(uin, chatID, msg)
 	case 0x10, 0x11, 0x14, 0x15: // ChatTips
 		if len(msg.MessageBytes) < 8 {
 			return fmt.Errorf("invalid message length: %d < 8", len(msg.MessageBytes))
@@ -55,14 +55,13 @@ func (m *Manager) Decode0x2dc(uin int64, msg *dto.Message) error {
 			chatID = int64(notify.GetGroupCode())
 		}
 		if v := notify.GetMsgGraytips(); v != nil {
-			_ = m.onChatMessageGrayTips(uin, chatID, v)
+			return m.onChatMessageGrayTips(uin, chatID, v)
 		} else if v := notify.GetMsgGroupNotify(); v != nil {
-			_ = m.onChatMessageNotify(uin, chatID, v)
+			return m.onChatMessageNotify(uin, chatID, v)
 		} else if v := notify.GetMsgRecall(); v != nil {
-			_ = m.onChatMessageRecall(uin, chatID, v)
+			return m.onChatMessageRecall(uin, chatID, v)
 		} else if v := notify.GetGeneralGrayTip(); v != nil {
-			_ = m.onChatGrayTips(uin, chatID, v)
-		} else {
+			return m.onChatGrayTips(uin, chatID, v)
 		}
 	case 0x03:
 		fallthrough
@@ -104,7 +103,7 @@ func (m *Manager) onChatMute(uin, chatID int64, msg *dto.Message) error {
 			if seconds == 0 {
 				log.Notifyf("[%d] group:%d(%s) [%d(%s)]解除[%d(%s)]禁言", uin, chat.ID, chat.Title, from.Account.ID, fromDisplay, to.Account.ID, toDisplay)
 			} else {
-				log.Notifyf("[%d] group:%d(%s) [%d(%s)]禁言[%d(%s)]%s", uin, chat.ID, chat.Title, from.Account.ID, fromDisplay, to.Account.ID, toDisplay, seconds)
+				log.Notifyf("[%d] group:%d(%s) [%d(%s)]禁言[%d(%s)][%s]", uin, chat.ID, chat.Title, from.Account.ID, fromDisplay, to.Account.ID, toDisplay, seconds)
 			}
 		}
 	}
@@ -137,8 +136,33 @@ func (m *Manager) onChatMessageRecall(uin, chatID int64, notify *pb.ChatTips_Mes
 }
 
 func (m *Manager) onChatGrayTips(uin, chatID int64, notify *pb.ChatTips_GeneralGrayTipInfo) error {
-	id := notify.GetBusiId()
-	if id == 1061 {
+	id, tmplID := notify.GetBusiId(), notify.GetTemplId()
+	if id == 1003 {
+		userID, userDisplay, honor := int64(0), "", ""
+		for _, v := range notify.GetMsgTemplParam() {
+			if bytes.Equal(v.GetName(), []byte("uin")) {
+				userID, _ = strconv.ParseInt(string(v.GetValue()), 10, 64)
+			} else if bytes.Equal(v.GetName(), []byte("nick")) {
+				userDisplay = string(v.GetValue())
+			} else if bytes.Equal(v.GetName(), []byte("honor_name_2")) {
+				honor = string(v.GetValue())
+			}
+		}
+		chat, _ := m.GetChatManager().GetChat(chatID)
+		user, _ := m.GetChatManager().GetChatUser(chatID, userID)
+		if userDisplay == "" {
+			userDisplay = user.Account.Username
+		}
+		if tmplID == 1052 {
+			log.Notifyf("[%d] group:%d(%s) [%d(%s)]在群聊中连续发消息超过7天, 获得[%s]标识。", uin, chat.ID, chat.Title, userID, userDisplay, honor)
+		} else if tmplID == 1053 {
+			log.Notifyf("[%d] group:%d(%s) 昨日[%d(%s)]在群内发言最积极，夺走了[%s]标识。", uin, chat.ID, chat.Title, userID, userDisplay, honor)
+		} else if tmplID == 1054 {
+			log.Notifyf("[%d] group:%d(%s) 昨日[%d(%s)]在群内发言最积极, 获得[%s]标识。", uin, chat.ID, chat.Title, userID, userDisplay, honor)
+		} else if tmplID == 1067 {
+			log.Notifyf("[%d] group:%d(%s) [%d(%s)]在群聊中连续发表情包超过3天，且累计数量超过20条，获得[%s]标识。", uin, chat.ID, chat.Title, userID, userDisplay, honor)
+		}
+	} else if id == 1061 {
 		fromID, action, toID, suffix := int64(0), "戳了戳", int64(0), ""
 		for _, v := range notify.GetMsgTemplParam() {
 			if bytes.Equal(v.GetName(), []byte("uin_str1")) {
@@ -163,15 +187,15 @@ func (m *Manager) onChatGrayTips(uin, chatID int64, notify *pb.ChatTips_GeneralG
 			toDisplay = to.Account.Username
 		}
 		log.Notifyf("[%d] group:%d(%s) [%d(%s)]%s[%d(%s)]%s", uin, chat.ID, chat.Title, from.Account.ID, fromDisplay, action, to.Account.ID, toDisplay, suffix)
-	} else if id == 1067 {
-		userID, userDisplay, honor := int64(0), "", ""
+	} else if id == 1068 {
+		userID, userDisplay, action := int64(0), "", ""
 		for _, v := range notify.GetMsgTemplParam() {
-			if bytes.Equal(v.GetName(), []byte("uin")) {
+			if bytes.Equal(v.GetName(), []byte("mqq_uin")) {
 				userID, _ = strconv.ParseInt(string(v.GetValue()), 10, 64)
-			} else if bytes.Equal(v.GetName(), []byte("nick")) {
+			} else if bytes.Equal(v.GetName(), []byte("mqq_nick")) && len(v.GetValue()) != 0 {
 				userDisplay = string(v.GetValue())
-			} else if bytes.Equal(v.GetName(), []byte("honor_name_2")) {
-				honor = string(v.GetValue())
+			} else if bytes.Equal(v.GetName(), []byte("user_sign")) && len(v.GetValue()) != 0 {
+				action = string(v.GetValue())
 			}
 		}
 		chat, _ := m.GetChatManager().GetChat(chatID)
@@ -179,9 +203,7 @@ func (m *Manager) onChatGrayTips(uin, chatID int64, notify *pb.ChatTips_GeneralG
 		if userDisplay == "" {
 			userDisplay = user.Account.Username
 		}
-		// log.Notifyf("[%d] group:%d(%s) 昨日[%d(%s)]在群内发言最积极，获得[%s]标识。", uin, chat.ID, chat.Title, userID, userDisplay, honor)
-		// log.Notifyf("[%d] group:%d(%s) [%d(%s)]在群聊中连续发消息超过7天, 获得[%s]标识。", uin, chat.ID, chat.Title, userID, userDisplay, honor)
-		log.Notifyf("[%d] group:%d(%s) [%d(%s)]在群聊中连续发表情包超过3天，且累计数量超过20条，获得[%s]标识。", uin, chat.ID, chat.Title, userID, userDisplay, honor)
+		log.Notifyf("[%d] group:%d(%s) [%d(%s)]%s", uin, chat.ID, chat.Title, user.Account.ID, userDisplay, action)
 	}
 	return nil
 }

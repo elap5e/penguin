@@ -16,6 +16,7 @@ package service
 
 import (
 	"encoding/json"
+	"strconv"
 
 	"google.golang.org/protobuf/proto"
 
@@ -111,7 +112,7 @@ func (m *Manager) OnlinePushResponse(reply *rpc.Reply, resp *OnlinePushResponse)
 
 func (m *Manager) handleOnlinePushRequest(reply *rpc.Reply) (*rpc.Args, error) {
 	data, push := uni.Data{}, OnlinePushRequest{}
-	if err := uni.Unmarshal(reply.Payload, &data, map[string]interface{}{
+	if err := uni.Unmarshal(reply.Payload, &data, map[string]any{
 		"req": &push,
 	}); err != nil {
 		return nil, err
@@ -126,8 +127,7 @@ func (m *Manager) handleOnlinePushRequest(reply *rpc.Reply) (*rpc.Args, error) {
 		case 732: // 0x2dc(732)
 			_ = m.Decode0x2dc(reply.Uin, msg)
 		case 736: // 0x2e0(736)
-			_, _ = m.decode0x2e0(reply.Uin, msg.MessageBytes)
-			dumpUnknown(msg.Type, msg)
+			_ = m.decode0x2e0(reply.Uin, msg)
 		case -1010, -1009, -1008, -1007, -1006:
 			// service message
 			fallthrough
@@ -176,7 +176,7 @@ func (m *Manager) handleOnlinePushRequest(reply *rpc.Reply) (*rpc.Args, error) {
 }
 
 func (m *Manager) handleOnlinePushTicketExpired(reply *rpc.Reply) (*rpc.Args, error) {
-	if _, err := m.GetAuthManager().SignInChangeToken(reply.Uin); err != nil {
+	if _, err := m.GetAuthManager().SignInUpdateToken(strconv.FormatInt(reply.Uin, 10), true); err != nil {
 		return nil, err
 	}
 	if _, err := m.RegisterAppRegister(reply.Uin); err != nil {

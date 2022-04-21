@@ -145,7 +145,7 @@ func (m *Manager) requestGetGroups(uin int64, req *GetGroupsRequest) (*GetGroups
 		Version:     3,
 		ServantName: "mqq.IMService.FriendListServiceServantObj",
 		FuncName:    "GetTroopListReqV2Simplify",
-	}, map[string]interface{}{
+	}, map[string]any{
 		"GetTroopListReqV2Simplify": req,
 	})
 	if err != nil {
@@ -175,7 +175,7 @@ func (m *Manager) requestGetGroups(uin int64, req *GetGroupsRequest) (*GetGroups
 		_, _ = m.SetChat(chat.ID, &chat)
 		p, _ := json.Marshal(chat)
 		log.Debug("chat:%d:%s", chat.ID, p)
-		_, _ = m.GetGroupUsers(uin, chat.ID)
+		_ = m.GetGroupUsersAll(uin, chat.ID)
 	}
 	return &resp, nil
 }

@@ -534,13 +534,9 @@ func (me *messageEncoder) encodeShakeWindow(elem *pb.IMMsgBody_ShakeWindow, msg 
 }
 
 func (me *messageEncoder) encodeText(elem *pb.IMMsgBody_Text, msg *penguin.Message) {
-	buf := elem.GetAttr_6Buf()
-	if len(buf) < 13 {
-		n, _ := me.buffer.Write(elem.GetStr())
-		me.offset += int64(n)
-	} else {
+	n, _ := me.buffer.Write(elem.GetStr())
+	if buf := elem.GetAttr_6Buf(); len(buf) > 12 {
 		id := int64(buf[7])<<24 + int64(buf[8])<<16 + int64(buf[9])<<8 + int64(buf[10])
-		n, _ := me.buffer.Write(elem.GetStr())
 		msg.Entities = append(msg.Entities, &penguin.MessageEntity{
 			Type:   "mention",
 			Offset: me.offset,
@@ -548,8 +544,19 @@ func (me *messageEncoder) encodeText(elem *pb.IMMsgBody_Text, msg *penguin.Messa
 			URL:    fmt.Sprintf("?id=%d", id),
 			User:   &penguin.User{Account: &penguin.Account{ID: id}},
 		})
-		me.offset += int64(n)
 	}
+	if buf := elem.GetPbReserve(); len(buf) > 0 {
+		info := pb.IMMsgBodyElem_TextPb{}
+		_ = proto.Unmarshal(elem.GetPbReserve(), &info)
+		msg.Entities = append(msg.Entities, &penguin.MessageEntity{
+			Type:   "mention",
+			Offset: me.offset,
+			Length: int64(n),
+			URL:    fmt.Sprintf("?id=%d", info.TinyId),
+			User:   &penguin.User{Account: &penguin.Account{ID: info.TinyId}},
+		})
+	}
+	me.offset += int64(n)
 }
 
 func (me *messageEncoder) encodeFace(elem *pb.IMMsgBody_Face, msg *penguin.Message) {
@@ -600,6 +607,16 @@ func (me *messageEncoder) encodeMarketFace(elem *pb.IMMsgBody_MarketFace, msg *p
 }
 
 func (me *messageEncoder) encodeCustomFace(elem *pb.IMMsgBody_CustomFace, msg *penguin.Message, flash ...bool) {
+	msg.Photo = &penguin.Photo{
+		ID:     int64(elem.GetFileId()),
+		Name:   string(elem.GetGuid()),
+		Size:   int64(elem.GetSize()),
+		Width:  int(elem.GetWidth()),
+		Height: int(elem.GetHeight()),
+		Digest: &penguin.Digest{
+			MD5: elem.GetMd5(),
+		},
+	}
 	n, _ := me.buffer.Write([]byte("[图片]"))
 	entity := &penguin.MessageEntity{
 		Type:   "photo",
@@ -622,6 +639,15 @@ func (me *messageEncoder) encodeCustomFace(elem *pb.IMMsgBody_CustomFace, msg *p
 }
 
 func (me *messageEncoder) encodeNotOnlineImage(elem *pb.IMMsgBody_NotOnlineImage, msg *penguin.Message, flash ...bool) {
+	msg.Photo = &penguin.Photo{
+		ID:     int64(elem.GetFileId()),
+		Size:   int64(elem.GetFileLen()),
+		Width:  int(elem.GetPicWidth()),
+		Height: int(elem.GetPicHeight()),
+		Digest: &penguin.Digest{
+			MD5: elem.GetPicMd5(),
+		},
+	}
 	n, _ := me.buffer.Write([]byte("[图片]"))
 	entity := &penguin.MessageEntity{
 		Type:   "photo",

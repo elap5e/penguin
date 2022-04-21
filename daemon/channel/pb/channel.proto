@@ -146,4 +146,12 @@ message Channel {
       }
     }
   }
+  message Service {
+    ChannelMute channel_mute = 43;
+    message ChannelMute {
+      int64 channel_id = 1;
+      int64 tiny_id = 2;
+      int64 time = 3;
+    }
+  }
 }

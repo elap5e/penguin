@@ -207,7 +207,7 @@ func (m *Manager) requestGetContacts(uin int64, req *GetContactsRequest) (*GetCo
 		Version:     3,
 		ServantName: "mqq.IMService.FriendListServiceServantObj",
 		FuncName:    "GetFriendListReq",
-	}, map[string]interface{}{
+	}, map[string]any{
 		"FL": req,
 	})
 	if err != nil {

@@ -88,8 +88,6 @@ const (
 	MethodServiceRegister            = "StatSvc.register"
 	MethodServiceSetStatusFromClient = "StatSvc.SetStatusFromClient"
 
-	MethodServicePushForceOffline = "MessageSvc.PushForceOffline"
-
 	MethodServiceConfigPushDomain   = "ConfigPushSvc.PushDomain"
 	MethodServiceConfigPushRequest  = "ConfigPushSvc.PushReq"
 	MethodServiceConfigPushResponse = "ConfigPushSvc.PushResp"
@@ -100,6 +98,9 @@ const (
 	MethodServiceOnlinePushRequest       = "OnlinePush.ReqPush"
 	MethodServiceOnlinePushResponse      = "OnlinePush.RespPush"
 	MethodServiceOnlinePushTicketExpired = "OnlinePush.SidTicketExpired"
+
+	MethodServicePushForceOffline = "MessageSvc.PushForceOffline"
+	MethodServicePushLoginNotify  = "StatSvc.SvcReqMSFLoginNotify"
 )
 
 func MethodOidbSvcTrpcTcp(cmd, svc uint32) string {

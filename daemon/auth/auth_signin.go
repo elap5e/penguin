@@ -55,21 +55,33 @@ func (m *Manager) SignIn(username, password string) (*Response, error) {
 			return nil, fmt.Errorf("not a valid username")
 		}
 	}
+	_ = m.SetAccount(username, password)
 	uin, err := strconv.ParseInt(username, 10, 64)
 	if err != nil {
 		return nil, err
 	}
 	tickets := m.c.GetTickets(uin)
 	if tickets.A2.Valid() {
-		return m.signInWithoutPassword(username, true)
+		return m.SignInUpdateToken(username, true)
 	} else if tickets.D2.Valid() {
-		return m.signInWithoutPassword(username, false)
+		return m.SignInUpdateToken(username)
 	}
-	return m.signInWithPassword(username, md5.Sum([]byte(password)), uin, 0, LoginTypeUin)
+	return m.SignInCreateToken(username, uin)
 }
 
-func (m *Manager) SignInChangeToken(uin int64) (*Response, error) {
-	return m.signInWithoutPassword(strconv.FormatInt(uin, 10), true)
+func (m *Manager) SignInCreateToken(username string, uin int64) (*Response, error) {
+	account := m.GetAccount(username)
+	if account.Generate {
+		return nil, fmt.Errorf("account %s is generated", username)
+	}
+	return m.signInWithPassword(account.Username, account.Password, uin, 0, LoginTypeUin)
+}
+
+func (m *Manager) SignInUpdateToken(username string, changeD2 ...bool) (*Response, error) {
+	if len(changeD2) > 0 && changeD2[0] {
+		return m.signInWithoutPassword(username, true)
+	}
+	return m.signInWithoutPassword(username, false)
 }
 
 // ACTION_WTLOGIN_GET_ST_WITH_PASSWD

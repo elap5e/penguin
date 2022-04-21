@@ -111,6 +111,7 @@ func (s *sender) recvLoop(ctx context.Context) {
 			go func() {
 				args, err := s.c.Handle(reply.ServiceMethod, reply)
 				if err != nil {
+					log.Error("handle %s error:%v", info, err)
 					log.Debug("push:%s data:\n%s", p, hex.Dump(reply.Payload))
 					log.Warn("skip %s data:%d", info, len(reply.Payload))
 					return
@@ -141,8 +142,6 @@ func (s *sender) sendLoop(ctx context.Context) {
 		s.sendList.Remove(elem)
 		s.sendLock.Unlock()
 
-		// time.Sleep(time.Millisecond * 100)
-
 		req = Request{
 			ServiceMethod: call.ServiceMethod,
 			Seq:           call.Seq,
@@ -169,10 +168,6 @@ func (s *sender) sendLoop(ctx context.Context) {
 		log.Info("send ver:%d uin:%s seq:%d cmd:%s data:%d", req.Version, req.Username, req.Seq, req.ServiceMethod, len(call.Args.Payload))
 	}
 	s.loopError(err)
-}
-
-func (s *sender) waitLoop(ctx context.Context) {
-	// wait for more calls to arrive
 }
 
 func (s *sender) watchDog(ctx context.Context) {
@@ -229,7 +224,6 @@ func (s *sender) Run(ctx context.Context) {
 	ctx, s.cancel = context.WithCancel(ctx)
 	go s.recvLoop(ctx)
 	go s.sendLoop(ctx)
-	go s.waitLoop(ctx)
 	go s.watchDog(ctx)
 	select {
 	case <-ctx.Done():

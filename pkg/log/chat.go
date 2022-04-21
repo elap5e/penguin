@@ -99,6 +99,6 @@ func Chat(id int64, msg *penguin.Message) {
 	logger.Println("\x1b[37;1m[CHAT]", str+"\x1b[0m")
 }
 
-func Notifyf(format string, args ...interface{}) {
+func Notifyf(format string, args ...any) {
 	logger.Println("\x1b[36;1m[NOTIFY]", fmt.Sprintf(format, args...)+"\x1b[0m")
 }

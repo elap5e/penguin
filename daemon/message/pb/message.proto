@@ -1,3 +1,7 @@
+syntax = "proto3";
+
+option go_package = "github.com/elap5e/penguin/daemon/message/pb";
+
 // Copyright 2022 Elapse and contributors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,14 +15,24 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
-package service
-
-import (
-	"github.com/elap5e/penguin/daemon/message/dto"
-)
-
-func (m *Manager) decode0x2e0(uin int64, msg *dto.Message) error {
-	dumpUnknown(msg.Type, msg)
-	return nil
+//
+// IMMsgBodyElem is the message type for the IMMsgBodyElem.
+message IMMsgBodyElem {
+  message TextPb {
+    int32 field3 = 3;
+    int32 field4 = 4;
+    int64 tiny_id = 5;
+    repeated Role roles = 6;
+    message Role {
+      int64 id = 1;
+      Info info = 2;
+      bool hoist = 3;
+      message Info {
+        int64 id = 1;
+        string title = 2;
+        int32 color = 3;
+        bool hoist = 4;
+      }
+    }
+  }
 }

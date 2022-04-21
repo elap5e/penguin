@@ -96,16 +96,16 @@ type QZoneUserInfo struct {
 	ExtendInfo map[string]string `jce:"1" json:",omitempty"`
 }
 
-func (m *Manager) GetGroupUsers(uin, id int64, v ...int64) (*GetGroupUsersResponse, error) {
+func (m *Manager) GetGroupUsers(uin, chatID int64, v ...int64) (*GetGroupUsersResponse, error) {
 	nextUin := int64(0)
 	if len(v) != 0 {
 		nextUin = v[0]
 	}
 	return m.requestGetGroupUsers(uin, &GetGroupUsersRequest{
 		Uin:                 uin,
-		GroupCode:           id,
+		GroupCode:           chatID,
 		NextUin:             nextUin,
-		GroupUin:            id,
+		GroupUin:            chatID,
 		Version:             3,
 		ReqType:             0,
 		GetListAppointTime:  0,
@@ -113,12 +113,25 @@ func (m *Manager) GetGroupUsers(uin, id int64, v ...int64) (*GetGroupUsersRespon
 	})
 }
 
+func (m *Manager) GetGroupUsersAll(uin, chatID int64) (err error) {
+	resp := &GetGroupUsersResponse{}
+	for {
+		resp, err = m.GetGroupUsers(uin, chatID, resp.NextUin)
+		if err != nil {
+			return err
+		}
+		if resp.NextUin == 0 {
+			return nil
+		}
+	}
+}
+
 func (m *Manager) requestGetGroupUsers(uin int64, req *GetGroupUsersRequest) (*GetGroupUsersResponse, error) {
 	p, err := uni.Marshal(&uni.Data{
 		Version:     3,
 		ServantName: "mqq.IMService.FriendListServiceServantObj",
 		FuncName:    "GetTroopMemberListReq",
-	}, map[string]interface{}{
+	}, map[string]any{
 		"GTML": req,
 	})
 	if err != nil {

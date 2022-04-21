@@ -912,6 +912,53 @@ func (x *Channel_User) GetField27() []*Channel_User_Field27 {
 	return nil
 }
 
+type Channel_Service struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	ChannelMute *Channel_Service_ChannelMute `protobuf:"bytes,43,opt,name=channel_mute,json=channelMute,proto3" json:"channel_mute,omitempty"`
+}
+
+func (x *Channel_Service) Reset() {
+	*x = Channel_Service{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_daemon_channel_pb_channel_proto_msgTypes[10]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Channel_Service) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Channel_Service) ProtoMessage() {}
+
+func (x *Channel_Service) ProtoReflect() protoreflect.Message {
+	mi := &file_daemon_channel_pb_channel_proto_msgTypes[10]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Channel_Service.ProtoReflect.Descriptor instead.
+func (*Channel_Service) Descriptor() ([]byte, []int) {
+	return file_daemon_channel_pb_channel_proto_rawDescGZIP(), []int{0, 9}
+}
+
+func (x *Channel_Service) GetChannelMute() *Channel_Service_ChannelMute {
+	if x != nil {
+		return x.ChannelMute
+	}
+	return nil
+}
+
 type Channel_GetChannelUsersRequest_Field4 struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -934,7 +981,7 @@ type Channel_GetChannelUsersRequest_Field4 struct {
 func (x *Channel_GetChannelUsersRequest_Field4) Reset() {
 	*x = Channel_GetChannelUsersRequest_Field4{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_daemon_channel_pb_channel_proto_msgTypes[10]
+		mi := &file_daemon_channel_pb_channel_proto_msgTypes[11]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -947,7 +994,7 @@ func (x *Channel_GetChannelUsersRequest_Field4) String() string {
 func (*Channel_GetChannelUsersRequest_Field4) ProtoMessage() {}
 
 func (x *Channel_GetChannelUsersRequest_Field4) ProtoReflect() protoreflect.Message {
-	mi := &file_daemon_channel_pb_channel_proto_msgTypes[10]
+	mi := &file_daemon_channel_pb_channel_proto_msgTypes[11]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1060,7 +1107,7 @@ type Channel_GetChannelUserRolesRequest_Field4 struct {
 func (x *Channel_GetChannelUserRolesRequest_Field4) Reset() {
 	*x = Channel_GetChannelUserRolesRequest_Field4{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_daemon_channel_pb_channel_proto_msgTypes[11]
+		mi := &file_daemon_channel_pb_channel_proto_msgTypes[12]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1073,7 +1120,7 @@ func (x *Channel_GetChannelUserRolesRequest_Field4) String() string {
 func (*Channel_GetChannelUserRolesRequest_Field4) ProtoMessage() {}
 
 func (x *Channel_GetChannelUserRolesRequest_Field4) ProtoReflect() protoreflect.Message {
-	mi := &file_daemon_channel_pb_channel_proto_msgTypes[11]
+	mi := &file_daemon_channel_pb_channel_proto_msgTypes[12]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1122,7 +1169,7 @@ type Channel_GetChannelUserRolesResponse_Field1 struct {
 func (x *Channel_GetChannelUserRolesResponse_Field1) Reset() {
 	*x = Channel_GetChannelUserRolesResponse_Field1{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_daemon_channel_pb_channel_proto_msgTypes[12]
+		mi := &file_daemon_channel_pb_channel_proto_msgTypes[13]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1135,7 +1182,7 @@ func (x *Channel_GetChannelUserRolesResponse_Field1) String() string {
 func (*Channel_GetChannelUserRolesResponse_Field1) ProtoMessage() {}
 
 func (x *Channel_GetChannelUserRolesResponse_Field1) ProtoReflect() protoreflect.Message {
-	mi := &file_daemon_channel_pb_channel_proto_msgTypes[12]
+	mi := &file_daemon_channel_pb_channel_proto_msgTypes[13]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1177,7 +1224,7 @@ type Channel_GetChannelRolesRequest_Field3 struct {
 func (x *Channel_GetChannelRolesRequest_Field3) Reset() {
 	*x = Channel_GetChannelRolesRequest_Field3{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_daemon_channel_pb_channel_proto_msgTypes[13]
+		mi := &file_daemon_channel_pb_channel_proto_msgTypes[14]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1190,7 +1237,7 @@ func (x *Channel_GetChannelRolesRequest_Field3) String() string {
 func (*Channel_GetChannelRolesRequest_Field3) ProtoMessage() {}
 
 func (x *Channel_GetChannelRolesRequest_Field3) ProtoReflect() protoreflect.Message {
-	mi := &file_daemon_channel_pb_channel_proto_msgTypes[13]
+	mi := &file_daemon_channel_pb_channel_proto_msgTypes[14]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1235,7 +1282,7 @@ type Channel_GetChannelRolesResponse_Field10 struct {
 func (x *Channel_GetChannelRolesResponse_Field10) Reset() {
 	*x = Channel_GetChannelRolesResponse_Field10{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_daemon_channel_pb_channel_proto_msgTypes[14]
+		mi := &file_daemon_channel_pb_channel_proto_msgTypes[15]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1248,7 +1295,7 @@ func (x *Channel_GetChannelRolesResponse_Field10) String() string {
 func (*Channel_GetChannelRolesResponse_Field10) ProtoMessage() {}
 
 func (x *Channel_GetChannelRolesResponse_Field10) ProtoReflect() protoreflect.Message {
-	mi := &file_daemon_channel_pb_channel_proto_msgTypes[14]
+	mi := &file_daemon_channel_pb_channel_proto_msgTypes[15]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1311,7 +1358,7 @@ type Channel_GetChannelRolesResponse_Field10_Field5 struct {
 func (x *Channel_GetChannelRolesResponse_Field10_Field5) Reset() {
 	*x = Channel_GetChannelRolesResponse_Field10_Field5{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_daemon_channel_pb_channel_proto_msgTypes[15]
+		mi := &file_daemon_channel_pb_channel_proto_msgTypes[16]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1324,7 +1371,7 @@ func (x *Channel_GetChannelRolesResponse_Field10_Field5) String() string {
 func (*Channel_GetChannelRolesResponse_Field10_Field5) ProtoMessage() {}
 
 func (x *Channel_GetChannelRolesResponse_Field10_Field5) ProtoReflect() protoreflect.Message {
-	mi := &file_daemon_channel_pb_channel_proto_msgTypes[15]
+	mi := &file_daemon_channel_pb_channel_proto_msgTypes[16]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1366,7 +1413,7 @@ type Channel_User_Field15 struct {
 func (x *Channel_User_Field15) Reset() {
 	*x = Channel_User_Field15{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_daemon_channel_pb_channel_proto_msgTypes[16]
+		mi := &file_daemon_channel_pb_channel_proto_msgTypes[17]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1379,7 +1426,7 @@ func (x *Channel_User_Field15) String() string {
 func (*Channel_User_Field15) ProtoMessage() {}
 
 func (x *Channel_User_Field15) ProtoReflect() protoreflect.Message {
-	mi := &file_daemon_channel_pb_channel_proto_msgTypes[16]
+	mi := &file_daemon_channel_pb_channel_proto_msgTypes[17]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1421,7 +1468,7 @@ type Channel_User_Field27 struct {
 func (x *Channel_User_Field27) Reset() {
 	*x = Channel_User_Field27{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_daemon_channel_pb_channel_proto_msgTypes[17]
+		mi := &file_daemon_channel_pb_channel_proto_msgTypes[18]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1434,7 +1481,7 @@ func (x *Channel_User_Field27) String() string {
 func (*Channel_User_Field27) ProtoMessage() {}
 
 func (x *Channel_User_Field27) ProtoReflect() protoreflect.Message {
-	mi := &file_daemon_channel_pb_channel_proto_msgTypes[17]
+	mi := &file_daemon_channel_pb_channel_proto_msgTypes[18]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1475,7 +1522,7 @@ type Channel_User_Field27_Field2 struct {
 func (x *Channel_User_Field27_Field2) Reset() {
 	*x = Channel_User_Field27_Field2{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_daemon_channel_pb_channel_proto_msgTypes[18]
+		mi := &file_daemon_channel_pb_channel_proto_msgTypes[19]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1488,7 +1535,7 @@ func (x *Channel_User_Field27_Field2) String() string {
 func (*Channel_User_Field27_Field2) ProtoMessage() {}
 
 func (x *Channel_User_Field27_Field2) ProtoReflect() protoreflect.Message {
-	mi := &file_daemon_channel_pb_channel_proto_msgTypes[18]
+	mi := &file_daemon_channel_pb_channel_proto_msgTypes[19]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1511,12 +1558,75 @@ func (x *Channel_User_Field27_Field2) GetValue() string {
 	return ""
 }
 
+type Channel_Service_ChannelMute struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	ChannelId int64 `protobuf:"varint,1,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
+	TinyId    int64 `protobuf:"varint,2,opt,name=tiny_id,json=tinyId,proto3" json:"tiny_id,omitempty"`
+	Time      int64 `protobuf:"varint,3,opt,name=time,proto3" json:"time,omitempty"`
+}
+
+func (x *Channel_Service_ChannelMute) Reset() {
+	*x = Channel_Service_ChannelMute{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_daemon_channel_pb_channel_proto_msgTypes[20]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Channel_Service_ChannelMute) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Channel_Service_ChannelMute) ProtoMessage() {}
+
+func (x *Channel_Service_ChannelMute) ProtoReflect() protoreflect.Message {
+	mi := &file_daemon_channel_pb_channel_proto_msgTypes[20]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Channel_Service_ChannelMute.ProtoReflect.Descriptor instead.
+func (*Channel_Service_ChannelMute) Descriptor() ([]byte, []int) {
+	return file_daemon_channel_pb_channel_proto_rawDescGZIP(), []int{0, 9, 0}
+}
+
+func (x *Channel_Service_ChannelMute) GetChannelId() int64 {
+	if x != nil {
+		return x.ChannelId
+	}
+	return 0
+}
+
+func (x *Channel_Service_ChannelMute) GetTinyId() int64 {
+	if x != nil {
+		return x.TinyId
+	}
+	return 0
+}
+
+func (x *Channel_Service_ChannelMute) GetTime() int64 {
+	if x != nil {
+		return x.Time
+	}
+	return 0
+}
+
 var File_daemon_channel_pb_channel_proto protoreflect.FileDescriptor
 
 var file_daemon_channel_pb_channel_proto_rawDesc = []byte{
 	0x0a, 0x1f, 0x64, 0x61, 0x65, 0x6d, 0x6f, 0x6e, 0x2f, 0x63, 0x68, 0x61, 0x6e, 0x6e, 0x65, 0x6c,
 	0x2f, 0x70, 0x62, 0x2f, 0x63, 0x68, 0x61, 0x6e, 0x6e, 0x65, 0x6c, 0x2e, 0x70, 0x72, 0x6f, 0x74,
-	0x6f, 0x22, 0xf7, 0x17, 0x0a, 0x07, 0x43, 0x68, 0x61, 0x6e, 0x6e, 0x65, 0x6c, 0x1a, 0x8f, 0x05,
+	0x6f, 0x22, 0x9f, 0x19, 0x0a, 0x07, 0x43, 0x68, 0x61, 0x6e, 0x6e, 0x65, 0x6c, 0x1a, 0x8f, 0x05,
 	0x0a, 0x16, 0x47, 0x65, 0x74, 0x43, 0x68, 0x61, 0x6e, 0x6e, 0x65, 0x6c, 0x55, 0x73, 0x65, 0x72,
 	0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1d, 0x0a, 0x0a, 0x63, 0x68, 0x61, 0x6e,
 	0x6e, 0x65, 0x6c, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x09, 0x63, 0x68,
@@ -1707,11 +1817,21 @@ var file_daemon_channel_pb_channel_proto_rawDesc = []byte{
 	0x55, 0x73, 0x65, 0x72, 0x2e, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x32, 0x37, 0x2e, 0x46, 0x69, 0x65,
 	0x6c, 0x64, 0x32, 0x52, 0x06, 0x66, 0x69, 0x65, 0x6c, 0x64, 0x32, 0x1a, 0x1e, 0x0a, 0x06, 0x46,
 	0x69, 0x65, 0x6c, 0x64, 0x32, 0x12, 0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02,
-	0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x42, 0x2d, 0x5a, 0x2b, 0x67,
-	0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x65, 0x6c, 0x61, 0x70, 0x35, 0x65,
-	0x2f, 0x70, 0x65, 0x6e, 0x67, 0x75, 0x69, 0x6e, 0x2f, 0x64, 0x61, 0x65, 0x6d, 0x6f, 0x6e, 0x2f,
-	0x63, 0x68, 0x61, 0x6e, 0x6e, 0x65, 0x6c, 0x2f, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74,
-	0x6f, 0x33,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x1a, 0xa5, 0x01, 0x0a, 0x07,
+	0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x3f, 0x0a, 0x0c, 0x63, 0x68, 0x61, 0x6e, 0x6e,
+	0x65, 0x6c, 0x5f, 0x6d, 0x75, 0x74, 0x65, 0x18, 0x2b, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1c, 0x2e,
+	0x43, 0x68, 0x61, 0x6e, 0x6e, 0x65, 0x6c, 0x2e, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x2e,
+	0x43, 0x68, 0x61, 0x6e, 0x6e, 0x65, 0x6c, 0x4d, 0x75, 0x74, 0x65, 0x52, 0x0b, 0x63, 0x68, 0x61,
+	0x6e, 0x6e, 0x65, 0x6c, 0x4d, 0x75, 0x74, 0x65, 0x1a, 0x59, 0x0a, 0x0b, 0x43, 0x68, 0x61, 0x6e,
+	0x6e, 0x65, 0x6c, 0x4d, 0x75, 0x74, 0x65, 0x12, 0x1d, 0x0a, 0x0a, 0x63, 0x68, 0x61, 0x6e, 0x6e,
+	0x65, 0x6c, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x09, 0x63, 0x68, 0x61,
+	0x6e, 0x6e, 0x65, 0x6c, 0x49, 0x64, 0x12, 0x17, 0x0a, 0x07, 0x74, 0x69, 0x6e, 0x79, 0x5f, 0x69,
+	0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x03, 0x52, 0x06, 0x74, 0x69, 0x6e, 0x79, 0x49, 0x64, 0x12,
+	0x12, 0x0a, 0x04, 0x74, 0x69, 0x6d, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x03, 0x52, 0x04, 0x74,
+	0x69, 0x6d, 0x65, 0x42, 0x2d, 0x5a, 0x2b, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f,
+	0x6d, 0x2f, 0x65, 0x6c, 0x61, 0x70, 0x35, 0x65, 0x2f, 0x70, 0x65, 0x6e, 0x67, 0x75, 0x69, 0x6e,
+	0x2f, 0x64, 0x61, 0x65, 0x6d, 0x6f, 0x6e, 0x2f, 0x63, 0x68, 0x61, 0x6e, 0x6e, 0x65, 0x6c, 0x2f,
+	0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -1726,7 +1846,7 @@ func file_daemon_channel_pb_channel_proto_rawDescGZIP() []byte {
 	return file_daemon_channel_pb_channel_proto_rawDescData
 }
 
-var file_daemon_channel_pb_channel_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
+var file_daemon_channel_pb_channel_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
 var file_daemon_channel_pb_channel_proto_goTypes = []interface{}{
 	(*Channel)(nil),                                        // 0: Channel
 	(*Channel_GetChannelUsersRequest)(nil),                 // 1: Channel.GetChannelUsersRequest
@@ -1738,38 +1858,41 @@ var file_daemon_channel_pb_channel_proto_goTypes = []interface{}{
 	(*Channel_Timestamp)(nil),                              // 7: Channel.Timestamp
 	(*Channel_Role)(nil),                                   // 8: Channel.Role
 	(*Channel_User)(nil),                                   // 9: Channel.User
-	(*Channel_GetChannelUsersRequest_Field4)(nil),          // 10: Channel.GetChannelUsersRequest.Field4
-	(*Channel_GetChannelUserRolesRequest_Field4)(nil),      // 11: Channel.GetChannelUserRolesRequest.Field4
-	(*Channel_GetChannelUserRolesResponse_Field1)(nil),     // 12: Channel.GetChannelUserRolesResponse.Field1
-	(*Channel_GetChannelRolesRequest_Field3)(nil),          // 13: Channel.GetChannelRolesRequest.Field3
-	(*Channel_GetChannelRolesResponse_Field10)(nil),        // 14: Channel.GetChannelRolesResponse.Field10
-	(*Channel_GetChannelRolesResponse_Field10_Field5)(nil), // 15: Channel.GetChannelRolesResponse.Field10.Field5
-	(*Channel_User_Field15)(nil),                           // 16: Channel.User.Field15
-	(*Channel_User_Field27)(nil),                           // 17: Channel.User.Field27
-	(*Channel_User_Field27_Field2)(nil),                    // 18: Channel.User.Field27.Field2
+	(*Channel_Service)(nil),                                // 10: Channel.Service
+	(*Channel_GetChannelUsersRequest_Field4)(nil),          // 11: Channel.GetChannelUsersRequest.Field4
+	(*Channel_GetChannelUserRolesRequest_Field4)(nil),      // 12: Channel.GetChannelUserRolesRequest.Field4
+	(*Channel_GetChannelUserRolesResponse_Field1)(nil),     // 13: Channel.GetChannelUserRolesResponse.Field1
+	(*Channel_GetChannelRolesRequest_Field3)(nil),          // 14: Channel.GetChannelRolesRequest.Field3
+	(*Channel_GetChannelRolesResponse_Field10)(nil),        // 15: Channel.GetChannelRolesResponse.Field10
+	(*Channel_GetChannelRolesResponse_Field10_Field5)(nil), // 16: Channel.GetChannelRolesResponse.Field10.Field5
+	(*Channel_User_Field15)(nil),                           // 17: Channel.User.Field15
+	(*Channel_User_Field27)(nil),                           // 18: Channel.User.Field27
+	(*Channel_User_Field27_Field2)(nil),                    // 19: Channel.User.Field27.Field2
+	(*Channel_Service_ChannelMute)(nil),                    // 20: Channel.Service.ChannelMute
 }
 var file_daemon_channel_pb_channel_proto_depIdxs = []int32{
-	10, // 0: Channel.GetChannelUsersRequest.field4:type_name -> Channel.GetChannelUsersRequest.Field4
+	11, // 0: Channel.GetChannelUsersRequest.field4:type_name -> Channel.GetChannelUsersRequest.Field4
 	9,  // 1: Channel.GetChannelUsersResponse.owner:type_name -> Channel.User
 	9,  // 2: Channel.GetChannelUsersResponse.bots:type_name -> Channel.User
 	9,  // 3: Channel.GetChannelUsersResponse.users:type_name -> Channel.User
-	11, // 4: Channel.GetChannelUserRolesRequest.field4:type_name -> Channel.GetChannelUserRolesRequest.Field4
-	12, // 5: Channel.GetChannelUserRolesResponse.field1:type_name -> Channel.GetChannelUserRolesResponse.Field1
+	12, // 4: Channel.GetChannelUserRolesRequest.field4:type_name -> Channel.GetChannelUserRolesRequest.Field4
+	13, // 5: Channel.GetChannelUserRolesResponse.field1:type_name -> Channel.GetChannelUserRolesResponse.Field1
 	7,  // 6: Channel.GetChannelUserRolesResponse.timestamp:type_name -> Channel.Timestamp
-	13, // 7: Channel.GetChannelRolesRequest.field3:type_name -> Channel.GetChannelRolesRequest.Field3
+	14, // 7: Channel.GetChannelRolesRequest.field3:type_name -> Channel.GetChannelRolesRequest.Field3
 	8,  // 8: Channel.GetChannelRolesResponse.roles:type_name -> Channel.Role
 	7,  // 9: Channel.GetChannelRolesResponse.timestamp:type_name -> Channel.Timestamp
-	14, // 10: Channel.GetChannelRolesResponse.field10:type_name -> Channel.GetChannelRolesResponse.Field10
-	16, // 11: Channel.User.field15:type_name -> Channel.User.Field15
-	17, // 12: Channel.User.field27:type_name -> Channel.User.Field27
-	8,  // 13: Channel.GetChannelUserRolesResponse.Field1.roles:type_name -> Channel.Role
-	15, // 14: Channel.GetChannelRolesResponse.Field10.field5:type_name -> Channel.GetChannelRolesResponse.Field10.Field5
-	18, // 15: Channel.User.Field27.field2:type_name -> Channel.User.Field27.Field2
-	16, // [16:16] is the sub-list for method output_type
-	16, // [16:16] is the sub-list for method input_type
-	16, // [16:16] is the sub-list for extension type_name
-	16, // [16:16] is the sub-list for extension extendee
-	0,  // [0:16] is the sub-list for field type_name
+	15, // 10: Channel.GetChannelRolesResponse.field10:type_name -> Channel.GetChannelRolesResponse.Field10
+	17, // 11: Channel.User.field15:type_name -> Channel.User.Field15
+	18, // 12: Channel.User.field27:type_name -> Channel.User.Field27
+	20, // 13: Channel.Service.channel_mute:type_name -> Channel.Service.ChannelMute
+	8,  // 14: Channel.GetChannelUserRolesResponse.Field1.roles:type_name -> Channel.Role
+	16, // 15: Channel.GetChannelRolesResponse.Field10.field5:type_name -> Channel.GetChannelRolesResponse.Field10.Field5
+	19, // 16: Channel.User.Field27.field2:type_name -> Channel.User.Field27.Field2
+	17, // [17:17] is the sub-list for method output_type
+	17, // [17:17] is the sub-list for method input_type
+	17, // [17:17] is the sub-list for extension type_name
+	17, // [17:17] is the sub-list for extension extendee
+	0,  // [0:17] is the sub-list for field type_name
 }
 
 func init() { file_daemon_channel_pb_channel_proto_init() }
@@ -1899,7 +2022,7 @@ func file_daemon_channel_pb_channel_proto_init() {
 			}
 		}
 		file_daemon_channel_pb_channel_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Channel_GetChannelUsersRequest_Field4); i {
+			switch v := v.(*Channel_Service); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1911,7 +2034,7 @@ func file_daemon_channel_pb_channel_proto_init() {
 			}
 		}
 		file_daemon_channel_pb_channel_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Channel_GetChannelUserRolesRequest_Field4); i {
+			switch v := v.(*Channel_GetChannelUsersRequest_Field4); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1923,7 +2046,7 @@ func file_daemon_channel_pb_channel_proto_init() {
 			}
 		}
 		file_daemon_channel_pb_channel_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Channel_GetChannelUserRolesResponse_Field1); i {
+			switch v := v.(*Channel_GetChannelUserRolesRequest_Field4); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1935,7 +2058,7 @@ func file_daemon_channel_pb_channel_proto_init() {
 			}
 		}
 		file_daemon_channel_pb_channel_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Channel_GetChannelRolesRequest_Field3); i {
+			switch v := v.(*Channel_GetChannelUserRolesResponse_Field1); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1947,7 +2070,7 @@ func file_daemon_channel_pb_channel_proto_init() {
 			}
 		}
 		file_daemon_channel_pb_channel_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Channel_GetChannelRolesResponse_Field10); i {
+			switch v := v.(*Channel_GetChannelRolesRequest_Field3); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1959,7 +2082,7 @@ func file_daemon_channel_pb_channel_proto_init() {
 			}
 		}
 		file_daemon_channel_pb_channel_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Channel_GetChannelRolesResponse_Field10_Field5); i {
+			switch v := v.(*Channel_GetChannelRolesResponse_Field10); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1971,7 +2094,7 @@ func file_daemon_channel_pb_channel_proto_init() {
 			}
 		}
 		file_daemon_channel_pb_channel_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Channel_User_Field15); i {
+			switch v := v.(*Channel_GetChannelRolesResponse_Field10_Field5); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1983,7 +2106,7 @@ func file_daemon_channel_pb_channel_proto_init() {
 			}
 		}
 		file_daemon_channel_pb_channel_proto_msgTypes[17].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Channel_User_Field27); i {
+			switch v := v.(*Channel_User_Field15); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1995,7 +2118,31 @@ func file_daemon_channel_pb_channel_proto_init() {
 			}
 		}
 		file_daemon_channel_pb_channel_proto_msgTypes[18].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Channel_User_Field27); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_daemon_channel_pb_channel_proto_msgTypes[19].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Channel_User_Field27_Field2); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_daemon_channel_pb_channel_proto_msgTypes[20].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Channel_Service_ChannelMute); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2013,7 +2160,7 @@ func file_daemon_channel_pb_channel_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_daemon_channel_pb_channel_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   19,
+			NumMessages:   21,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

@@ -106,7 +106,6 @@ func (d *Daemon) Run() error {
 	if _, err := d.svcm.RegisterAppRegister(resp.Data.Uin); err != nil {
 		return fmt.Errorf("service register app register, error: %v", err)
 	}
-	// time.Sleep(time.Second * 5)
 	if _, err := d.cntm.GetContacts(resp.Data.Uin, 0, 100, 0, 100); err != nil {
 		return fmt.Errorf("contact get contacts, error: %v", err)
 	}
@@ -152,6 +151,10 @@ func (d *Daemon) GetFakeSource(uin int64) *fake.Source {
 	return d.c.GetFakeSource(uin)
 }
 
+func (d *Daemon) GetMessageChannel() chan *penguin.Message {
+	return d.msgChan
+}
+
 func (d *Daemon) GetAccountManager() *account.Manager {
 	return d.accm
 }
@@ -160,12 +163,16 @@ func (d *Daemon) GetAuthManager() *auth.Manager {
 	return d.athm
 }
 
+func (d *Daemon) GetChannelManager() *channel.Manager {
+	return d.chnm
+}
+
 func (d *Daemon) GetChatManager() *chat.Manager {
 	return d.chtm
 }
 
-func (d *Daemon) GetChannelManager() *channel.Manager {
-	return d.chnm
+func (d *Daemon) GetContactManager() *contact.Manager {
+	return d.cntm
 }
 
 func (d *Daemon) GetMessageManager() *message.Manager {
@@ -174,8 +181,4 @@ func (d *Daemon) GetMessageManager() *message.Manager {
 
 func (d *Daemon) GetServiceManager() *service.Manager {
 	return d.svcm
-}
-
-func (d *Daemon) GetMessageChannel() chan *penguin.Message {
-	return d.msgChan
 }

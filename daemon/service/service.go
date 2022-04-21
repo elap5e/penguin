@@ -16,6 +16,7 @@ package service
 
 import (
 	"context"
+	"time"
 
 	"github.com/elap5e/penguin/daemon/auth"
 	"github.com/elap5e/penguin/daemon/chat"
@@ -38,12 +39,15 @@ type Daemon interface {
 type Manager struct {
 	Daemon
 	ctx context.Context
+
+	timers map[int64]*time.Timer
 }
 
 func NewManager(ctx context.Context, d Daemon) *Manager {
 	m := &Manager{
 		Daemon: d,
 		ctx:    ctx,
+		timers: make(map[int64]*time.Timer),
 	}
 	m.Daemon.Register(service.MethodServiceConfigPushDomain, m.handleConfigPushDomain)
 	m.Daemon.Register(service.MethodServiceConfigPushRequest, m.handleConfigPushRequest)
@@ -51,5 +55,7 @@ func NewManager(ctx context.Context, d Daemon) *Manager {
 	m.Daemon.Register(service.MethodServiceOnlinePushChatMessage, m.handleOnlinePushMessage)
 	m.Daemon.Register(service.MethodServiceOnlinePushUserMessage, m.handleOnlinePushMessage)
 	m.Daemon.Register(service.MethodServiceOnlinePushTicketExpired, m.handleOnlinePushTicketExpired)
+	m.Daemon.Register(service.MethodServicePushForceOffline, m.handlePushForceOffline)
+	m.Daemon.Register(service.MethodServicePushLoginNotify, m.handlePushLoginNotify)
 	return m
 }
