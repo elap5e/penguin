@@ -49,8 +49,12 @@ jobs:
       - if: matrix.pack
         name: Pack ${{ matrix.goos }}/${{ matrix.goarch }} binaries
         run: upx --best build/*
+      - name: Add LICENSE and README.md to artifact
+        run: |
+          cp LICENSE build/
+          cp README.md build/
       - name: Upload ${{ matrix.goos }}/${{ matrix.goarch }} binaries
         uses: actions/upload-artifact@v3
         with:
           name: penguin-all-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: ${{ github.workspace }}
+          path: build
