@@ -124,7 +124,7 @@ func (m *Manager) request(req *Request) (*Response, error) {
 			log.Warn("auth verify captcha, url: %s", strings.ReplaceAll(
 				resp.ExtraData.CaptchaSign,
 				"https://ssl.captcha.qq.com/template/wireless_mqq_captcha.html",
-				"http://"+addr+"/index.html",
+				"http://"+addr+"/captcha",
 			))
 			sign, err := serveHTTPVerifyCaptcha(l)
 			if err != nil {

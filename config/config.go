@@ -27,6 +27,7 @@ import (
 type Config struct {
 	Basedir  string     `json:"basedir" yaml:"basedir"`
 	Servers  []*Server  `json:"servers" yaml:"servers"`
+	Logging  *Logging   `json:"logging" yaml:"logging"`
 	Storage  *Storage   `json:"storage" yaml:"storage"`
 	Plugins  []*Plugin  `json:"plugins" yaml:"plugins"`
 	Accounts []*Account `json:"accounts" yaml:"accounts"`
@@ -108,9 +109,45 @@ database:
 func OpenFile(name string) *Config {
 	data, err := ioutil.ReadFile(name)
 	if os.IsNotExist(err) {
-		err = os.MkdirAll(path.Dir(name), 0750)
-		if err != nil && !os.IsExist(err) {
+		if err = os.MkdirAll(path.Dir(name), 0750); err != nil && !os.IsExist(err) {
 			log.Fatal("unable to create config directory: %s", err)
+		}
+		dirs := []string{
+			".penguin/log",
+			".penguin/cache/temps",
+			".penguin/cache/service",
+			".penguin/cache/session",
+			".penguin/cache/tickets",
+			".penguin/media",
+			".penguin/media/blobs",
+			".penguin/media/blobs/md5",
+			".penguin/media/blobs/sha256",
+			".penguin/media/metas",
+			".penguin/media/audio",
+			".penguin/media/document",
+			".penguin/media/photo",
+			".penguin/media/video",
+			".penguin/media/voice",
+		}
+		oldDirs := []string{
+			".penguin/cache",
+			".penguin/cache/blobs",
+			".penguin/cache/blobs/md5",
+			".penguin/cache/blobs/sha256",
+			".penguin/cache/metas",
+			".penguin/cache/temps",
+			".penguin/cache/audio",
+			".penguin/cache/photo",
+			".penguin/cache/video",
+			".penguin/cache/voice",
+			".penguin/service",
+			".penguin/session",
+			".penguin/tickets",
+		}
+		for _, dir := range append(dirs, oldDirs...) {
+			if err = os.MkdirAll(dir, 0750); err != nil && !os.IsExist(err) {
+				log.Fatal("unable to create directory: %s", err)
+			}
 		}
 		log.Warn("config file does not exist, using default config: %s", name)
 		data = []byte(defaultConfig)
@@ -126,5 +163,20 @@ func OpenFile(name string) *Config {
 	if err != nil {
 		log.Fatal("failed to parse config: %s", err)
 	}
-	return &cfg
+	return setDefault(&cfg)
+}
+
+func setDefault(cfg *Config) *Config {
+	if cfg.Basedir == "" {
+		cfg.Basedir = ".penguin"
+	}
+	if cfg.Logging == nil {
+		cfg.Logging = &Logging{
+			Basedir: path.Join(cfg.Basedir, "log"),
+			Level:   "debug",
+		}
+	} else if cfg.Logging.Basedir == "" {
+		cfg.Logging.Basedir = path.Join(cfg.Basedir, "log")
+	}
+	return cfg
 }

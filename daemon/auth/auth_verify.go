@@ -58,7 +58,7 @@ func (m *Manager) verifySignInWithCodeCaptach(username string) ([]byte, error) {
 		return nil, err
 	}
 	addr := l.Addr().(*net.TCPAddr).String()
-	log.Warn("verify captcha, url: http://%s/index.html", addr)
+	log.Warn("verify captcha, url: http://%s/captcha", addr)
 	sign, err := serveHTTPVerifySignInWithCodeCaptach(l)
 	if err != nil {
 		return nil, err

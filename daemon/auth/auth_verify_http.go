@@ -36,7 +36,7 @@ func serveHTTPVerifySignInWithCodeCaptach(l net.Listener) (*CaptchaSign, error) 
 func serveHTTP(l net.Listener, t string) (*CaptchaSign, error) {
 	done := make(chan *CaptchaSign, 1)
 	mux := http.NewServeMux()
-	mux.Handle("/index.html", http.HandlerFunc(
+	mux.Handle("/captcha", http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
 			case http.MethodGet:
@@ -98,7 +98,7 @@ const tmplVerifyCaptcha = `<!DOCTYPE html>
                 capInit(document.getElementById("cap_iframe"), {
                     callback: function (a) {
                         var xhr = new XMLHttpRequest();
-                        xhr.open("POST", "/index.html", true);
+                        xhr.open("POST", "/captcha", true);
                         var d = new FormData();
                         d.append("ticket", a.ticket);
                         d.append("randstr", a.randstr);
@@ -140,7 +140,7 @@ const tmplVerifySignInWithCodeCaptach = `<!DOCTYPE html>
                     "2081081773",
                     function (a) {
                         var xhr = new XMLHttpRequest();
-                        xhr.open("POST", "/index.html", true);
+                        xhr.open("POST", "/captcha", true);
                         var d = new FormData();
                         d.append("ticket", a.ticket);
                         d.append("randstr", a.randstr);

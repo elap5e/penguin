@@ -16,8 +16,6 @@ package main
 
 import (
 	"context"
-	"os"
-	"path"
 
 	"github.com/elap5e/penguin/config"
 	"github.com/elap5e/penguin/daemon"
@@ -25,25 +23,9 @@ import (
 )
 
 func main() {
-	home, _ := os.UserHomeDir()
-	_ = os.MkdirAll(path.Join(home, ".penguin"), 0755)
-	_ = os.MkdirAll(path.Join(home, ".penguin", "cache"), 0755)
-	_ = os.MkdirAll(path.Join(home, ".penguin", "cache", "blobs"), 0755)
-	_ = os.MkdirAll(path.Join(home, ".penguin", "cache", "blobs", "md5"), 0755)
-	_ = os.MkdirAll(path.Join(home, ".penguin", "cache", "blobs", "sha256"), 0755)
-	_ = os.MkdirAll(path.Join(home, ".penguin", "cache", "metas"), 0755)
-	_ = os.MkdirAll(path.Join(home, ".penguin", "cache", "temps"), 0755)
-	_ = os.MkdirAll(path.Join(home, ".penguin", "cache", "audio"), 0755)
-	_ = os.MkdirAll(path.Join(home, ".penguin", "cache", "photo"), 0755)
-	_ = os.MkdirAll(path.Join(home, ".penguin", "cache", "video"), 0755)
-	_ = os.MkdirAll(path.Join(home, ".penguin", "cache", "voice"), 0755)
-	_ = os.MkdirAll(path.Join(home, ".penguin", "log"), 0755)
-	_ = os.MkdirAll(path.Join(home, ".penguin", "service"), 0755)
-	_ = os.MkdirAll(path.Join(home, ".penguin", "session"), 0755)
-	_ = os.MkdirAll(path.Join(home, ".penguin", "tickets"), 0755)
-	c := config.OpenFile(path.Join(home, ".penguin/config.yaml"))
-	d := daemon.New(context.Background(), c)
-	if err := d.Run(); err != nil {
+	config := config.OpenFile(".penguin/config.yaml")
+	penguind := daemon.New(context.Background(), config)
+	if err := penguind.Run(); err != nil {
 		log.Error("penguin daemon exit with error: %s", err)
 	}
 }
