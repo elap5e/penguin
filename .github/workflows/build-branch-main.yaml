@@ -20,14 +20,11 @@ jobs:
             goarch: arm64
           - goos: freebsd
             goarch: amd64
-            pack: true
           - goos: freebsd
             goarch: amd64
             goamd64: v3
-            pack: true
           - goos: freebsd
             goarch: arm64
-            pack: true
           - goos: linux
             goarch: 386
             pack: true
@@ -41,7 +38,6 @@ jobs:
           - goos: linux
             goarch: arm
             goarm: 7
-            pack: true
           - goos: linux
             goarch: arm64
             pack: true
@@ -54,7 +50,6 @@ jobs:
           - goos: windows
             goarch: amd64
             goamd64: v3
-            pack: true
           - goos: windows
             goarch: arm
             goarm: 7
@@ -80,13 +75,23 @@ jobs:
         name: Pack ${{ matrix.goos }}/${{ matrix.goarch }}${{ matrix.goamd64 }}${{ matrix.goarm }} binaries
         run: upx --best build/*
       - name: Add files and keep permission
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          GOAMD64: ${{ matrix.goamd64 }}
+          GOARM: ${{ matrix.goarm }}
         run: |
           cp LICENSE build
           cp README.md build
           cp SECURITY.md build
-          tar -cvzf penguin-all-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.goamd64 }}${{ matrix.goarm }}.tar.gz -C build .
+          tar -cvzf penguin-all-$GOOS-$GOARCH$GOAMD64$GOARM.tar.gz -C build .
       - name: Upload ${{ matrix.goos }}/${{ matrix.goarch }}${{ matrix.goamd64 }}${{ matrix.goarm }} artifact
         uses: actions/upload-artifact@v3
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          GOAMD64: ${{ matrix.goamd64 }}
+          GOARM: ${{ matrix.goarm }}
         with:
-          name: penguin-all-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.goamd64 }}${{ matrix.goarm }}
-          path: penguin-all-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.goamd64 }}${{ matrix.goarm }}.tar.gz
+          name: penguin-all-$GOOS-$GOARCH$GOAMD64$GOARM
+          path: penguin-all-$GOOS-$GOARCH$GOAMD64$GOARM.tar.gz
