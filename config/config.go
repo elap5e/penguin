@@ -15,38 +15,116 @@
 package config
 
 import (
-	"encoding/json"
 	"io/ioutil"
 	"os"
+	"path"
+
+	"gopkg.in/yaml.v2"
 
 	"github.com/elap5e/penguin/pkg/log"
 )
 
 type Config struct {
-	Username string `json:"username,omitempty"`
-	Password string `json:"password,omitempty"`
+	Basedir  string     `json:"basedir" yaml:"basedir"`
+	Servers  []*Server  `json:"servers" yaml:"servers"`
+	Storage  *Storage   `json:"storage" yaml:"storage"`
+	Plugins  []*Plugin  `json:"plugins" yaml:"plugins"`
+	Accounts []*Account `json:"accounts" yaml:"accounts"`
+	Database *Database  `json:"database" yaml:"database"`
 }
+
+type Server struct {
+	Type    string `json:"type" yaml:"type"`
+	Address string `json:"address" yaml:"address"`
+}
+
+type Logging struct {
+	Basedir string `json:"basedir,omitempty" yaml:"basedir"`
+	Level   string `json:"level,omitempty" yaml:"level"`
+}
+
+type Storage struct {
+	Cache *StorageBackend `json:"cache" yaml:"cache"`
+	Media *StorageBackend `json:"media" yaml:"media"`
+}
+
+type StorageBackend struct {
+	Engine string `json:"engine" yaml:"engine"`
+	Config any    `json:"config" yaml:"config"`
+}
+
+type Plugin struct {
+	Plugin string       `json:"engine" yaml:"engine"`
+	Config PluginConfig `json:"config" yaml:"config"`
+}
+
+type PluginConfig = any
+
+type Account struct {
+	Username string `json:"username" yaml:"username"`
+	Password string `json:"password,omitempty" yaml:"password"`
+}
+
+type Database struct {
+	Engine string          `json:"engine" yaml:"engine"`
+	Config *DatabaseConfig `json:"config" yaml:"config"`
+}
+
+type DatabaseConfig struct {
+	Path     string `json:"path,omitempty" yaml:"path"`
+	Host     string `json:"host,omitempty" yaml:"host"`
+	Port     string `json:"port,omitempty" yaml:"port"`
+	Database string `json:"database,omitempty" yaml:"database"`
+	Username string `json:"username,omitempty" yaml:"username"`
+	Password string `json:"password,omitempty" yaml:"password"`
+}
+
+const defaultConfig = `# Configuration for Penguin
+
+basedir: .penguin
+servers:
+  - type: http
+    address: localhost:6748
+logging:
+  level: debug
+storage:
+  cache:
+    engine: fs
+  media:
+    engine: fs
+plugins:
+  - plugin: default
+    config: {}
+  - plugin: pprof
+    config:
+      address: localhost:6060
+accounts:
+  - username: 10000
+    password: password
+database:
+  engine: default
+`
 
 func OpenFile(name string) *Config {
 	data, err := ioutil.ReadFile(name)
 	if os.IsNotExist(err) {
-		log.Warn("config file does not exist, using default config: %s", name)
-		data, err = json.MarshalIndent(defaultConfig, "", "  ")
-		if err == nil {
-			err = ioutil.WriteFile(name, data, 0644)
+		err = os.MkdirAll(path.Dir(name), 0750)
+		if err != nil && !os.IsExist(err) {
+			log.Fatal("unable to create config directory: %s", err)
 		}
-	}
-	if err != nil {
-		log.Fatalln(err)
+		log.Warn("config file does not exist, using default config: %s", name)
+		data = []byte(defaultConfig)
+		err = ioutil.WriteFile(name, data, 0640)
+		if err != nil {
+			log.Fatal("failed to write default config: %s", err)
+		}
+		log.Warn("please edit the config file and restart")
+		os.Exit(0)
 	}
 	var cfg Config
-	err = json.Unmarshal(data, &cfg)
+	err = yaml.Unmarshal(data, &cfg)
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatal("failed to parse config: %s", err)
 	}
 	return &cfg
-}
-
-var defaultConfig = &Config{
-	Username: "10000",
 }

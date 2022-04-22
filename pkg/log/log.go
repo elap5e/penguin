@@ -67,6 +67,7 @@ func Error(format string, v ...any) {
 
 func Fatal(format string, v ...any) {
 	logger.Println("\x1b[35m[FATAL]\x1b[0m", fmt.Sprintf(format, v...))
+	os.Exit(1)
 }
 
 func Panic(format string, v ...any) {

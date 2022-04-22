@@ -41,7 +41,7 @@ func main() {
 	_ = os.MkdirAll(path.Join(home, ".penguin", "service"), 0755)
 	_ = os.MkdirAll(path.Join(home, ".penguin", "session"), 0755)
 	_ = os.MkdirAll(path.Join(home, ".penguin", "tickets"), 0755)
-	c := config.OpenFile(path.Join(home, ".penguin/config.json"))
+	c := config.OpenFile(path.Join(home, ".penguin/config.yaml"))
 	d := daemon.New(context.Background(), c)
 	if err := d.Run(); err != nil {
 		log.Error("penguin daemon exit with error: %s", err)

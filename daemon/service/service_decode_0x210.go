@@ -17,6 +17,8 @@ package service
 import (
 	"encoding/base64"
 
+	"google.golang.org/protobuf/proto"
+
 	"github.com/elap5e/penguin/daemon/message/dto"
 	"github.com/elap5e/penguin/daemon/message/pb"
 	"github.com/elap5e/penguin/pkg/encoding/jce"
@@ -46,7 +48,7 @@ func (m *Manager) decode0x210Jce(uin int64, p []byte) error {
 
 func (m *Manager) decode0x210Pb(uin int64, p []byte) error {
 	msg := pb.MsgCommon_MsgType0X210{}
-	if err := jce.Unmarshal(p, &msg, true); err != nil {
+	if err := proto.Unmarshal(p, &msg); err != nil {
 		return err
 	}
 	return m.decode0x210(uin, int32(msg.GetSubMsgType()), msg.GetMsgContent())

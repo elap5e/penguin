@@ -145,7 +145,8 @@ func (d *Daemon) run() error {
 }
 
 func (d *Daemon) init() error {
-	return d.Start(d.cfg.Username, d.cfg.Password)
+	account := d.cfg.Accounts[0]
+	return d.Start(account.Username, account.Password)
 }
 
 func (d *Daemon) Start(username, password string) error {
