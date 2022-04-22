@@ -37,6 +37,7 @@ func main() {
 	_ = os.MkdirAll(path.Join(home, ".penguin", "cache", "photo"), 0755)
 	_ = os.MkdirAll(path.Join(home, ".penguin", "cache", "video"), 0755)
 	_ = os.MkdirAll(path.Join(home, ".penguin", "cache", "voice"), 0755)
+	_ = os.MkdirAll(path.Join(home, ".penguin", "log"), 0755)
 	_ = os.MkdirAll(path.Join(home, ".penguin", "service"), 0755)
 	_ = os.MkdirAll(path.Join(home, ".penguin", "session"), 0755)
 	_ = os.MkdirAll(path.Join(home, ".penguin", "tickets"), 0755)

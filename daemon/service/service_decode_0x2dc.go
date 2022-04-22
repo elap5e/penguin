@@ -25,6 +25,7 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
+	"github.com/elap5e/penguin"
 	"github.com/elap5e/penguin/daemon/message/dto"
 	"github.com/elap5e/penguin/daemon/service/pb"
 	"github.com/elap5e/penguin/pkg/log"
@@ -35,12 +36,16 @@ func (m *Manager) Decode0x2dc(uin int64, msg *dto.Message) error {
 		return fmt.Errorf("invalid message length: %d < 5", len(msg.MessageBytes))
 	}
 	chatID := int64(binary.BigEndian.Uint32(msg.MessageBytes[:4]))
-	typ := msg.MessageBytes[4]
+	chat, _ := m.GetChatManager().GetChat(chatID)
 
+	typ := msg.MessageBytes[4]
 	switch typ {
 	case 0x0c:
 		// chat mute
-		return m.onChatMute(uin, chatID, msg)
+		return m.onChatMute(uin, chat, msg)
+	case 0x0e:
+		// chat anonymous
+		return m.onChatAnonymous(uin, chat, msg)
 	case 0x10, 0x11, 0x14, 0x15:
 		// chat tips
 		if len(msg.MessageBytes) < 8 {
@@ -55,19 +60,17 @@ func (m *Manager) Decode0x2dc(uin int64, msg *dto.Message) error {
 		if chatID != int64(notify.GetGroupCode()) {
 			log.Warn("decode0x2dc chatID:%d != notify.GroupCode:%d", chatID, notify.GetGroupCode())
 			chatID = int64(notify.GetGroupCode())
+			chat, _ = m.GetChatManager().GetChat(chatID)
 		}
 		if v := notify.GetMsgGraytips(); v != nil {
-			return m.onChatMessageGrayTips(uin, chatID, v)
+			return m.onChatMessageGrayTips(uin, chat, v)
 		} else if v := notify.GetMsgGroupNotify(); v != nil {
-			return m.onChatMessageNotify(uin, chatID, v)
+			return m.onChatMessageNotify(uin, chat, v)
 		} else if v := notify.GetMsgRecall(); v != nil {
-			return m.onChatMessageRecall(uin, chatID, v)
+			return m.onChatMessageRecall(uin, chat, v)
 		} else if v := notify.GetGeneralGrayTip(); v != nil {
-			return m.onChatGrayTips(uin, chatID, v)
+			return m.onChatGrayTips(uin, chat, v)
 		}
-	case 0x0e:
-		// chat anonymous
-		return m.onChatAnonymous(uin, chatID, msg)
 	case 0x03:
 		fallthrough
 	case 0x0f:
@@ -75,70 +78,55 @@ func (m *Manager) Decode0x2dc(uin int64, msg *dto.Message) error {
 	default:
 		dumpUnknown(msg.Type, msg)
 	}
-
 	return nil
 }
 
-func (m *Manager) onChatMute(uin, chatID int64, msg *dto.Message) error {
+func (m *Manager) onChatMute(uin int64, chat *penguin.Chat, msg *dto.Message) error {
 	fromID := int64(binary.BigEndian.Uint32(msg.MessageBytes[6:10]))
-	chat, _ := m.GetChatManager().GetChat(chatID)
-	from, _ := m.GetChatManager().GetChatUser(chatID, fromID)
-	fromDisplay := from.Display
-	if fromDisplay == "" {
-		fromDisplay = from.Account.Username
-	}
+	fromDisplay := m.getChatUserDisplay(chat.ID, fromID)
 	// time := binary.BigEndian.Uint32(msg.MessageBytes[10:14])
 	for i := 0; i < int(binary.BigEndian.Uint16(msg.MessageBytes[14:16])); i++ {
 		toID := int64(binary.BigEndian.Uint32(msg.MessageBytes[16+i*8 : 20+i*8]))
 		seconds := time.Second * time.Duration(binary.BigEndian.Uint32(msg.MessageBytes[20+i*8:24+i*8]))
 		if toID == 0 {
 			if seconds == 0 {
-				log.Notifyf("[%d] group:%d(%s) [%d(%s)]解除全员禁言", uin, chat.ID, chat.Title, from.Account.ID, fromDisplay)
+				log.Notifyf("[%d] group:%d(%s) [%d(%s)]解除全员禁言", uin, chat.ID, chat.Title, fromID, fromDisplay)
 			} else {
-				log.Notifyf("[%d] group:%d(%s) [%d(%s)]全员禁言", uin, chat.ID, chat.Title, from.Account.ID, fromDisplay)
+				log.Notifyf("[%d] group:%d(%s) [%d(%s)]全员禁言", uin, chat.ID, chat.Title, fromID, fromDisplay)
 			}
 		} else {
-			to, _ := m.GetChatManager().GetChatUser(chatID, toID)
-			toDisplay := to.Display
-			if toDisplay == "" {
-				toDisplay = to.Account.Username
-			}
+			toDisplay := m.getChatUserDisplay(chat.ID, toID)
 			if seconds == 0 {
-				log.Notifyf("[%d] group:%d(%s) [%d(%s)]解除[%d(%s)]禁言", uin, chat.ID, chat.Title, from.Account.ID, fromDisplay, to.Account.ID, toDisplay)
+				log.Notifyf("[%d] group:%d(%s) [%d(%s)]解除[%d(%s)]禁言", uin, chat.ID, chat.Title, fromID, fromDisplay, toID, toDisplay)
 			} else {
-				log.Notifyf("[%d] group:%d(%s) [%d(%s)]禁言[%d(%s)][%s]", uin, chat.ID, chat.Title, from.Account.ID, fromDisplay, to.Account.ID, toDisplay, seconds)
+				log.Notifyf("[%d] group:%d(%s) [%d(%s)]禁言[%d(%s)][%s]", uin, chat.ID, chat.Title, fromID, fromDisplay, toID, toDisplay, seconds)
 			}
 		}
 	}
 	return nil
 }
 
-func (m *Manager) onChatMessageGrayTips(uin, chatID int64, notify *pb.ChatTips_AIOGrayTipsInfo) error {
+func (m *Manager) onChatMessageGrayTips(uin int64, chat *penguin.Chat, notify *pb.ChatTips_AIOGrayTipsInfo) error {
 	return nil
 }
 
-func (m *Manager) onChatMessageNotify(uin, chatID int64, notify *pb.ChatTips_GroupNotifyInfo) error {
+func (m *Manager) onChatMessageNotify(uin int64, chat *penguin.Chat, notify *pb.ChatTips_GroupNotifyInfo) error {
 	return nil
 }
 
-func (m *Manager) onChatMessageRecall(uin, chatID int64, notify *pb.ChatTips_MessageRecallReminder) error {
+func (m *Manager) onChatMessageRecall(uin int64, chat *penguin.Chat, notify *pb.ChatTips_MessageRecallReminder) error {
 	userID, suffix := int64(notify.GetUin()), notify.GetMsgWordingInfo().GetItemName()
-	chat, _ := m.GetChatManager().GetChat(chatID)
-	user, _ := m.GetChatManager().GetChatUser(chatID, userID)
-	userDisplay := user.Display
-	if userDisplay == "" {
-		userDisplay = user.Account.Username
-	}
+	userDisplay := m.getChatUserDisplay(chat.ID, userID)
 	if suffix != "" && !strings.HasPrefix(suffix, "，") {
 		suffix = "，" + suffix
 	}
 	for _, v := range notify.GetRecalledMsgList() {
-		log.Notifyf("[%d] group:%d(%s) [%d(%s)]撤回了一条消息[%d:%d]%s", uin, chat.ID, chat.Title, user.Account.ID, userDisplay, v.GetTime(), v.GetSeq(), suffix)
+		log.Notifyf("[%d] group:%d(%s) [%d(%s)]撤回了一条消息[%d:%d]%s", uin, chat.ID, chat.Title, userID, userDisplay, v.GetTime(), v.GetSeq(), suffix)
 	}
 	return nil
 }
 
-func (m *Manager) onChatGrayTips(uin, chatID int64, notify *pb.ChatTips_GeneralGrayTipInfo) error {
+func (m *Manager) onChatGrayTips(uin int64, chat *penguin.Chat, notify *pb.ChatTips_GeneralGrayTipInfo) error {
 	id, tmplID := notify.GetBusiId(), notify.GetTemplId()
 	if id == 1003 {
 		userID, userDisplay, lastID, lastDisplay, honor := int64(0), "", int64(0), "", ""
@@ -155,25 +143,25 @@ func (m *Manager) onChatGrayTips(uin, chatID int64, notify *pb.ChatTips_GeneralG
 				honor = string(v.GetValue())
 			}
 		}
-		chat, _ := m.GetChatManager().GetChat(chatID)
-		user, _ := m.GetChatManager().GetChatUser(chatID, userID)
 		if userDisplay == "" {
-			userDisplay = user.Account.Username
+			userDisplay = m.getChatUserDisplay(chat.ID, userID)
+		}
+		if lastDisplay == "" {
+			lastDisplay = m.getChatUserDisplay(chat.ID, lastID)
+		}
+		if honor == "" && (tmplID == 1053 || tmplID == 1054 || tmplID == 10094) {
+			honor = "龙王"
 		}
 		if tmplID == 1052 {
 			log.Notifyf("[%d] group:%d(%s) [%d(%s)]在群聊中连续发消息超过7天, 获得[%s]标识。", uin, chat.ID, chat.Title, userID, userDisplay, honor)
 		} else if tmplID == 1053 {
-			last, _ := m.GetChatManager().GetChatUser(chatID, lastID)
-			if lastDisplay == "" {
-				lastDisplay = last.Account.Username
-			}
-			honor = "龙王"
-			log.Notifyf("[%d] group:%d(%s) 昨日[%d(%s)]在群内发言最积极，夺走了[]的[%s]标识。", uin, chat.ID, chat.Title, userID, userDisplay, honor)
+			log.Notifyf("[%d] group:%d(%s) 昨日[%d(%s)]在群内发言最积极，夺走了[%d(%s)]的[%s]标识。", uin, chat.ID, chat.Title, userID, userDisplay, lastID, lastDisplay, honor)
 		} else if tmplID == 1054 {
-			honor = "龙王"
 			log.Notifyf("[%d] group:%d(%s) 昨日[%d(%s)]在群内发言最积极，获得[%s]标识。", uin, chat.ID, chat.Title, userID, userDisplay, honor)
 		} else if tmplID == 1067 {
 			log.Notifyf("[%d] group:%d(%s) [%d(%s)]在群聊中连续发表情包超过3天，且累计数量超过20条，获得[%s]标识。", uin, chat.ID, chat.Title, userID, userDisplay, honor)
+		} else if tmplID == 10094 {
+			log.Notifyf("[%d] group:%d(%s) 昨日你在群内发言最积极，夺走了[%d(%s)]的[%s]标识。", uin, chat.ID, chat.Title, lastID, lastDisplay, honor)
 		}
 	} else if id == 1061 {
 		fromID, action, toID, suffix := int64(0), "戳了戳", int64(0), ""
@@ -188,18 +176,9 @@ func (m *Manager) onChatGrayTips(uin, chatID int64, notify *pb.ChatTips_GeneralG
 				suffix = string(v.GetValue())
 			}
 		}
-		chat, _ := m.GetChatManager().GetChat(chatID)
-		from, _ := m.GetChatManager().GetChatUser(chatID, fromID)
-		fromDisplay := from.Display
-		if fromDisplay == "" {
-			fromDisplay = from.Account.Username
-		}
-		to, _ := m.GetChatManager().GetChatUser(chatID, toID)
-		toDisplay := to.Display
-		if toDisplay == "" {
-			toDisplay = to.Account.Username
-		}
-		log.Notifyf("[%d] group:%d(%s) [%d(%s)]%s[%d(%s)]%s", uin, chat.ID, chat.Title, from.Account.ID, fromDisplay, action, to.Account.ID, toDisplay, suffix)
+		fromDisplay := m.getChatUserDisplay(chat.ID, fromID)
+		toDisplay := m.getChatUserDisplay(chat.ID, toID)
+		log.Notifyf("[%d] group:%d(%s) [%d(%s)]%s[%d(%s)]%s", uin, chat.ID, chat.Title, fromID, fromDisplay, action, toID, toDisplay, suffix)
 	} else if id == 1068 {
 		userID, userDisplay, action := int64(0), "", ""
 		for _, v := range notify.GetMsgTemplParam() {
@@ -211,28 +190,33 @@ func (m *Manager) onChatGrayTips(uin, chatID int64, notify *pb.ChatTips_GeneralG
 				action = string(v.GetValue())
 			}
 		}
-		chat, _ := m.GetChatManager().GetChat(chatID)
-		user, _ := m.GetChatManager().GetChatUser(chatID, userID)
 		if userDisplay == "" {
-			userDisplay = user.Account.Username
+			userDisplay = m.getChatUserDisplay(chat.ID, userID)
 		}
-		log.Notifyf("[%d] group:%d(%s) [%d(%s)]%s", uin, chat.ID, chat.Title, user.Account.ID, userDisplay, action)
+		log.Notifyf("[%d] group:%d(%s) [%d(%s)]%s", uin, chat.ID, chat.Title, userID, userDisplay, action)
 	}
 	return nil
 }
 
-func (m *Manager) onChatAnonymous(uin, chatID int64, msg *dto.Message) error {
+func (m *Manager) onChatAnonymous(uin int64, chat *penguin.Chat, msg *dto.Message) error {
 	fromID := int64(binary.BigEndian.Uint32(msg.MessageBytes[6:10]))
-	chat, _ := m.GetChatManager().GetChat(chatID)
-	from, _ := m.GetChatManager().GetChatUser(chatID, fromID)
-	fromDisplay := from.Display
-	if fromDisplay == "" {
-		fromDisplay = from.Account.Username
-	}
+	fromDisplay := m.getChatUserDisplay(chat.ID, fromID)
 	if bytes.Equal(msg.MessageBytes[10:14], []byte{0, 0, 0, 0}) {
-		log.Notifyf("[%d] group:%d(%s) [%d(%s)]允许群内匿名聊天", uin, chat.ID, chat.Title, from.Account.ID, fromDisplay)
+		log.Notifyf("[%d] group:%d(%s) [%d(%s)]允许群内匿名聊天", uin, chat.ID, chat.Title, fromID, fromDisplay)
 	} else {
-		log.Notifyf("[%d] group:%d(%s) [%d(%s)]禁止群内匿名聊天", uin, chat.ID, chat.Title, from.Account.ID, fromDisplay)
+		log.Notifyf("[%d] group:%d(%s) [%d(%s)]禁止群内匿名聊天", uin, chat.ID, chat.Title, fromID, fromDisplay)
 	}
 	return nil
+}
+
+func (m *Manager) getChatUserDisplay(chatID, userID int64) string {
+	user, ok := m.GetChatManager().GetChatUser(chatID, userID)
+	if ok {
+		if user.Display != "" {
+			return user.Display
+		} else {
+			return user.Account.Username
+		}
+	}
+	return ""
 }

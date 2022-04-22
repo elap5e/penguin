@@ -118,16 +118,13 @@ func (m *Manager) onChannelServiceChannelDelete(uin int64, msg *pb.ChannelServic
 }
 
 func (m *Manager) onChannelServiceChannelMute(uin int64, msg *pb.Channel_Service_ChannelMute) error {
-	channel, _ := m.GetChannel(msg.GetChannelId())
-	to, _ := m.GetUser(msg.GetChannelId(), msg.GetTinyId())
-	toDisplay := to.Display
-	if toDisplay == "" {
-		toDisplay = to.Account.Username
-	}
+	channelID, toID := msg.GetChannelId(), msg.GetTinyId()
+	channel, _ := m.GetChannel(channelID)
+	toDisplay := m.getUserDisplay(channelID, toID)
 	if msg.GetTime() == 0 {
-		log.Notifyf("[%d] channel:%d(%s) [%d(%s)]被解除禁言", uin, channel.ID, channel.Title, to.Account.ID, toDisplay)
+		log.Notifyf("[%d] channel:%d(%s) [%d(%s)]被解除禁言", uin, channel.ID, channel.Title, toID, toDisplay)
 	} else {
-		log.Notifyf("[%d] channel:%d(%s) [%d(%s)]被禁言至[%s]", uin, channel.ID, channel.Title, to.Account.ID, toDisplay, time.Unix(msg.GetTime(), 0).UTC().Format(time.RFC3339))
+		log.Notifyf("[%d] channel:%d(%s) [%d(%s)]被禁言至[%s]", uin, channel.ID, channel.Title, toID, toDisplay, time.Unix(msg.GetTime(), 0).UTC().Format(time.RFC3339))
 	}
 	return nil
 }
@@ -158,6 +155,18 @@ func (m *Manager) onChannelServiceUserKicked(uin int64, msg *pb.ChannelService_K
 
 func (m *Manager) onChannelServiceUserLeaved(uin int64, msg *pb.ChannelService_QuitGuild) error {
 	return nil
+}
+
+func (m *Manager) getUserDisplay(channelID, userID int64) string {
+	user, ok := m.GetUser(channelID, userID)
+	if ok {
+		if user.Display != "" {
+			return user.Display
+		} else {
+			return user.Account.Username
+		}
+	}
+	return ""
 }
 
 func dumpUnknown(typ, sub uint64, msg *pb.Common_Msg) {

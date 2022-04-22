@@ -53,7 +53,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: penguin-all-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: |
-            LICENSE
-            README.md
-            build/*
+          path: ${{ github.workspace }}
