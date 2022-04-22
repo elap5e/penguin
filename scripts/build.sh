@@ -24,3 +24,5 @@ if [ "${GOOS:-}" = "windows" ]; then
 fi
 
 CGO_ENABLED=0 go build -trimpath -ldflags="-w -s" -o build/$BINARY cmd/$TARGET/main.go
+
+chmod +x build/$BINARY

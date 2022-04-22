@@ -52,5 +52,8 @@ jobs:
       - name: Upload ${{ matrix.goos }}/${{ matrix.goarch }} binaries
         uses: actions/upload-artifact@v3
         with:
-          name: penguin-all-${{ matrix.goos }}-${{ matrix.goarch }}.zip
-          path: build
+          name: penguin-all-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: |
+            LICENSE
+            README.md
+            build/*
