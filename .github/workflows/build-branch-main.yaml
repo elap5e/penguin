@@ -14,12 +14,33 @@ jobs:
           - goos: darwin
             goarch: amd64
           - goos: darwin
+            goarch: amd64
+            goamd64: v3
+          - goos: darwin
             goarch: arm64
+          - goos: freebsd
+            goarch: amd64
+            pack: true
+          - goos: freebsd
+            goarch: amd64
+            goamd64: v3
+            pack: true
+          - goos: freebsd
+            goarch: arm64
+            pack: true
           - goos: linux
             goarch: 386
             pack: true
           - goos: linux
             goarch: amd64
+            pack: true
+          - goos: linux
+            goarch: amd64
+            goamd64: v3
+            pack: true
+          - goos: linux
+            goarch: arm
+            goarm: 7
             pack: true
           - goos: linux
             goarch: arm64
@@ -30,6 +51,13 @@ jobs:
           - goos: windows
             goarch: amd64
             pack: true
+          - goos: windows
+            goarch: amd64
+            goamd64: v3
+            pack: true
+          - goos: windows
+            goarch: arm
+            goarm: 7
           - goos: windows
             goarch: arm64
     steps:
@@ -39,24 +67,26 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: "1.18.1"
-      - name: Build ${{ matrix.goos }}/${{ matrix.goarch }} binaries
+      - name: Build ${{ matrix.goos }}/${{ matrix.goarch }}${{ matrix.goamd64 }}${{ matrix.goarm }} binaries
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
+          GOAMD64: ${{ matrix.goamd64 }}
+          GOARM: ${{ matrix.goarm }}
         run: |
           bash scripts/build.sh penguin-cli
           bash scripts/build.sh penguind
       - if: matrix.pack
-        name: Pack ${{ matrix.goos }}/${{ matrix.goarch }} binaries
+        name: Pack ${{ matrix.goos }}/${{ matrix.goarch }}${{ matrix.goamd64 }}${{ matrix.goarm }} binaries
         run: upx --best build/*
       - name: Add files and keep permission
         run: |
           cp LICENSE build
           cp README.md build
           cp SECURITY.md build
-          tar -cvzf penguin-all-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz -C build .
-      - name: Upload ${{ matrix.goos }}/${{ matrix.goarch }} artifact
+          tar -cvzf penguin-all-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.goamd64 }}${{ matrix.goarm }}.tar.gz -C build .
+      - name: Upload ${{ matrix.goos }}/${{ matrix.goarch }}${{ matrix.goamd64 }}${{ matrix.goarm }} artifact
         uses: actions/upload-artifact@v3
         with:
-          name: penguin-all-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: penguin-all-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
+          name: penguin-all-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.goamd64 }}${{ matrix.goarm }}
+          path: penguin-all-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.goamd64 }}${{ matrix.goarm }}.tar.gz
