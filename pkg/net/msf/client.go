@@ -29,6 +29,7 @@ import (
 	"github.com/elap5e/penguin/pkg/log"
 	"github.com/elap5e/penguin/pkg/net/msf/rpc"
 	"github.com/elap5e/penguin/pkg/net/msf/rpc/tcp"
+	"github.com/elap5e/penguin/pkg/net/msf/service"
 )
 
 var random = rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -37,6 +38,11 @@ type Client struct {
 	rpc.Sender
 	seq int32
 
+	cancel context.CancelFunc
+
+	cacheMu sync.Mutex
+	caching map[int32]bool
+
 	mu          sync.Mutex
 	handlers    map[string]rpc.Handler
 	sessions    map[int64]*rpc.Session
@@ -44,54 +50,87 @@ type Client struct {
 	fakeSources map[int64]*fake.Source
 }
 
-func NewClient(ctx context.Context) rpc.Client {
-	c := &Client{
+func NewClient() rpc.Client {
+	return &Client{
 		seq:         random.Int31n(100000),
+		cacheMu:     sync.Mutex{},
+		caching:     make(map[int32]bool),
 		mu:          sync.Mutex{},
 		handlers:    make(map[string]rpc.Handler),
 		sessions:    make(map[int64]*rpc.Session),
 		stickets:    make(map[int64]*rpc.Tickets),
 		fakeSources: make(map[int64]*fake.Source),
 	}
-	if err := c.DialDefault(ctx); err != nil {
-		log.Warn("msf.Client.DialDefault error: %v", err)
-	}
-	return c
 }
 
-func (c *Client) Dial(network, address string) error {
-	return c.DialWithContext(context.Background(), network, address)
+var whitelist = map[string]bool{
+	strings.ToLower(service.MethodChannelPushFirstView): true,
+}
+
+func checkWhitelistMethod(method string) bool {
+	return whitelist[strings.ToLower(method)]
+}
+
+func (c *Client) checkCaching(seq int32, duration time.Duration) bool {
+	c.cacheMu.Lock()
+	_, ok := c.caching[seq]
+	if !ok {
+		ticker := time.NewTicker(duration)
+		c.caching[seq] = true
+		go func(seq int32) {
+			<-ticker.C
+			c.cacheMu.Lock()
+			delete(c.caching, seq)
+			c.cacheMu.Unlock()
+		}(seq)
+	}
+	c.cacheMu.Unlock()
+	return ok
+}
+
+func (c *Client) BindCancelFunc(cancel context.CancelFunc) {
+	c.cancel = cancel
 }
 
 func (c *Client) DialDefault(ctx context.Context) error {
-	return c.DialWithContext(ctx, "tcp", "msfwifi.3g.qq.com:8080")
+	return c.Dial(ctx, "tcp", "msfwifi.3g.qq.com:8080")
 }
 
-func (c *Client) DialWithContext(ctx context.Context, network, address string) error {
-	if c.Sender != nil {
-		if err := c.Sender.Close(); err != nil {
-			return err
-		}
-	}
+func (c *Client) Dial(ctx context.Context, network, address string) error {
+	log.Info("dialing %s %s", network, address)
 	conn, err := net.Dial(network, address)
 	if err != nil {
 		return err
 	}
 	c.Sender = rpc.NewSender(c, tcp.NewCodec(c, conn))
-	go c.Sender.Run(ctx)
+	go c.Sender.Run(ctx, func() { c.cancel() })
 	return nil
 }
 
 func (c *Client) Close() error {
-	return c.Sender.Close()
+	if c.Sender != nil {
+		return c.Sender.Close()
+	}
+	return fmt.Errorf("msf.Client.Close error: Sender is nil")
 }
 
-func (c *Client) Call(serviceMethod string, args *rpc.Args, reply *rpc.Reply) error {
-	call := <-c.Go(serviceMethod, args, reply, make(chan *rpc.Call, 1)).Done
-	return call.Error
+func (c *Client) Call(serviceMethod string, args *rpc.Args, reply *rpc.Reply) (err error) {
+	ticker := time.NewTicker(time.Second * 30)
+	select {
+	case <-ticker.C:
+		ticker.Stop()
+		err = rpc.ErrWriteTimeout
+	case call := <-c.Go(serviceMethod, args, reply, make(chan *rpc.Call, 1)).Done:
+		err = call.Error
+	}
+	return err
 }
 
 func (c *Client) Handle(serviceMethod string, reply *rpc.Reply) (*rpc.Args, error) {
+	// 10 seconds is enough for caching pushed message
+	if !checkWhitelistMethod(reply.ServiceMethod) && c.checkCaching(reply.Seq, time.Second*10) {
+		return nil, rpc.ErrCachedPush
+	}
 	if handler, ok := c.handlers[strings.ToLower(serviceMethod)]; ok {
 		return handler(reply)
 	}

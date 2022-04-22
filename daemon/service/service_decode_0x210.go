@@ -15,9 +15,12 @@
 package service
 
 import (
+	"encoding/base64"
+
 	"github.com/elap5e/penguin/daemon/message/dto"
 	"github.com/elap5e/penguin/daemon/message/pb"
 	"github.com/elap5e/penguin/pkg/encoding/jce"
+	"github.com/elap5e/penguin/pkg/log"
 )
 
 type Message0x210 struct {
@@ -50,5 +53,6 @@ func (m *Manager) decode0x210Pb(uin int64, p []byte) error {
 }
 
 func (m *Manager) decode0x210(uin int64, typ int32, p []byte) error {
+	log.Warn("decode0x210: %d %d base64:%q", typ, len(p), base64.StdEncoding.EncodeToString(p))
 	return nil
 }

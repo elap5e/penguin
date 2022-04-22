@@ -35,7 +35,7 @@ type Sender interface {
 	Close() error
 	Go(serviceMethod string, args *Args, reply *Reply, done chan *Call) *Call
 
-	Run(ctx context.Context)
+	Run(ctx context.Context, cancel context.CancelFunc)
 }
 
 type sender struct {
@@ -76,7 +76,7 @@ func (s *sender) recvLoop(ctx context.Context) {
 		resp = Response{}
 		err = s.codec.ReadResponseHeader(&resp)
 		if err != nil {
-			return
+			break
 		}
 		seq := resp.Seq
 		s.mu.Lock()
@@ -110,18 +110,19 @@ func (s *sender) recvLoop(ctx context.Context) {
 			log.Info("push %s data:%d", info, len(reply.Payload))
 			go func() {
 				args, err := s.c.Handle(reply.ServiceMethod, reply)
-				if err != nil {
+				if err == ErrCachedPush {
+					log.Warn("cached push %s data:%d", info, len(reply.Payload))
+				} else if err != nil {
 					log.Error("handle %s error:%v", info, err)
 					log.Debug("push:%s data:\n%s", p, hex.Dump(reply.Payload))
 					log.Warn("skip %s data:%d", info, len(reply.Payload))
-					return
-				}
-				if args != nil {
+				} else if args != nil {
 					s.goSend(args.ServiceMethod, args, nil, nil, true)
 				}
 			}()
 		}
 	}
+	log.Error("recvLoop error: %v", err)
 	s.loopError(err)
 }
 
@@ -167,6 +168,7 @@ func (s *sender) sendLoop(ctx context.Context) {
 		log.Debug("send:%s data:%d", p, len(call.Args.Payload))
 		log.Info("send ver:%d uin:%s seq:%d cmd:%s data:%d", req.Version, req.Username, req.Seq, req.ServiceMethod, len(call.Args.Payload))
 	}
+	log.Error("sendLoop error: %v", err)
 	s.loopError(err)
 }
 
@@ -193,6 +195,7 @@ func (s *sender) watchDog(ctx context.Context) {
 		if !s.heartbeating {
 			if err := s.heartbeat(); err != nil {
 				log.Error("watchDog sender, error: %v", err)
+				s.Close()
 			}
 		}
 		ticker.Reset(duration)
@@ -217,11 +220,11 @@ func (s *sender) loopError(err error) {
 		call.done()
 	}
 	s.mu.Unlock()
-	s.cancel()
+	s.Close()
 }
 
-func (s *sender) Run(ctx context.Context) {
-	ctx, s.cancel = context.WithCancel(ctx)
+func (s *sender) Run(ctx context.Context, cancel context.CancelFunc) {
+	s.cancel = func() { cancel() }
 	go s.recvLoop(ctx)
 	go s.sendLoop(ctx)
 	go s.watchDog(ctx)
@@ -258,6 +261,11 @@ func (s *sender) push(call *Call, front bool) {
 }
 
 func (s *sender) Close() error {
+	s.mu.Lock()
+	defer s.mu.Lock()
+	if s.closing {
+		return fmt.Errorf("sender is closing")
+	}
 	s.cancel()
 	return s.codec.Close()
 }
@@ -296,11 +304,18 @@ func (s *sender) goSend(serviceMethod string, args *Args, reply *Reply, done cha
 	return call
 }
 
-func (s *sender) heartbeat() error {
+func (s *sender) heartbeat() (err error) {
 	s.heartbeating = true
-	call := <-s.goSend(service.MethodHeartbeatAlive, new(Args), new(Reply), make(chan *Call, 1), true).Done
+	ticker := time.NewTicker(time.Second)
+	select {
+	case <-ticker.C:
+		ticker.Stop()
+		err = ErrHeartbeatTimeout
+	case call := <-s.goSend(service.MethodHeartbeatAlive, new(Args), new(Reply), make(chan *Call, 1), true).Done:
+		err = call.Error
+	}
 	s.heartbeating = false
-	return call.Error
+	return err
 }
 
 var _ Sender = (*sender)(nil)

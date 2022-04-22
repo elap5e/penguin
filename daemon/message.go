@@ -259,7 +259,11 @@ func (d *Daemon) onSendMessage(id int64, req *pb.MsgService_PbSendMsgReq, resp *
 	prsp, _ := json.Marshal(resp)
 	pmsg, _ := json.Marshal(msg)
 	log.Debug("id:%d req:%s resp:%s msg:%s", id, preq, prsp, pmsg)
-	log.Chat(id, msg)
+	if resp.GetResult() != 0 {
+		log.Error("failed to send message, error:%s", resp.GetErrmsg())
+	} else if msg.Chat.Type != penguin.ChatTypeGroup {
+		log.Chat(id, msg)
+	}
 	return nil
 }
 

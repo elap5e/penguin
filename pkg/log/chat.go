@@ -33,9 +33,10 @@ func Chat(id int64, msg *penguin.Message) {
 	switch msg.Chat.Type {
 	case penguin.ChatTypeGroup:
 		str = fmt.Sprintf(
-			"[%d] group:%d(%s) user:%d(%s) text:%q",
+			"[%d] group:%d:%d(%s) user:%d(%s) text:%q",
 			id,
 			msg.Chat.ID,
+			msg.MessageID,
 			chatDisplay,
 			msg.From.Account.ID,
 			fromDisplay,
@@ -47,11 +48,12 @@ func Chat(id int64, msg *penguin.Message) {
 			userDisplay = msg.Chat.User.Account.Username
 		}
 		str = fmt.Sprintf(
-			"[%d] group:%d(%s) private:%d(%s) user:%d(%s) text:%q",
+			"[%d] group:%d(%s) private:%d:%d(%s) user:%d(%s) text:%q",
 			id,
 			msg.Chat.ID,
 			chatDisplay,
 			msg.Chat.User.Account.ID,
+			msg.MessageID,
 			userDisplay,
 			msg.From.Account.ID,
 			fromDisplay,
@@ -63,9 +65,10 @@ func Chat(id int64, msg *penguin.Message) {
 			userDisplay = msg.Chat.User.Account.Username
 		}
 		str = fmt.Sprintf(
-			"[%d] private:%d(%s) user:%d(%s) text:%q",
+			"[%d] private:%d:%d(%s) user:%d(%s) text:%q",
 			id,
 			msg.Chat.User.Account.ID,
+			msg.MessageID,
 			userDisplay,
 			msg.From.Account.ID,
 			fromDisplay,
@@ -73,11 +76,12 @@ func Chat(id int64, msg *penguin.Message) {
 		)
 	case penguin.ChatTypeRoomText, penguin.ChatTypeRoomLive:
 		str = fmt.Sprintf(
-			"[%d] channel:%d(%s) room:%d(%s) user:%d(%s) text:%q",
+			"[%d] channel:%d(%s) room:%d:%d(%s) user:%d(%s) text:%q",
 			id,
 			msg.Chat.Channel.ID,
 			msg.Chat.Channel.Title,
 			msg.Chat.ID,
+			msg.MessageID,
 			chatDisplay,
 			msg.From.Account.ID,
 			fromDisplay,
@@ -85,12 +89,13 @@ func Chat(id int64, msg *penguin.Message) {
 		)
 	case penguin.ChatTypeRoomPrivate:
 		str = fmt.Sprintf(
-			"[%d] channel:%d(%s) private:%d:%d user:%d(%s) text:%q",
+			"[%d] channel:%d(%s) private:%d:%d:%d user:%d(%s) text:%q",
 			id,
 			msg.Chat.Channel.Channel.ID,
 			msg.Chat.Channel.Channel.Title,
 			msg.Chat.Channel.ID,
 			msg.Chat.ID,
+			msg.MessageID,
 			msg.From.Account.ID,
 			fromDisplay,
 			msg.Text,

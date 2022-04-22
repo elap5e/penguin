@@ -77,5 +77,15 @@ type Response struct {
 }
 
 var (
+	ErrCachedPush = errors.New("cached push")
 	ErrNotHandled = errors.New("not handled")
+
+	ErrHeartbeatTimeout = errors.New("heartbeat timeout")
+
+	ErrWriteClosed  = errors.New("write closed")
+	ErrWriteTimeout = errors.New("write timeout")
+)
+
+var (
+	ContextErrorKey = struct{}{}
 )

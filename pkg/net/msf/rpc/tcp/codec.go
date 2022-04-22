@@ -16,7 +16,6 @@ package tcp
 
 import (
 	"io"
-	"net"
 
 	"github.com/elap5e/penguin/pkg/bytes"
 	"github.com/elap5e/penguin/pkg/net/msf/rpc"
@@ -30,7 +29,7 @@ type codec struct {
 	reply *rpc.Reply
 }
 
-func NewCodec(cl rpc.Client, conn net.Conn) rpc.Codec {
+func NewCodec(cl rpc.Client, conn io.ReadWriteCloser) rpc.Codec {
 	return &codec{
 		cl:    cl,
 		conn:  conn,

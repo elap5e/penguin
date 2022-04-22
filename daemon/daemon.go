@@ -41,6 +41,7 @@ var random = rand.New(rand.NewSource(time.Now().UTC().UnixMicro()))
 type Daemon struct {
 	ctx context.Context
 	cfg *config.Config
+	uin int64
 
 	c rpc.Client
 
@@ -53,7 +54,10 @@ type Daemon struct {
 	svcm *service.Manager
 
 	mu      sync.Mutex
+	isReady bool
+	readyCh chan struct{}
 	msgChan chan *penguin.Message
+
 	wg      sync.WaitGroup
 	waiting bool
 
@@ -65,7 +69,7 @@ func New(ctx context.Context, cfg *config.Config) *Daemon {
 	d := &Daemon{
 		ctx: ctx,
 		cfg: cfg,
-		c:   msf.NewClient(ctx),
+		c:   msf.NewClient(),
 		mu:  sync.Mutex{},
 	}
 	d.accm = account.NewManager(d.ctx, d, account.NewMemStore())
@@ -76,7 +80,8 @@ func New(ctx context.Context, cfg *config.Config) *Daemon {
 	d.msgm = message.NewManager(d.ctx, d)
 	d.svcm = service.NewManager(d.ctx, d)
 	d.msgChan = make(chan *penguin.Message, 1000)
-	d.Wait()
+	d.readyCh = make(chan struct{}, 10)
+	d.Waiting()
 	return d
 }
 
@@ -105,28 +110,103 @@ func (d *Daemon) watchDog(uin int64) {
 }
 
 func (d *Daemon) Run() error {
+	log.Info("rpc client is starting")
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- d.run()
+	}()
+	<-d.readyCh
+	log.Info("rpc client is ready, start the daemon")
+	if err := d.init(); err != nil {
+		return err
+	}
+	return <-errCh
+}
+
+func (d *Daemon) run() error {
+	var err error
+	for {
+		ctx, cancel := context.WithCancel(context.Background())
+		d.c.BindCancelFunc(cancel)
+		if err = d.c.DialDefault(ctx); err != nil {
+			log.Warn("daemon.Daemon.run error: %v", err)
+			break
+		}
+		if d.checkReady() {
+			if err = d.resync(d.uin); err != nil {
+				log.Warn("daemon.Daemon.run error: %v", err)
+				break
+			}
+		}
+		d.ready()
+		<-ctx.Done()
+	}
+	return err
+}
+
+func (d *Daemon) init() error {
 	resp, err := d.athm.SignIn(d.cfg.Username, d.cfg.Password)
 	if err != nil {
 		return fmt.Errorf("auth sign in, error: %v", err)
 	}
-	if _, err := d.svcm.RegisterAppRegister(resp.Data.Uin); err != nil {
-		return fmt.Errorf("service register app register, error: %v", err)
+	if err := d.start(resp.Data.Uin); err != nil {
+		return err
 	}
-	if _, err := d.cntm.GetContacts(resp.Data.Uin, 0, 100, 0, 100); err != nil {
-		return fmt.Errorf("contact get contacts, error: %v", err)
+	d.started()
+	log.Info("daemon is started, start handling push message")
+	go d.watchDog(d.uin)
+	return nil
+}
+
+func (d *Daemon) start(uin int64) error {
+	d.uin = uin
+	if err := d.sync(uin); err != nil {
+		return err
 	}
-	if _, err := d.chtm.GetGroups(resp.Data.Uin); err != nil {
-		return fmt.Errorf("chat get groups and users, error: %v", err)
-	}
-	if _, err := d.chnm.SyncFirstView(resp.Data.Uin, 0); err != nil {
-		return fmt.Errorf("channel sync first view, error: %v", err)
-	}
-	if _, err := d.svcm.RegisterSetOnlineStatus(resp.Data.Uin, service.StatusTypeOnline, true); err != nil {
+	if _, err := d.svcm.RegisterSetOnlineStatus(d.uin, service.StatusTypeOnline, true); err != nil {
 		return fmt.Errorf("service register set online status, error: %v", err)
 	}
-	d.Start()
-	go d.watchDog(resp.Data.Uin)
-	select {}
+	return nil
+}
+
+func (d *Daemon) sync(uin int64) error {
+	if _, err := d.svcm.RegisterAppRegister(d.uin); err != nil {
+		return fmt.Errorf("service register app register, error: %v", err)
+	}
+	if _, err := d.cntm.GetContacts(d.uin, 0, 100, 0, 100); err != nil {
+		return fmt.Errorf("contact get contacts, error: %v", err)
+	}
+	if _, err := d.chtm.GetGroups(d.uin); err != nil {
+		return fmt.Errorf("chat get groups and users, error: %v", err)
+	}
+	if _, err := d.chnm.SyncFirstView(d.uin, 0); err != nil {
+		return fmt.Errorf("channel sync first view, error: %v", err)
+	}
+	return nil
+}
+
+func (d *Daemon) resync(uin int64) error {
+	if _, err := d.svcm.RegisterAppRegister(d.uin); err != nil {
+		return fmt.Errorf("service register app register, error: %v", err)
+	}
+	return nil
+}
+
+func (d *Daemon) ready() {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if !d.isReady {
+		d.isReady = true
+		if len(d.readyCh) == 0 {
+			d.readyCh <- struct{}{}
+		}
+	}
+}
+
+func (d *Daemon) checkReady() bool {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.isReady
 }
 
 func (d *Daemon) Call(serviceMethod string, args *rpc.Args, reply *rpc.Reply) error {
@@ -139,7 +219,7 @@ func (d *Daemon) Call(serviceMethod string, args *rpc.Args, reply *rpc.Reply) er
 	return err
 }
 
-func (d *Daemon) Start() {
+func (d *Daemon) started() {
 	d.mu.Lock()
 	if d.waiting {
 		d.wg.Done()
@@ -150,7 +230,7 @@ func (d *Daemon) Start() {
 	d.mu.Unlock()
 }
 
-func (d *Daemon) Wait() {
+func (d *Daemon) Waiting() {
 	d.mu.Lock()
 	if !d.waiting {
 		d.wg.Add(1)

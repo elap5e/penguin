@@ -15,6 +15,7 @@
 package rpc
 
 import (
+	"context"
 	"encoding/hex"
 	"strconv"
 	"time"
@@ -25,6 +26,11 @@ import (
 )
 
 type Client interface {
+	BindCancelFunc(cancel context.CancelFunc)
+
+	DialDefault(ctx context.Context) error
+	Dial(ctx context.Context, network, address string) error
+
 	Close() error
 	Go(serviceMethod string, args *Args, reply *Reply, done chan *Call) *Call
 	Call(serviceMethod string, args *Args, reply *Reply) error

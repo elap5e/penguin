@@ -38,9 +38,11 @@ func (m *Manager) Decode0x2dc(uin int64, msg *dto.Message) error {
 	typ := msg.MessageBytes[4]
 
 	switch typ {
-	case 0x0c: // ChatMute
+	case 0x0c:
+		// chat mute
 		return m.onChatMute(uin, chatID, msg)
-	case 0x10, 0x11, 0x14, 0x15: // ChatTips
+	case 0x10, 0x11, 0x14, 0x15:
+		// chat tips
 		if len(msg.MessageBytes) < 8 {
 			return fmt.Errorf("invalid message length: %d < 8", len(msg.MessageBytes))
 		}
@@ -63,9 +65,10 @@ func (m *Manager) Decode0x2dc(uin int64, msg *dto.Message) error {
 		} else if v := notify.GetGeneralGrayTip(); v != nil {
 			return m.onChatGrayTips(uin, chatID, v)
 		}
-	case 0x03:
-		fallthrough
 	case 0x0e:
+		// chat anonymous
+		return m.onChatAnonymous(uin, chatID, msg)
+	case 0x03:
 		fallthrough
 	case 0x0f:
 		fallthrough
@@ -138,12 +141,16 @@ func (m *Manager) onChatMessageRecall(uin, chatID int64, notify *pb.ChatTips_Mes
 func (m *Manager) onChatGrayTips(uin, chatID int64, notify *pb.ChatTips_GeneralGrayTipInfo) error {
 	id, tmplID := notify.GetBusiId(), notify.GetTemplId()
 	if id == 1003 {
-		userID, userDisplay, honor := int64(0), "", ""
+		userID, userDisplay, lastID, lastDisplay, honor := int64(0), "", int64(0), "", ""
 		for _, v := range notify.GetMsgTemplParam() {
 			if bytes.Equal(v.GetName(), []byte("uin")) {
 				userID, _ = strconv.ParseInt(string(v.GetValue()), 10, 64)
 			} else if bytes.Equal(v.GetName(), []byte("nick")) {
 				userDisplay = string(v.GetValue())
+			} else if bytes.Equal(v.GetName(), []byte("uin_last")) {
+				lastID, _ = strconv.ParseInt(string(v.GetValue()), 10, 64)
+			} else if bytes.Equal(v.GetName(), []byte("nick_last")) {
+				lastDisplay = string(v.GetValue())
 			} else if bytes.Equal(v.GetName(), []byte("honor_name_2")) {
 				honor = string(v.GetValue())
 			}
@@ -156,9 +163,15 @@ func (m *Manager) onChatGrayTips(uin, chatID int64, notify *pb.ChatTips_GeneralG
 		if tmplID == 1052 {
 			log.Notifyf("[%d] group:%d(%s) [%d(%s)]在群聊中连续发消息超过7天, 获得[%s]标识。", uin, chat.ID, chat.Title, userID, userDisplay, honor)
 		} else if tmplID == 1053 {
-			log.Notifyf("[%d] group:%d(%s) 昨日[%d(%s)]在群内发言最积极，夺走了[%s]标识。", uin, chat.ID, chat.Title, userID, userDisplay, honor)
+			last, _ := m.GetChatManager().GetChatUser(chatID, lastID)
+			if lastDisplay == "" {
+				lastDisplay = last.Account.Username
+			}
+			honor = "龙王"
+			log.Notifyf("[%d] group:%d(%s) 昨日[%d(%s)]在群内发言最积极，夺走了[]的[%s]标识。", uin, chat.ID, chat.Title, userID, userDisplay, honor)
 		} else if tmplID == 1054 {
-			log.Notifyf("[%d] group:%d(%s) 昨日[%d(%s)]在群内发言最积极, 获得[%s]标识。", uin, chat.ID, chat.Title, userID, userDisplay, honor)
+			honor = "龙王"
+			log.Notifyf("[%d] group:%d(%s) 昨日[%d(%s)]在群内发言最积极，获得[%s]标识。", uin, chat.ID, chat.Title, userID, userDisplay, honor)
 		} else if tmplID == 1067 {
 			log.Notifyf("[%d] group:%d(%s) [%d(%s)]在群聊中连续发表情包超过3天，且累计数量超过20条，获得[%s]标识。", uin, chat.ID, chat.Title, userID, userDisplay, honor)
 		}
@@ -204,6 +217,22 @@ func (m *Manager) onChatGrayTips(uin, chatID int64, notify *pb.ChatTips_GeneralG
 			userDisplay = user.Account.Username
 		}
 		log.Notifyf("[%d] group:%d(%s) [%d(%s)]%s", uin, chat.ID, chat.Title, user.Account.ID, userDisplay, action)
+	}
+	return nil
+}
+
+func (m *Manager) onChatAnonymous(uin, chatID int64, msg *dto.Message) error {
+	fromID := int64(binary.BigEndian.Uint32(msg.MessageBytes[6:10]))
+	chat, _ := m.GetChatManager().GetChat(chatID)
+	from, _ := m.GetChatManager().GetChatUser(chatID, fromID)
+	fromDisplay := from.Display
+	if fromDisplay == "" {
+		fromDisplay = from.Account.Username
+	}
+	if bytes.Equal(msg.MessageBytes[10:14], []byte{0, 0, 0, 0}) {
+		log.Notifyf("[%d] group:%d(%s) [%d(%s)]允许群内匿名聊天", uin, chat.ID, chat.Title, from.Account.ID, fromDisplay)
+	} else {
+		log.Notifyf("[%d] group:%d(%s) [%d(%s)]禁止群内匿名聊天", uin, chat.ID, chat.Title, from.Account.ID, fromDisplay)
 	}
 	return nil
 }
