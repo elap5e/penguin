@@ -51,9 +51,11 @@ func (m *Manager) SignIn(username, password string) (*Response, error) {
 		if err != nil {
 			return nil, err
 		}
-		if username = re.FindString(username); username == "" {
+		matched := re.FindStringSubmatch(username)
+		if matched == nil || len(matched) != 2 {
 			return nil, fmt.Errorf("not a valid username")
 		}
+		username = matched[1]
 	}
 	_ = m.SetAccount(username, password)
 	uin, err := strconv.ParseInt(username, 10, 64)

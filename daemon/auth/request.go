@@ -54,7 +54,8 @@ func (m *Manager) request(req *Request) (*Response, error) {
 			m.c.SetSessionAuth(data.Uin, resp.ExtraData.SessionAuth)
 
 			login := resp.ExtraData.ThirdPartLogin.MsgRspCmd_18.MsgRspPhoneSmsExtendLogin
-			for k, v := range login.BindUinInfo {
+			log.Warn("available accounts: %d", len(login.GetBindUinInfo()))
+			for k, v := range login.GetBindUinInfo() {
 				log.Printf("%d: %s(%s) photo:%s", k, v.Nick, v.MaskUin, v.ImageUrl)
 			}
 			log.Warn("auth unbinding notify: %s", login.UnbindWording)
@@ -64,7 +65,7 @@ func (m *Manager) request(req *Request) (*Response, error) {
 			fmt.Printf(">>> ")
 			fmt.Scanln(&code)
 			line, _ := strconv.Atoi(code)
-			info := login.BindUinInfo[line]
+			info := login.GetBindUinInfo()[line]
 			extraData.T542 = info.EncryptUin
 
 			return m.name2Uin(info.Nick)
@@ -191,6 +192,9 @@ func (m *Manager) request(req *Request) (*Response, error) {
 	case 0x01:
 		log.Debug("invalid login, error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
 		return nil, fmt.Errorf("invalid password")
+	case 0x05:
+		log.Debug("invalid username, error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
+		return nil, fmt.Errorf("invalid username")
 	case 0x06:
 		log.Debug("not implement, error:%s message:%s", resp.ExtraData.ErrorTitle, resp.ExtraData.ErrorMessage)
 	case 0x09:
