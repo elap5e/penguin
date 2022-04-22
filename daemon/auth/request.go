@@ -228,6 +228,7 @@ func (m *Manager) request(req *Request) (*Response, error) {
 		return nil, fmt.Errorf("too many failures")
 	default:
 		log.Debug("unknown code: 0x%02x", data.Code)
+		return nil, fmt.Errorf("unknown code: 0x%02x", data.Code)
 	}
 	return resp, nil
 }

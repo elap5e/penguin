@@ -145,27 +145,24 @@ func (d *Daemon) run() error {
 }
 
 func (d *Daemon) init() error {
-	resp, err := d.athm.SignIn(d.cfg.Username, d.cfg.Password)
+	return d.Start(d.cfg.Username, d.cfg.Password)
+}
+
+func (d *Daemon) Start(username, password string) error {
+	resp, err := d.athm.SignIn(username, password)
 	if err != nil {
 		return fmt.Errorf("auth sign in, error: %v", err)
 	}
-	if err := d.start(resp.Data.Uin); err != nil {
-		return err
-	}
-	d.started()
-	log.Info("daemon is started, start handling push message")
-	go d.watchDog(d.uin)
-	return nil
-}
-
-func (d *Daemon) start(uin int64) error {
-	d.uin = uin
-	if err := d.sync(uin); err != nil {
+	d.uin = resp.Data.Uin
+	if err := d.sync(d.uin); err != nil {
 		return err
 	}
 	if _, err := d.svcm.RegisterSetOnlineStatus(d.uin, service.StatusTypeOnline, true); err != nil {
 		return fmt.Errorf("service register set online status, error: %v", err)
 	}
+	d.started()
+	log.Info("daemon is started, start handling push message")
+	go d.watchDog(d.uin)
 	return nil
 }
 

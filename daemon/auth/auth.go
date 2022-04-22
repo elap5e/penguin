@@ -97,7 +97,7 @@ func (m *Manager) SetAccount(username, password string) (oldAccount *Account) {
 	}
 	copyAccount(account, &Account{
 		Username: username,
-		Password: md5.Sum([]byte(randomPassword())),
+		Password: md5.Sum([]byte(password)),
 		Generate: false,
 	})
 	return account

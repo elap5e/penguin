@@ -30,6 +30,7 @@ type Config struct {
 func OpenFile(name string) *Config {
 	data, err := ioutil.ReadFile(name)
 	if os.IsNotExist(err) {
+		log.Warn("config file does not exist, using default config: %s", name)
 		data, err = json.MarshalIndent(defaultConfig, "", "  ")
 		if err == nil {
 			err = ioutil.WriteFile(name, data, 0644)
