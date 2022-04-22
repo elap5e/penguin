@@ -8,52 +8,49 @@ jobs:
   build:
     name: Build Go Binary
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+          - goos: linux
+            goarch: 386
+            pack: true
+          - goos: linux
+            goarch: amd64
+            pack: true
+          - goos: linux
+            goarch: arm64
+            pack: true
+          - goos: windows
+            goarch: 386
+            pack: true
+          - goos: windows
+            goarch: amd64
+            pack: true
+          - goos: windows
+            goarch: arm64
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: '1.18.1'
-      - name: Build Binaries
-        run: bash scripts/release.sh
-      - name: Upload darwin/amd64
+          go-version: "1.18.1"
+      - name: Build ${{ matrix.goos }}/${{ matrix.goarch }} binaries
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          bash scripts/build.sh penguin-cli
+          bash scripts/build.sh penguind
+      - if: matrix.pack
+        name: Pack ${{ matrix.goos }}/${{ matrix.goarch }} binaries
+        run: upx --best build/*
+      - name: Upload ${{ matrix.goos }}/${{ matrix.goarch }} binaries
         uses: actions/upload-artifact@v3
         with:
-          name: darwin-amd64
-          path: build/releases/*-darwin-amd64
-      - name: Upload darwin/arm64
-        uses: actions/upload-artifact@v3
-        with:
-          name: darwin-arm64
-          path: build/releases/*-darwin-arm64
-      - name: Upload linux/386
-        uses: actions/upload-artifact@v3
-        with:
-          name: linux-386
-          path: build/releases/*-linux-386
-      - name: Upload linux/amd64
-        uses: actions/upload-artifact@v3
-        with:
-          name: linux-amd64
-          path: build/releases/*-linux-amd64
-      - name: Upload linux/arm64
-        uses: actions/upload-artifact@v3
-        with:
-          name: linux-arm64
-          path: build/releases/*-linux-arm64
-      - name: Upload windows/386
-        uses: actions/upload-artifact@v3
-        with:
-          name: windows-386
-          path: build/releases/*-windows-386.exe
-      - name: Upload windows/amd64
-        uses: actions/upload-artifact@v3
-        with:
-          name: windows-amd64
-          path: build/releases/*-windows-amd64.exe
-      - name: Upload windows/arm64
-        uses: actions/upload-artifact@v3
-        with:
-          name: windows-arm64
-          path: build/releases/*-windows-arm64.exe
+          name: penguin-all-${{ matrix.goos }}-${{ matrix.goarch }}.zip
+          path: build

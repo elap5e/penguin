@@ -16,5 +16,11 @@
 
 set -uex
 
-CGO_ENABLED=0 go build -trimpath -ldflags="-w -s" -o build/penguin-cli cmd/penguin-cli/main.go
-CGO_ENABLED=0 go build -trimpath -ldflags="-w -s" -o build/penguind cmd/penguind/main.go
+TARGET=$1
+BINARY=$TARGET
+
+if [ "${GOOS:-}" = "windows" ]; then
+    BINARY=${BINARY}.exe
+fi
+
+CGO_ENABLED=0 go build -trimpath -ldflags="-w -s" -o build/$BINARY cmd/$TARGET/main.go
