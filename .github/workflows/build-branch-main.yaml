@@ -54,9 +54,9 @@ jobs:
           cp LICENSE build
           cp README.md build
           cp SECURITY.md build
-          tar -cvzf bin.tar.gz -C build .
+          tar -cvzf penguin-all-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz -C build .
       - name: Upload ${{ matrix.goos }}/${{ matrix.goarch }} artifact
         uses: actions/upload-artifact@v3
         with:
           name: penguin-all-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: bin.tar.gz
+          path: penguin-all-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
