@@ -10,5 +10,5 @@ require (
 
 require (
 	github.com/mattn/go-isatty v0.0.14 // indirect
-	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
+	golang.org/x/sys v0.0.0-20220502124256-b6088ccd6cba // indirect
 )
