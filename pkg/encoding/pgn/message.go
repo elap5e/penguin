@@ -485,7 +485,7 @@ func (me *messageEncoder) encodeWallet(elem *pb.IMMsgBody_QQWalletMsg, msg *peng
 		Type:   "wallet",
 		Offset: me.offset,
 		Length: int64(n),
-		URL:    fmt.Sprintf("?id=%d", msg.ReplyTo.MessageID),
+		URL:    "",
 	})
 	me.offset += int64(n)
 }
