@@ -39,7 +39,7 @@ func NewMiniHDQQAndroidSource(uin int64) *Source {
 func NewNextMobileQQAndroidSource(uin int64) *Source {
 	return &Source{
 		App:    NextMobileQQAndroidApp,
-		SDK:    MobileQQAndroidSDK,
+		SDK:    NextMobileQQAndroidSDK,
 		Device: NewAndroidDevice(uin),
 	}
 }
@@ -47,7 +47,7 @@ func NewNextMobileQQAndroidSource(uin int64) *Source {
 func NewNextMiniHDQQAndroidSource(uin int64) *Source {
 	return &Source{
 		App:    NextMiniHDQQAndroidApp,
-		SDK:    MiniHDQQAndroidSDK,
+		SDK:    NextMiniHDQQAndroidSDK,
 		Device: NewAndroidDevice(uin),
 	}
 }

@@ -38,3 +38,8 @@ var (
 		CanCaptcha: true,
 	}
 )
+
+var (
+	NextMobileQQAndroidSDK = MobileQQAndroidSDK
+	NextMiniHDQQAndroidSDK = MiniHDQQAndroidSDK
+)
