@@ -24,8 +24,8 @@ type SDK struct {
 
 var (
 	MobileQQAndroidSDK = &SDK{
-		BuildAt:    1645432578,
-		Version:    "6.0.0.2497",
+		BuildAt:    1652271523,
+		Version:    "6.0.0.2508",
 		SSOVersion: 18,
 		ImageType:  1,
 		CanCaptcha: true,

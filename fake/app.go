@@ -27,12 +27,12 @@ type App struct {
 
 var (
 	MobileQQAndroidApp = &App{
-		FixID:    537118045,
-		AppID:    537118045,
+		FixID:    537119544,
+		AppID:    537119544,
 		Package:  "com.tencent.mobileqq",
-		Version:  "8.8.88",
-		Build:    "7830",
-		Revision: "2e061dd9",
+		Version:  "8.8.90",
+		Build:    "7975",
+		Revision: "83e6c009",
 		SigHash:  [16]byte{0xa6, 0xb7, 0x45, 0xbf, 0x24, 0xa2, 0xc2, 0x77, 0x52, 0x77, 0x16, 0xf6, 0xf3, 0x6e, 0xb6, 0x8d},
 	}
 	MiniHDQQAndroidApp = &App{

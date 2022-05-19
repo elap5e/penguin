@@ -6,7 +6,7 @@
 
 ### GitHub Releases Page
 
-The _**latest releases and changelog**_ are avaliable via [this link](https://github.com/elap5e/penguin/releases/latest).
+The _latest releases and changelog_ are avaliable via [this link](https://github.com/elap5e/penguin/releases/latest).
 
 ### Nightly Build Artifacts
 
